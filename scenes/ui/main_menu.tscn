@@ -1,0 +1,198 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/level1_pixel_adventure/backgrounds/bg_blue.png" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/shared/ui/menu/menu_ground_strip.png" id="3_ground"]
+[ext_resource type="SpriteFrames" path="res://assets/shared/heroes/ninja_frog/ninja_frog_frames.tres" id="4_frog"]
+[ext_resource type="SpriteFrames" path="res://assets/shared/heroes/pink_man/pink_man_frames.tres" id="5_pink"]
+[ext_resource type="SpriteFrames" path="res://assets/shared/heroes/mask_dude/mask_dude_frames.tres" id="6_mask"]
+[ext_resource type="SpriteFrames" path="res://assets/shared/heroes/virtual_guy/virtual_guy_frames.tres" id="7_virtual"]
+
+[sub_resource type="StyleBoxFlat" id="title_band"]
+bg_color = Color(0.129412, 0.121569, 0.188235, 0.55)
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Background" type="TextureRect" parent="."]
+layout_mode = 0
+offset_right = 704.0
+offset_bottom = 424.0
+texture = ExtResource("2_bg")
+stretch_mode = 1
+
+[node name="TitleBand" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 40.0
+offset_bottom = 110.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("title_band")
+
+[node name="Title" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 48.0
+offset_bottom = 84.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 0.894118, 0.470588, 1)
+theme_override_colors/font_shadow_color = Color(0.239216, 0.141176, 0.164706, 1)
+theme_override_constants/shadow_offset_x = 3
+theme_override_constants/shadow_offset_y = 3
+theme_override_font_sizes/font_size = 30
+text = "CODE ODYSSEY"
+horizontal_alignment = 1
+
+[node name="Prompt" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 88.0
+offset_bottom = 100.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.556863, 0.913725, 0.611765, 1)
+text = "> PRESS PLAY TO COMPILE_"
+horizontal_alignment = 1
+
+[node name="MenuButtons" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -60.0
+offset_top = 130.0
+offset_right = 60.0
+offset_bottom = 250.0
+grow_horizontal = 2
+theme_override_constants/separation = 6
+
+[node name="PlayButton" type="Button" parent="MenuButtons"]
+layout_mode = 2
+text = "PLAY"
+
+[node name="ContinueButton" type="Button" parent="MenuButtons"]
+layout_mode = 2
+text = "CONTINUE"
+
+[node name="SettingsButton" type="Button" parent="MenuButtons"]
+layout_mode = 2
+text = "SETTINGS"
+
+[node name="QuitButton" type="Button" parent="MenuButtons"]
+layout_mode = 2
+text = "QUIT"
+
+[node name="SettingsPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -110.0
+offset_top = 124.0
+offset_right = 110.0
+offset_bottom = 254.0
+grow_horizontal = 2
+
+[node name="VBox" type="VBoxContainer" parent="SettingsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Heading" type="Label" parent="SettingsPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.239216, 0.141176, 0.164706, 1)
+theme_override_font_sizes/font_size = 20
+text = "SETTINGS"
+horizontal_alignment = 1
+
+[node name="VolumeRow" type="HBoxContainer" parent="SettingsPanel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="VolumeLabel" type="Label" parent="SettingsPanel/VBox/VolumeRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.239216, 0.141176, 0.164706, 1)
+text = "VOLUME"
+
+[node name="VolumeSlider" type="HSlider" parent="SettingsPanel/VBox/VolumeRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.05
+value = 0.8
+
+[node name="FullscreenCheck" type="CheckButton" parent="SettingsPanel/VBox"]
+layout_mode = 2
+text = "FULLSCREEN"
+
+[node name="BackButton" type="Button" parent="SettingsPanel/VBox"]
+layout_mode = 2
+text = "BACK"
+
+[node name="Ground" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -48.0
+grow_horizontal = 2
+grow_vertical = 0
+texture = ExtResource("3_ground")
+stretch_mode = 1
+
+[node name="Heroes" type="Node2D" parent="."]
+position = Vector2(0, 296)
+
+[node name="NinjaFrog" type="AnimatedSprite2D" parent="Heroes"]
+position = Vector2(64, 0)
+sprite_frames = ExtResource("4_frog")
+animation = &"idle"
+autoplay = "idle"
+
+[node name="PinkMan" type="AnimatedSprite2D" parent="Heroes"]
+position = Vector2(100, 0)
+sprite_frames = ExtResource("5_pink")
+animation = &"idle"
+autoplay = "idle"
+frame_progress = 0.3
+
+[node name="MaskDude" type="AnimatedSprite2D" parent="Heroes"]
+position = Vector2(540, 0)
+sprite_frames = ExtResource("6_mask")
+animation = &"idle"
+autoplay = "idle"
+flip_h = true
+
+[node name="VirtualGuy" type="AnimatedSprite2D" parent="Heroes"]
+position = Vector2(576, 0)
+sprite_frames = ExtResource("7_virtual")
+animation = &"idle"
+autoplay = "idle"
+flip_h = true
+
+[node name="Version" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -120.0
+offset_top = -14.0
+offset_right = -4.0
+offset_bottom = -2.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 1, 1, 0.7)
+text = "V0.1 PROTOTYPE"
+horizontal_alignment = 2

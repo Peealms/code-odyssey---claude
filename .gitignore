@@ -1,0 +1,9 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Old unsorted copy of the asset packs (everything used is in assets/; Godot ignores it too)
+/ASSETS CODE ODYSSEY/
+
+# Claude Code MCP config - contains the Godot path on one person's PC
+.mcp.json

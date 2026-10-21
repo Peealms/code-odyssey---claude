@@ -1,0 +1,76 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/crabby.gd" id="1_script"]
+[ext_resource type="SpriteFrames" path="res://assets/level2_treasure_hunters/enemies/crabby/crabby_frames.tres" id="2_frames"]
+
+[sub_resource type="RectangleShape2D" id="body_shape"]
+size = Vector2(30, 18)
+
+[sub_resource type="RectangleShape2D" id="hurt_shape"]
+size = Vector2(34, 20)
+
+[sub_resource type="RectangleShape2D" id="claw_shape"]
+size = Vector2(104, 24)
+
+[sub_resource type="StyleBoxFlat" id="bar_bg"]
+bg_color = Color(0.129412, 0.121569, 0.188235, 0.85)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.129412, 0.121569, 0.188235, 1)
+expand_margin_left = 1.0
+expand_margin_top = 1.0
+expand_margin_right = 1.0
+expand_margin_bottom = 1.0
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="bar_fill"]
+bg_color = Color(0.85, 0.2, 0.22, 1)
+anti_aliasing = false
+
+[node name="Crabby" type="CharacterBody2D" groups=["enemy"]]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_script")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(0, -13)
+sprite_frames = ExtResource("2_frames")
+animation = &"run"
+autoplay = "run"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -9)
+shape = SubResource("body_shape")
+
+[node name="HealthBar" type="ProgressBar" parent="."]
+visible = false
+z_index = 15
+offset_left = -14.0
+offset_top = -32.0
+offset_right = 14.0
+offset_bottom = -29.0
+mouse_filter = 2
+theme_override_styles/background = SubResource("bar_bg")
+theme_override_styles/fill = SubResource("bar_fill")
+max_value = 30.0
+value = 30.0
+show_percentage = false
+
+[node name="ClawBox" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ClawBox"]
+position = Vector2(0, -12)
+shape = SubResource("claw_shape")
+
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
+position = Vector2(0, -10)
+shape = SubResource("hurt_shape")

@@ -1,0 +1,1 @@
+Byte (AI companion) sprites go in this folder.
