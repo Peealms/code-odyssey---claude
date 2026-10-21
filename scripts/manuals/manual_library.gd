@@ -43,11 +43,12 @@ Read it out loud: [i]"Make a String called hero and store PinkMan in it."[/i]"""
 If you break a rule, Byte will tell you which step failed.""",
 
 			"""[b]Try it![/b]
-Press [b]E[/b] to open Byte's terminal and type:
+Press [b]E[/b] to open Byte's terminal. Your first line of Java prints a message:
 
-[code]String hero = "MaskDude";[/code]
+[code]System.out.println("Hello Byte");[/code]
 
-[color=#2e7d32][b]Byte's hint:[/b] the gap ahead is too wide for Ninja Frog. Which hero could cross it? Store their name in [code]hero[/code]![/color]""",
+[color=#2e7d32][b]Byte's hint:[/b] my gate opens when I hear you say something! Then climb the narrow shaft - only Ninja Frog can wall-jump.
+Later, when a gap is too wide, rescue a new hero and store their name in a [b]String[/b] called [code]hero[/code].[/color]""",
 		],
 	},
 	"data_types": {
@@ -84,6 +85,88 @@ Do you [i]have[/i] a sword? That's a yes-or-no question...
 Try a [b]boolean[/b] called [code]hasSword[/code].[/color]
 
 Once you have it, pick it from your hotbar with [b]1-5[/b] and [b]left-click[/b] to swing.""",
+		],
+	},
+	"numbers": {
+		"title": "MANUAL: NUMBERS",
+		"book": 4,
+		"pages": [
+			"""[b]Two kinds of numbers[/b]
+Java keeps whole numbers and decimal numbers apart:
+
+[code]int   [/code] whole numbers only     [code]0[/code]  [code]6[/code]  [code]-3[/code]  [code]100[/code]
+[code]double[/code] numbers with a point   [code]1.5[/code]  [code]0.25[/code]  [code]2.0[/code]
+
+Use [b]int[/b] for things you [i]count[/i] (blocks, lives, coins).
+Use [b]double[/b] for things you [i]measure[/i] (speed, height, power).""",
+
+			"""[b]Writing numbers[/b]
+- No quotes: [code]6[/code] is a number, [code]"6"[/code] is text.
+- No commas: [code]1000[/code], not [code]1,000[/code]
+- An int can't hold a decimal:
+
+[color=#2e7d32]OK[/color]   [code]int bridgeLength = 10;[/code]
+[color=#c0392b]NO[/color]   [code]int bridgeLength = 9.5;[/code]
+[color=#2e7d32]OK[/color]   [code]double jumpPower = 1.5;[/code]""",
+
+			"""[color=#2e7d32][b]Byte's hint:[/b] the bridge ahead is broken. It builds one block for every 1 in its number.
+Count how many blocks wide the gap is, and store that [b]whole number[/b] in an [b]int[/b] called [code]bridgeLength[/code].[/color]
+
+Then the step on the other side is too high for one jump. Who can jump twice?
+Remember: [code]hero[/code] already exists, so change it [i]without[/i] the type:
+[code]hero = "...";[/code]""",
+		],
+	},
+	"booleans_chars": {
+		"title": "MANUAL: BOOLEANS & CHARS",
+		"book": 2,
+		"pages": [
+			"""[b]boolean: on or off[/b]
+A boolean has only two values: [code]true[/code] and [code]false[/code].
+It's perfect for switches, doors and yes-or-no questions.
+
+[code]boolean lightOn = true;[/code]
+[code]boolean doorLocked = false;[/code]
+
+Lowercase, and [b]no quotes[/b] - [code]"true"[/code] would be text, not a boolean.""",
+
+			"""[b]char: one single character[/b]
+A char holds exactly [b]one[/b] letter, digit or symbol, in [b]single quotes[/b]:
+
+[code]char grade = 'A';[/code]
+[code]char key = '7';[/code]
+
+[color=#c0392b]NO[/color]   [code]char grade = "A";[/code]   double quotes make a String
+[color=#c0392b]NO[/color]   [code]char grade = 'AB';[/code]  only one character fits""",
+
+			"""[color=#2e7d32][b]Byte's hint:[/b] the fan below is switched off. Switch it on with a [b]boolean[/b] called [code]fanOn[/code], then ride the air up and step off onto the ledge.
+
+Later, three paths cross a chasm and only one can hold you. Choose it with a [b]char[/b] called [code]path[/code]. Read the sign for the letter![/color]""",
+		],
+	},
+	"changing_variables": {
+		"title": "MANUAL: CHANGING VARIABLES",
+		"book": 3,
+		"pages": [
+			"""[b]Making vs changing[/b]
+You make (declare) a variable [b]once[/b], with its type:
+
+[code]double jumpPower = 1.5;[/code]
+
+After that, Java already knows its type. To change it, write just the name:
+
+[code]jumpPower = 1.0;[/code]""",
+
+			"""[b]Why not write the type again?[/b]
+Writing the type means "make a [i]new[/i] variable". Java refuses to make two variables with the same name:
+
+[color=#c0392b]NO[/color]   [code]double jumpPower = 1.0;[/code]   jumpPower already exists
+[color=#2e7d32]OK[/color]   [code]jumpPower = 1.0;[/code]
+
+The new value must still fit the type: [code]jumpPower = "low";[/code] won't work.""",
+
+			"""[color=#2e7d32][b]Byte's hint:[/b] the tunnel ahead has spikes on the ceiling. With your big jumps from before, you'll hit your head!
+Change [code]jumpPower[/code] back to a smaller number - and remember, it already exists.[/color]""",
 		],
 	},
 }

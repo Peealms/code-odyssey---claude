@@ -7,7 +7,7 @@ extends Area2D
 signal first_opened(manual_id: String)
 
 ## Which manual from ManualLibrary is inside. Add new ids here when you add manuals.
-@export_enum("variables_101", "data_types") var manual_id: String = "variables_101"
+@export_enum("variables_101", "data_types", "numbers", "booleans_chars", "changing_variables") var manual_id: String = "variables_101"
 
 ## What's in the chest right now ("" = empty slot). Filled from manual_id at start.
 var slots: Array[String] = ["", "", "", "", ""]

@@ -1,7 +1,9 @@
 extends Control
 ## Main menu: Play / Continue / Settings / Quit.
 
-const FIRST_LEVEL := "res://scenes/levels/test/test_room.tscn"
+const FIRST_LEVEL := "res://scenes/levels/level1/level1.tscn"
+## The test room (all heroes, Crabby, sword) is still at res://scenes/levels/test/test_room.tscn -
+## open it in the editor and press F6 to play it.
 
 @onready var background: TextureRect = $Background
 @onready var title: Label = $Title

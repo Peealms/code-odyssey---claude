@@ -52,7 +52,8 @@ func _physics_process(delta: float) -> void:
 		return
 	for body in air.get_overlapping_bodies():
 		if body is CharacterBody2D and body.is_in_group("player"):
-			# Push up, weaker near the top of the column so the player bobs there.
+			# Push up, a bit weaker near the top but always stronger than gravity, so the
+			# player rides all the way up and bobs at the top of the column.
 			var height := global_position.y - body.global_position.y
-			var strength := clampf(1.0 - height / lift_height, 0.25, 1.0)
+			var strength := clampf(1.0 - height / lift_height, 0.5, 1.0)
 			body.velocity.y = maxf(body.velocity.y - lift_accel * strength * delta, -lift_speed)
