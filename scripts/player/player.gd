@@ -106,6 +106,8 @@ var health := 0.0
 var stamina := 0.0
 var exhausted := false  ## True after stamina hits 0, until it's full again.
 var is_sprinting := false
+## Set by the code terminal (double jumpPower = 1.5;). 1.5 = jumps 1.5x as high.
+var jump_power := 1.0
 
 var _coyote_timer := 0.0
 var _jump_buffer_timer := 0.0
@@ -233,7 +235,8 @@ func _handle_jump() -> void:
 
 
 func _do_jump() -> void:
-	velocity.y = jump_velocity
+	# Jump height grows with the square of the speed, so sqrt makes jump_power scale the height.
+	velocity.y = jump_velocity * sqrt(jump_power)
 	_jump_buffer_timer = 0.0
 	_coyote_timer = 0.0
 

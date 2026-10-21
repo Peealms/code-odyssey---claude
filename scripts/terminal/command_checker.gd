@@ -3,25 +3,19 @@ extends RefCounted
 ## Checks one line of Java-style code, step by step, the way Byte explains it.
 ## It never runs real Java: it only understands the statements listed below.
 ##
-##   <Type> <name> = <value>;      e.g.  String hero = "PinkMan";
-##   System.out.println(<value>);   e.g.  System.out.println("Hello");
+##   <Type> <name> = <value>;      declare a new variable    String hero = "PinkMan";
+##   <name> = <value>;             change one you declared   hero = "MaskDude";
+##   System.out.println(<value>);  print text / a number / a variable
 ##
 ## check() returns:
 ##   ok      true if every step passed
 ##   steps   [{ "label": String, "ok": bool }]  (the checklist Byte shows)
 ##   error   friendly explanation of the first failed step ("" when ok)
-##   action  what the game should do, e.g. { "type": "set", "name": "hero", "value": "pink_man" }
+##   action  what the game should do, e.g. { "type": "set", "name": "hero", "value": "pink_man", "declare": true }
 ##
-## To teach a new variable, add it to VARIABLES and handle its "set" action in the terminal.
+## The variables it knows come from VariableLibrary (a level picks which ones).
 
 const TYPES := ["String", "int", "double", "boolean", "char"]
-
-## Variables the player may set. "type" is the Java type the variable needs.
-const VARIABLES := {
-	"hero": {"type": "String", "about": "the hero you play as"},
-	"speed": {"type": "double", "about": "how fast you run", "min": 0.5, "max": 2.0},
-	"hasSword": {"type": "boolean", "about": "whether you carry a sword"},
-}
 
 ## Hero names as typed in code -> hero ids used by the Player.
 const HERO_NAMES := {
@@ -33,23 +27,34 @@ const HERO_NAMES := {
 
 const ID_REGEX := "^[A-Za-z_$][A-Za-z0-9_$]*$"
 
+## Variables this level allows: name -> spec (see VariableLibrary).
+var variables: Dictionary
+## When true, declaring the same variable twice is allowed (Java itself says no).
+var allow_redeclare := false
+
 var _steps: Array = []
 
 
-## values: current value of each variable (for println). unlocked: hero ids allowed, or [] for all.
-func check(source: String, values := {}, unlocked: Array = []) -> Dictionary:
+func _init(level_variables: Dictionary = VariableLibrary.VARIABLES) -> void:
+	variables = level_variables
+
+
+## values:   current value of each declared variable (for println)
+## unlocked: hero ids the player may switch to, or [] for all
+## declared: names the player has already declared in this level
+func check(source: String, values := {}, unlocked: Array = [], declared: Array = []) -> Dictionary:
 	_steps = []
 	var line := source.strip_edges()
 	if line == "":
 		return _fail("Code", "Type a line of code first. Try: String hero = \"PinkMan\";")
 	if line.to_lower().begins_with("system."):
 		return _check_print(line, values)
-	return _check_declaration(line, unlocked)
+	return _check_assignment(line, unlocked, declared)
 
 
-# ---------------- String hero = "PinkMan"; ----------------
+# ---------------- String hero = "PinkMan";   /   hero = "MaskDude"; ----------------
 
-func _check_declaration(line: String, unlocked: Array) -> Dictionary:
+func _check_assignment(line: String, unlocked: Array, declared: Array) -> Dictionary:
 	if not line.ends_with(";"):
 		return _fail("Semicolon", "Every Java statement ends with a semicolon. Add ; at the end.")
 	_pass("Ends with ;")
@@ -64,39 +69,42 @@ func _check_declaration(line: String, unlocked: Array) -> Dictionary:
 		return _fail("Value", "Put a value after the =, like \"PinkMan\".")
 
 	var parts := left.split(" ", false)
-	if parts.size() == 1:
-		var only := parts[0]
-		if VARIABLES.has(only):
-			return _fail("Type", "Tell Java the type first: %s %s = ...;" % [VARIABLES[only]["type"], only])
-		return _fail("Type", "A variable needs a type and a name, like: String hero = \"PinkMan\";")
 	if parts.size() > 2:
 		return _fail("Variable name", "Variable names can't have spaces. Try joining the words: myHero.")
+	if parts.is_empty():
+		return _fail("Variable name", "Put a variable name before the =.")
 
-	var type := parts[0]
-	var name := parts[1]
+	var declaring := parts.size() == 2
+	var name: String = parts[-1]
+	var type := ""
 
-	# Step: type
-	if not type in TYPES:
-		for t in TYPES:
-			if t.to_lower() == type.to_lower():
-				return _fail("Type", "Java is case-sensitive. Write %s, not %s." % [t, type])
-		return _fail("Type", "'%s' isn't a type I know. Try String, int, double, boolean or char." % type)
-	_pass("Type is " + type)
+	if declaring:
+		# Step: type
+		type = parts[0]
+		if not type in TYPES:
+			for t in TYPES:
+				if t.to_lower() == type.to_lower():
+					return _fail("Type", "Java is case-sensitive. Write %s, not %s." % [t, type])
+			return _fail("Type", "'%s' isn't a type I know. Try String, int, double, boolean or char." % type)
+		_pass("Type is " + type)
 
 	# Step: variable name
-	if not _is_identifier(name):
-		if name[0].is_valid_int():
-			return _fail("Variable name", "Variable names can't start with a number.")
-		return _fail("Variable name", "Variable names can only use letters, numbers, _ and $.")
-	if not VARIABLES.has(name):
-		for v in VARIABLES:
-			if v.to_lower() == name.to_lower():
-				return _fail("Variable name", "Names are case-sensitive. Did you mean %s?" % v)
-		return _fail("Variable name", "I don't know a variable called '%s' here. Try: %s." % [name, ", ".join(VARIABLES.keys())])
-	var expected: String = VARIABLES[name]["type"]
-	if type != expected:
-		return _fail("Type matches", "%s is %s, so it must be a %s, not %s." % [name, VARIABLES[name]["about"], expected, type])
-	_pass("Name is " + name)
+	var name_error := _check_name(name)
+	if name_error != "":
+		return _fail("Variable name", name_error)
+	var spec: Dictionary = variables[name]
+
+	if declaring:
+		if type != spec["type"]:
+			return _fail("Type matches", "%s is %s, so it must be a %s, not %s." % [name, spec["about"], spec["type"], type])
+		if name in declared and not allow_redeclare:
+			return _fail("New variable", "%s already exists, so Java won't make it again. To change it, leave out the type: %s = %s;" % [name, name, value_text])
+		_pass("Name is " + name)
+	else:
+		if not name in declared:
+			return _fail("Declared", "Java doesn't know %s yet. Make it first with its type: %s %s = %s;" % [name, spec["type"], name, value_text])
+		type = spec["type"]
+		_pass("Changing " + name)
 
 	# Step: value matches the type
 	var parsed := _parse_value(type, value_text)
@@ -106,26 +114,42 @@ func _check_declaration(line: String, unlocked: Array) -> Dictionary:
 
 	# Step: value makes sense for this variable
 	var value = parsed["value"]
-	match name:
-		"hero":
-			if not HERO_NAMES.has(value):
-				var squashed: String = value.replace(" ", "").to_lower()
-				for h in HERO_NAMES:
-					if h.to_lower() == squashed:
-						return _fail("Hero", "Close! Hero names are written exactly like this: \"%s\"." % h)
-				return _fail("Hero", "There's no hero called \"%s\". Try: %s." % [value, ", ".join(HERO_NAMES.keys())])
-			value = HERO_NAMES[value]
-			if not unlocked.is_empty() and not value in unlocked:
-				return _fail("Hero", "%s hasn't been rescued yet!" % parsed["value"])
-			_pass("Hero found")
-		"speed":
-			var lo: float = VARIABLES[name]["min"]
-			var hi: float = VARIABLES[name]["max"]
-			if value < lo or value > hi:
-				return _fail("Range", "speed must be between %s and %s." % [lo, hi])
-			_pass("Speed in range")
+	if name == "hero":
+		if not HERO_NAMES.has(value):
+			var squashed: String = value.replace(" ", "").to_lower()
+			for h in HERO_NAMES:
+				if h.to_lower() == squashed:
+					return _fail("Hero", "Close! Hero names are written exactly like this: \"%s\"." % h)
+			return _fail("Hero", "There's no hero called \"%s\". Try: %s." % [value, ", ".join(HERO_NAMES.keys())])
+		value = HERO_NAMES[value]
+		if not unlocked.is_empty() and not value in unlocked:
+			return _fail("Hero", "%s hasn't been rescued yet!" % parsed["value"])
+		_pass("Hero found")
+	elif spec.has("min") and (value < spec["min"] or value > spec["max"]):
+		return _fail("Range", "%s must be between %s and %s." % [name, spec["min"], spec["max"]])
+	elif spec.has("choices") and not str(value) in spec["choices"]:
+		var shown: Array = spec["choices"].map(func(c): return "'%s'" % c if type == "char" else "\"%s\"" % c)
+		return _fail("Choice", "%s can only be %s." % [name, " or ".join(shown)])
+	elif spec.has("min") or spec.has("choices"):
+		_pass("Value allowed")
 
-	return _ok({"type": "set", "name": name, "value": value})
+	return _ok({"type": "set", "name": name, "value": value, "declare": declaring})
+
+
+## "" if `name` is a variable this level knows, otherwise Byte's explanation.
+func _check_name(name: String) -> String:
+	if not _is_identifier(name):
+		if name[0].is_valid_int():
+			return "Variable names can't start with a number."
+		return "Variable names can only use letters, numbers, _ and $."
+	if variables.has(name):
+		return ""
+	if name in TYPES:
+		return "%s is a type, not a name. Write the type and then a name, like: %s myValue = ...;" % [name, name]
+	for v in variables:
+		if v.to_lower() == name.to_lower():
+			return "Names are case-sensitive. Did you mean %s?" % v
+	return "I don't know a variable called '%s' here. Try: %s." % [name, ", ".join(variables.keys())]
 
 
 func _parse_value(type: String, text: String) -> Dictionary:
@@ -161,10 +185,14 @@ func _parse_value(type: String, text: String) -> Dictionary:
 				return {"value": text == "true"}
 			if text.to_lower() == "true" or text.to_lower() == "false":
 				return {"error": "Write true or false in lowercase."}
+			if quoted_double or quoted_single:
+				return {"error": "true and false don't use quotes. Write it without the quotes."}
 			return {"error": "boolean can only be true or false."}
 		"char":
 			if quoted_single and text.length() == 3:
 				return {"value": text[1]}
+			if quoted_single:
+				return {"error": "A char holds only ONE character, like 'B'."}
 			if quoted_double:
 				return {"error": "Double quotes are for String. A char uses single quotes, like 'A'."}
 			return {"error": "A char is one character in single quotes, like 'A'."}
@@ -207,10 +235,12 @@ func _check_print(line: String, values: Dictionary) -> Dictionary:
 		text = arg
 	elif values.has(arg):
 		text = str(values[arg])
+	elif variables.has(arg):
+		return _fail("Value", "%s hasn't been made yet. Declare it first: %s %s = ...;" % [arg, variables[arg]["type"], arg])
 	elif _is_identifier(arg):
-		return _fail("Value", "I don't know '%s'. Print text in quotes, a number, or a variable like hero." % arg)
+		return _fail("Value", "I don't know '%s'. Print text in quotes, a number, or a variable you made." % arg)
 	else:
-		return _fail("Value", "I can print text in quotes, numbers, or variables like hero.")
+		return _fail("Value", "I can print text in quotes, numbers, or variables you made.")
 	_pass("Value can print")
 	return _ok({"type": "print", "text": text})
 

@@ -10,6 +10,14 @@ const HEROES := ["ninja_frog", "pink_man", "mask_dude", "virtual_guy"]
 
 var current_hero: String = "ninja_frog"
 var unlocked_heroes: Array = ["ninja_frog"]
+## Best stars per level id, e.g. {"level1": 3}. Saved with progress.
+var best_stars: Dictionary = {}
+
+# The level being played right now (reset by start_level).
+var level_id := ""
+var answers_shown := 0  ## "Show answer" uses - each one costs a star.
+var mistakes := 0  ## Wrong lines typed in the terminal.
+var _level_start_ms := 0
 
 var master_volume: float = 0.8
 var fullscreen: bool = false
@@ -72,6 +80,35 @@ func is_hero_unlocked(hero_id: String) -> bool:
 	return hero_id in unlocked_heroes
 
 
+# ---------------- Level stats & stars ----------------
+
+func start_level(id: String) -> void:
+	level_id = id
+	answers_shown = 0
+	mistakes = 0
+	_level_start_ms = Time.get_ticks_msec()
+
+
+## 0 answers shown = 3 stars, 1 = 2 stars, 2 or more = 1 star.
+func stars_earned() -> int:
+	return clampi(3 - answers_shown, 1, 3)
+
+
+## Call when the level's goal is reached. Saves the best stars and returns the results.
+func finish_level() -> Dictionary:
+	var stars := stars_earned()
+	var best: int = maxi(stars, best_stars.get(level_id, 0))
+	best_stars[level_id] = best
+	save_progress()
+	return {
+		"stars": stars,
+		"best": best,
+		"answers_shown": answers_shown,
+		"mistakes": mistakes,
+		"seconds": (Time.get_ticks_msec() - _level_start_ms) / 1000.0,
+	}
+
+
 # ---------------- Settings ----------------
 
 func set_master_volume(value: float) -> void:
@@ -113,6 +150,7 @@ func save_progress() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("progress", "unlocked_heroes", unlocked_heroes)
 	cfg.set_value("progress", "current_hero", current_hero)
+	cfg.set_value("progress", "best_stars", best_stars)
 	cfg.save(SAVE_PATH)
 
 
@@ -121,6 +159,7 @@ func load_progress() -> void:
 	if cfg.load(SAVE_PATH) == OK:
 		unlocked_heroes = cfg.get_value("progress", "unlocked_heroes", unlocked_heroes)
 		current_hero = cfg.get_value("progress", "current_hero", current_hero)
+		best_stars = cfg.get_value("progress", "best_stars", best_stars)
 
 
 func has_save() -> bool:
@@ -130,4 +169,5 @@ func has_save() -> bool:
 func reset_progress() -> void:
 	unlocked_heroes = ["ninja_frog"]
 	current_hero = "ninja_frog"
+	best_stars = {}
 	save_progress()

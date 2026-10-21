@@ -36,6 +36,19 @@ Notes
   explains int can't hold decimals.
 - Room 6 reuses the `jumpPower` from Room 3 – the lesson is that a variable that already
   exists is changed with `name = value;` (writing `double` again is a redeclaration error).
+- The terminal follows Java here from the start: once `hero` is declared (Room 1), switching
+  again in Room 2 must be `hero = "MaskDude";`. Byte explains this the first time
+  ("hero already exists... leave out the type"), so Room 6 is the *practice* of it, not the
+  first sight. (CodeTerminal has an "Allow Redeclare" switch if we ever want to relax this.)
+
+## How it's built (step 1 - done)
+- `VariableLibrary` lists every variable; each level's CodeTerminal picks its
+  **Allowed Variables**. Gadgets listen to `CodeTerminal.variable_set(name, value)`.
+- `Room` (scenes/levels/room.tscn): size, title, hint, blanks, answer.
+- `Checkpoint` (scenes/objects/checkpoint.tscn): respawn point + optional **Unlock Hero**.
+- `Level` (scripts/levels/level.gd): base script for every level - respawn, checkpoints,
+  hero unlocks, HUD, stars. `Game.start_level / finish_level` track answers shown & mistakes.
+- jumpPower scales jump **height**: 1.0 = 50 px, 1.5 = 75 px, 2.0 = 100 px.
 
 ## Manual chests
 | Before | Manual | Book colour |

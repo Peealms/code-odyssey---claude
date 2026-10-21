@@ -16,12 +16,16 @@
 [ext_resource type="PackedScene" path="res://scenes/objects/manual_chest.tscn" id="14_chest"]
 [ext_resource type="PackedScene" path="res://scenes/ui/manual_reader.tscn" id="15_reader"]
 [ext_resource type="PackedScene" path="res://scenes/ui/chest_window.tscn" id="16_chestwin"]
+[ext_resource type="PackedScene" path="res://scenes/objects/checkpoint.tscn" id="17_checkpoint"]
+[ext_resource type="PackedScene" path="res://scenes/levels/room.tscn" id="18_room"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_crabzone"]
 size = Vector2(32, 96)
 
 [node name="TestRoom" type="Node2D" unique_id=587300]
 script = ExtResource("1_script")
+level_id = "test_room"
+level_title = "TEST ROOM"
 
 [node name="BackgroundLayer" type="CanvasLayer" parent="." unique_id=1660030176]
 layer = -10
@@ -152,6 +156,17 @@ position = Vector2(272, 304)
 [node name="DataTypesChest" parent="Chests" unique_id=1447153077 instance=ExtResource("14_chest")]
 position = Vector2(1536, 304)
 manual_id = "data_types"
+
+[node name="TunnelCheckpoint" parent="." unique_id=1520994310 instance=ExtResource("17_checkpoint")]
+position = Vector2(1480, 304)
+
+[node name="CrabRoom" parent="." unique_id=1777316205 instance=ExtResource("18_room")]
+position = Vector2(1880, 208)
+size = Vector2(880, 320)
+title = "THE CRAB TUNNEL"
+hint = "Do you have a sword? That's a yes-or-no question, so use a boolean. Its name is hasSword."
+blanks = "boolean hasSword = ____;"
+answer = "boolean hasSword = true;"
 
 [node name="CrabZone" type="Area2D" parent="." unique_id=771208345]
 position = Vector2(1600, 256)

@@ -3,43 +3,72 @@ extends CanvasLayer
 ## Byte checks the line step by step (see CommandChecker), then reacts:
 ## correct code runs (e.g. swaps the hero), wrong code gets a friendly hint.
 ## Up / Down recall earlier lines. Esc closes.
+##
+## Each level picks its variables in "Allowed Variables" (names from VariableLibrary).
+## Player variables (hero, speed, hasSword, jumpPower) are applied here; gadgets such as
+## bridges and fans listen to `variable_set` instead.
+##
+## Inside a Room, wrong lines count up: 3 -> the room's hint + "Show answer" (costs a star),
+## 5 -> the answer with blanks.
+
+signal variable_set(name: String, value: Variant)
 
 const STEP_DELAY := 0.18  ## Seconds between Byte's checklist lines.
+const HINT_AT := 3  ## Wrong tries in a room before the hint and "Show answer".
+const BLANKS_AT := 5  ## Wrong tries before Byte shows the answer with blanks.
 const COLOR_CODE := "ffffff"
 const COLOR_OK := "7cf07c"
 const COLOR_BAD := "ff5c6c"
 const COLOR_BYTE := "5ef2e0"
 const COLOR_HINT := "8fa3bf"
+const COLOR_ANSWER := "ffd34d"
 
 @export var player: CharacterBody2D
 @export var byte: Node2D
+## Variables players can use in this level (names from VariableLibrary).
+@export var allowed_variables: Array[String] = ["hero", "speed", "hasSword"]
 ## Only let the player switch to heroes they've rescued (off for the test room).
 @export var require_unlocked_heroes := false
+## Allow declaring the same variable twice (Java doesn't; leave off to teach `name = value;`).
+@export var allow_redeclare := false
 
 var is_open := false
 ## Levels can set this; Byte says it the next time the terminal opens.
 var pending_hint := ""
+## The Room the player is standing in (set by Room). Its hints and answer are used.
+var current_room: Room = null:
+	set(value):
+		current_room = value
+		_reset_answer_button()
+## Every variable the player declared so far, and its value as Java would print it.
+var values := {}
 
-var _checker := CommandChecker.new()
+var _checker: CommandChecker
 var _running := false
 var _greeted := false
 var _history: Array[String] = []
 var _history_index := 0
 var _base_run_speed := 0.0
-var _speed := 1.0
 var _player_input_before := true
+var _confirming_answer := false
 
 @onready var panel: PanelContainer = $Panel
 @onready var portrait: AnimatedSprite2D = $Panel/HBox/Portrait/Sprite
 @onready var log_label: RichTextLabel = $Panel/HBox/VBox/Log
 @onready var input: LineEdit = $Panel/HBox/VBox/InputRow/Input
+@onready var answer_button: Button = $Panel/HBox/VBox/HeaderRow/AnswerButton
 @onready var open_hint: Label = $OpenHint
 
 
 func _ready() -> void:
+	add_to_group("code_terminal")
 	panel.visible = false
+	_checker = CommandChecker.new(VariableLibrary.pick(allowed_variables))
+	_checker.allow_redeclare = allow_redeclare
 	input.text_submitted.connect(_on_submitted)
 	input.gui_input.connect(_on_input_gui_input)
+	answer_button.pressed.connect(_on_answer_pressed)
+	_reset_answer_button()
 	if player:
 		_base_run_speed = player.run_speed
 
@@ -78,10 +107,11 @@ func open() -> void:
 	if not _greeted:
 		_greeted = true
 		_byte_line("Hi! I'm Byte. Type a line of Java and press Enter.")
-		_hint_line("Try:  String hero = \"PinkMan\";   double speed = 1.5;   System.out.println(\"Hi\");")
+		_hint_line("Variables you can use here: " + ", ".join(allowed_variables))
 	if pending_hint != "":
 		_byte_line(pending_hint)
 		pending_hint = ""
+	_reset_answer_button()
 
 
 func close() -> void:
@@ -105,7 +135,7 @@ func _on_submitted(text: String) -> void:
 	_append("[color=#%s]> %s[/color]" % [COLOR_CODE, _escape(text)])
 
 	var unlocked: Array = Game.unlocked_heroes if require_unlocked_heroes else []
-	var result := _checker.check(text, _current_values(), unlocked)
+	var result := _checker.check(text, values, unlocked, values.keys())
 
 	if byte:
 		byte.talk(STEP_DELAY * result["steps"].size() + 0.1)
@@ -123,48 +153,103 @@ func _on_submitted(text: String) -> void:
 		if byte:
 			byte.react(false)
 			byte.say("OOPS!", 1.5)
+		_count_wrong_try()
 	_running = false
 
 
 func _run_action(action: Dictionary) -> void:
-	match action["type"]:
-		"set":
-			match action["name"]:
-				"hero":
-					player.set_hero(action["value"])
-					_byte_line("Nice! hero is now %s." % player.HERO_DATA[action["value"]]["name"])
-				"speed":
-					_speed = action["value"]
-					player.run_speed = _base_run_speed * _speed
-					_byte_line("Nice! speed is now %s." % _speed)
-				"hasSword":
-					player.has_sword = action["value"]
-					if action["value"]:
-						var slot: int = player.inventory.find("sword") + 1
-						if player.held_item() == "sword":
-							_byte_line("Nice! The sword is in slot %d of your hotbar and you're holding it. Close me with Esc, then left-click to swing!" % slot)
-						else:
-							_byte_line("Nice! The sword is in slot %d of your hotbar. Close me with Esc, press %d (or scroll) to hold it, then left-click to swing!" % [slot, slot])
-					else:
-						_byte_line("Okay, sword put away.")
-			if byte:
-				byte.react(true)
-				byte.say("NICE!", 1.5)
-		"print":
-			_byte_line("Printed: %s" % action["text"])
-			if byte:
-				byte.react(true)
-				byte.say(action["text"] if action["text"] != "" else "...", 3.0)
+	if action["type"] == "print":
+		_byte_line("Printed: %s" % action["text"])
+		if byte:
+			byte.react(true)
+			byte.say(action["text"] if action["text"] != "" else "...", 3.0)
+		variable_set.emit("println", action["text"])
+		return
+
+	var name: String = action["name"]
+	var value = action["value"]
+	values[name] = _java_text(name, value)
+	match name:
+		"hero":
+			player.set_hero(value)
+		"speed":
+			player.run_speed = _base_run_speed * value
+		"hasSword":
+			player.has_sword = value
+		"jumpPower":
+			player.jump_power = value
+
+	if name == "hasSword" and value:
+		var slot: int = player.inventory.find("sword") + 1
+		_byte_line("Nice! The sword is in slot %d of your hotbar. Close me with Esc, hold it, then left-click to swing!" % slot)
+	elif action["declare"]:
+		_byte_line("Nice! You made %s and stored %s in it." % [name, values[name]])
+	else:
+		_byte_line("Nice! %s changed to %s." % [name, values[name]])
+	if byte:
+		byte.react(true)
+		byte.say("NICE!", 1.5)
+	variable_set.emit(name, value)
 
 
-## Current variable values, so println(hero) can print them.
-func _current_values() -> Dictionary:
-	var hero_name := ""
-	if player:
+## The value the way the player wrote it, e.g. hero -> PinkMan (not pink_man).
+func _java_text(name: String, value) -> String:
+	if name == "hero":
 		for h in CommandChecker.HERO_NAMES:
-			if CommandChecker.HERO_NAMES[h] == player.hero_id:
-				hero_name = h
-	return {"hero": hero_name, "speed": _speed, "hasSword": player.has_sword if player else false}
+			if CommandChecker.HERO_NAMES[h] == value:
+				return h
+	return str(value)
+
+
+# ---------------- Hints, "Show answer" and stars ----------------
+
+func _count_wrong_try() -> void:
+	Game.mistakes += 1
+	if current_room == null:
+		return
+	current_room.wrong_tries += 1
+	var tries := current_room.wrong_tries
+	if tries == HINT_AT and current_room.hint != "":
+		_byte_line("Hint: " + current_room.hint)
+	if tries == BLANKS_AT and current_room.blanks != "":
+		_byte_line("Fill in the blanks:")
+		_append("[color=#%s]      %s[/color]" % [COLOR_ANSWER, _escape(current_room.blanks)])
+	_reset_answer_button()
+
+
+func _reset_answer_button() -> void:
+	if answer_button == null:
+		return
+	_confirming_answer = false
+	var room := current_room
+	answer_button.visible = room != null and room.answer != "" and room.wrong_tries >= HINT_AT
+	if room and room.answer_shown:
+		answer_button.text = "SHOW ANSWER"
+	else:
+		answer_button.text = "SHOW ANSWER: -1 STAR"
+
+
+## First click asks to confirm (it costs a star), the second click shows the answer.
+func _on_answer_pressed() -> void:
+	var room := current_room
+	if room == null:
+		return
+	if not room.answer_shown and not _confirming_answer:
+		_confirming_answer = true
+		answer_button.text = "SURE? CLICK AGAIN"
+		await get_tree().create_timer(3.0).timeout
+		if _confirming_answer:
+			_reset_answer_button()
+		return
+	if not room.answer_shown:
+		room.answer_shown = true
+		Game.answers_shown += 1
+	_byte_line("Here's the answer. Read it, then press Enter to try it:")
+	_append("[color=#%s]      %s[/color]" % [COLOR_ANSWER, _escape(room.answer)])
+	input.text = room.answer
+	input.caret_column = input.text.length()
+	input.grab_focus()
+	_reset_answer_button()
 
 
 # ---------------- Log + history ----------------

@@ -27,6 +27,7 @@ var _stamina_fill: StyleBoxFlat
 
 
 func _ready() -> void:
+	add_to_group("hud")
 	message_label.modulate.a = 0.0
 	set_fruits(0)
 	# Own copy of the fill style so its colour can change when exhausted.
