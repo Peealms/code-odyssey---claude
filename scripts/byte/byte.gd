@@ -18,6 +18,7 @@ var _bubble_id := 0
 
 
 func _ready() -> void:
+	add_to_group("byte")
 	sprite.play("idle")
 	bubble.visible = false
 

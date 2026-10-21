@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gadgets/byte_gate.gd" id="1_script"]
+
+[node name="ByteGate" type="Node2D"]
+script = ExtResource("1_script")
+variable_name = "println"
+
+[node name="Body" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Body"]

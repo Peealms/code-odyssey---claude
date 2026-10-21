@@ -1,0 +1,35 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/gadgets/falling_platform.gd" id="1_script"]
+[ext_resource type="SpriteFrames" path="res://assets/level1_pixel_adventure/traps/falling_platforms/falling_platforms_frames.tres" id="2_frames"]
+
+[sub_resource type="RectangleShape2D" id="top"]
+size = Vector2(32, 6)
+
+[sub_resource type="RectangleShape2D" id="feet"]
+size = Vector2(30, 6)
+
+[node name="FallingPlatform" type="AnimatableBody2D"]
+collision_layer = 1
+collision_mask = 0
+sync_to_physics = false
+script = ExtResource("1_script")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(0, 2)
+sprite_frames = ExtResource("2_frames")
+animation = &"on"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, 0)
+shape = SubResource("top")
+one_way_collision = true
+
+[node name="FeetCheck" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="FeetCheck"]
+position = Vector2(0, -5)
+shape = SubResource("feet")

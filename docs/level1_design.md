@@ -50,6 +50,18 @@ Notes
   hero unlocks, HUD, stars. `Game.start_level / finish_level` track answers shown & mistakes.
 - jumpPower scales jump **height**: 1.0 = 50 px, 1.5 = 75 px, 2.0 = 100 px.
 
+## Gadgets (step 2 - done), all in scenes/gadgets/
+| Scene | Driven by | Notes |
+|---|---|---|
+| `byte_gate.tscn` | `System.out.println(...)` | Blocks shatter. `Required Text` = exact message, empty = anything. `Height` in blocks. |
+| `code_bridge.tscn` | `int bridgeLength` | Crate blocks pop in left->right from the node (top-left of block 1). Changing the number adds/removes. |
+| `code_fan.tscn` | `boolean fanOn` | Lifts the player up to `Lift Height` (default 160 px). `false` turns it off. |
+| `path_platform.tscn` | `char path` | Set `Letter` A/B/C; chosen letter is solid, others are see-through outlines. `Show Letter` on the first of a path. |
+| `falling_platform.tscn` | - | Shakes for `Fall Delay` (0.35 s) when landed on, drops, returns after 2.5 s. One-way from below. |
+| `spikes.tscn` | - | `Count` spikes in a row; rotate 180 deg for a ceiling. 20 damage. |
+| `saw.tscn` | - | 20 damage. `Travel` = slide offset (shows a chain), `Speed`. |
+New code-driven gadgets extend `CodeGadget` (set `variable_name`, override `_on_value`).
+
 ## Manual chests
 | Before | Manual | Book colour |
 |---|---|---|
