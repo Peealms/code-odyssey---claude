@@ -1,0 +1,24 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/gadgets/spiked_ball.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/gadgets/hazard.gd" id="2_hazard"]
+[ext_resource type="SpriteFrames" path="res://assets/level1_pixel_adventure/traps/spiked_ball/spiked_ball_frames.tres" id="3_frames"]
+
+[sub_resource type="CircleShape2D" id="ball"]
+radius = 11.0
+
+[node name="SpikedBall" type="Node2D"]
+z_index = 1
+script = ExtResource("1_script")
+
+[node name="Ball" type="Area2D" parent="."]
+position = Vector2(0, 64)
+script = ExtResource("2_hazard")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Ball"]
+sprite_frames = ExtResource("3_frames")
+animation = &"spiked_ball"
+autoplay = "spiked_ball"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ball"]
+shape = SubResource("ball")

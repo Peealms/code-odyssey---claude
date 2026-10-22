@@ -94,6 +94,57 @@ func ensure_hero(id: String) -> void:
 		game.unlocked_heroes.append(id)
 
 
+func room(i: int) -> Node:
+	return level.get_node("Rooms").get_child(i)
+
+
+## Collects every fruit left in room i (the bot tests puzzles, not fruit hunting).
+func collect_room(i: int) -> void:
+	var r := room(i)
+	for f in get_nodes_in_group("fruit"):
+		if is_instance_valid(f) and r.contains(f.global_position) and not f._taken:
+			f._on_body_entered(p)
+	await wait(0.3)
+
+
+## Walks into a flag from the left (re-touches it if it was already reached).
+func touch_flag(x: float, y: float) -> void:
+	tp(x - 40, y)
+	await wait(0.3)
+	Input.action_press("move_right")
+	await until_x(x + 2, 2.0)
+	release_all()
+	await wait(0.4)
+
+
+## Presses accept until the rescue cutscene is gone. Returns true if one was shown.
+func dismiss_cutscene() -> bool:
+	var cut := level.get_node_or_null("HeroCutscene")
+	if cut == null:
+		return false
+	var start := Time.get_ticks_msec()
+	while is_instance_valid(cut) and Time.get_ticks_msec() - start < 20000:
+		await wait(0.8)
+		var ev := InputEventAction.new()
+		ev.action = "ui_accept"
+		ev.pressed = true
+		Input.parse_input_event(ev)
+		await process_frame
+		var up := InputEventAction.new()
+		up.action = "ui_accept"
+		Input.parse_input_event(up)
+	await wait(0.3)
+	return true
+
+
+## Holds an exit door's state: true if its crates still block the way.
+func door_closed(i: int) -> bool:
+	for n in level.get_node("Traps").get_children():
+		if n.get_script() and n.get_script().resource_path.ends_with("fruit_door.gd") and n.room == room(i):
+			return not n.is_open
+	return false
+
+
 func shot(name: String) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT))
 	root.get_texture().get_image().save_png(OUT + "bot_" + name + ".png")
@@ -157,11 +208,15 @@ func _run() -> void:
 	wall_bot = false
 	release_all()
 	check("R0 Ninja Frog wall-jumps up the shaft", p.global_position.y < 150 and p.global_position.x > 448, "pos=%s" % p.global_position)
-	tp(560, 128)
-	Input.action_press("move_right")
-	await wait(0.8)
-	release_all()
-	check("R0 flag rescues Pink Man", "pink_man" in game.unlocked_heroes, str(game.unlocked_heroes))
+	await touch_flag(584, 128)
+	check("R0 flag won't rescue Pink Man until all fruit", not "pink_man" in game.unlocked_heroes and not paused, "fruit %d/%d" % [room(0).fruit_collected, room(0).fruit_total])
+	await collect_room(0)
+	await touch_flag(584, 128)
+	var shown := paused and level.get_node_or_null("HeroCutscene") != null
+	await wait(4.5)
+	shot("r0_cutscene")
+	shown = await dismiss_cutscene() and shown
+	check("R0 all fruit + flag: cutscene, then Pink Man joins", shown and "pink_man" in game.unlocked_heroes and not paused, str(game.unlocked_heroes))
 	shot("r0_done")
 
 	# ---------------- Room 1 ----------------
@@ -189,9 +244,10 @@ func _run() -> void:
 	await wait(1.0)
 	release_all()
 	check("R1 Pink Man dash-jumps the gap", p.global_position.x > 960 and p.global_position.y < 150, "pos=%s" % p.global_position)
-	tp(1224, 128)
-	await wait(0.5)
-	check("R1 flag rescues Mask Dude", "mask_dude" in game.unlocked_heroes, str(game.unlocked_heroes))
+	await collect_room(1)
+	await touch_flag(1224, 128)
+	var shown1 := await dismiss_cutscene()
+	check("R1 all fruit + flag rescues Mask Dude", shown1 and "mask_dude" in game.unlocked_heroes, str(game.unlocked_heroes))
 
 	# ---------------- Room 2 ----------------
 	ensure_hero("mask_dude")
@@ -253,12 +309,17 @@ func _run() -> void:
 	await wait(0.5)
 	release_all()
 	check("R2 Mask Dude double-jumps onto the step", p.global_position.y < 230, "pos=%s" % p.global_position)
-	tp(1860, 208)
-	await wait(0.5)
-	check("R2 flag rescues Virtual Guy", "virtual_guy" in game.unlocked_heroes, str(game.unlocked_heroes))
+	await collect_room(2)
+	await touch_flag(1864, 208)
+	var shown2 := await dismiss_cutscene()
+	check("R2 all fruit + flag rescues Virtual Guy", shown2 and "virtual_guy" in game.unlocked_heroes, str(game.unlocked_heroes))
 
 	# ---------------- Room 3 ----------------
 	ensure_hero("virtual_guy")
+	check("R3 exit door is shut while fruit is missing", door_closed(3), "fruit %d/%d" % [room(3).fruit_collected, room(3).fruit_total])
+	await collect_room(3)
+	await wait(0.5)
+	check("R3 exit door opens with all the fruit", not door_closed(3))
 	await code('hero = "NinjaFrog";')
 	tp(1990, 208)
 	p.restore_vitals()
@@ -284,7 +345,8 @@ func _run() -> void:
 	await double_jump()
 	await wait(0.5)
 	release_all()
-	check("R3 double jump alone can't reach the ledge", p.global_position.y > 150, "pos=%s" % p.global_position)
+	await wait(1.0)  # let the player land (the wall spikes can knock them up and back)
+	check("R3 double jump alone can't reach the ledge", not (p.global_position.x > 2528 and p.global_position.y < 112), "pos=%s" % p.global_position)
 	await code("double jumpPower = 1.5;")
 	tp(2496, 208)
 	p.restore_vitals()
@@ -366,11 +428,20 @@ func _run() -> void:
 	for x in [4184, 4296, 4408, 4504]:
 		await until_x(x)
 		await jump()
-	await wait(1.0)
+	await wait(0.3)  # stop before the saw that waits after the tunnel
 	release_all()
 	check("R6 runs the tunnel without getting hurt", p.health == 100, "hp=%.0f x=%.0f" % [p.health, p.global_position.x])
+	# The goal needs all of Room 6's fruit.
+	tp(4700, 288)
+	p.restore_vitals()
 	Input.action_press("move_right")
-	await wait(2.5)
+	await wait(1.0)
+	release_all()
+	check("Goal won't finish while Room 6 fruit is missing", level.get_node_or_null("LevelComplete") == null and not paused, "fruit %d/%d" % [room(6).fruit_collected, room(6).fruit_total])
+	await collect_room(6)
+	tp(4700, 288)
+	Input.action_press("move_right")
+	await wait(1.5)
 	release_all()
 	await wait(2.5)
 	var screen := level.get_node_or_null("LevelComplete")

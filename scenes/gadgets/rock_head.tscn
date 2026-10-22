@@ -1,0 +1,30 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/gadgets/block_head.gd" id="1_script"]
+[ext_resource type="SpriteFrames" path="res://assets/level1_pixel_adventure/traps/rock_head/rock_head_frames.tres" id="2_frames"]
+
+[sub_resource type="RectangleShape2D" id="body"]
+size = Vector2(32, 32)
+
+[sub_resource type="RectangleShape2D" id="hurt"]
+size = Vector2(36, 36)
+
+[node name="RockHead" type="AnimatableBody2D"]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_script")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = ExtResource("2_frames")
+animation = &"idle"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("body")
+
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("hurt")

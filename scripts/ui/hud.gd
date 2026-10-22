@@ -20,7 +20,8 @@ const EXHAUSTED_COLOR := Color(0.5, 0.48, 0.52)
 @onready var health_text: Label = $HealthBar/HealthText
 @onready var stamina_bar: ProgressBar = $StaminaBar
 
-var fruits := 0
+var fruits := 0  ## Total fruit collected in the level.
+var _room: Node  ## The Room whose fruit the counter shows.
 var _message_tween: Tween
 var _health_tween: Tween
 var _stamina_fill: StyleBoxFlat
@@ -59,11 +60,35 @@ func show_hero(hero_id: String, hero_data: Dictionary) -> void:
 
 func set_fruits(count: int) -> void:
 	fruits = count
-	fruit_label.text = "FRUITS: %d" % count
+	if _room == null:
+		fruit_label.text = "FRUITS: %d" % count
 
 
 func add_fruit() -> void:
 	set_fruits(fruits + 1)
+
+
+## Show the fruit of the room the player is in, e.g. FRUIT 3/15 (green once it's all collected).
+func track_room(room: Node) -> void:
+	if _room == room:
+		return
+	if _room and _room.fruit_changed.is_connected(_on_room_fruit):
+		_room.fruit_changed.disconnect(_on_room_fruit)
+	_room = room
+	_room.fruit_changed.connect(_on_room_fruit)
+	_on_room_fruit(_room.fruit_collected, _room.fruit_total)
+
+
+func _on_room_fruit(collected: int, total: int) -> void:
+	if total == 0:
+		fruit_label.text = "FRUITS: %d" % fruits
+		fruit_label.remove_theme_color_override("font_color")
+		return
+	fruit_label.text = "FRUIT %d/%d" % [collected, total]
+	if collected >= total:
+		fruit_label.add_theme_color_override("font_color", Color("7cf07c"))
+	else:
+		fruit_label.remove_theme_color_override("font_color")
 
 
 func show_message(text: String, duration := 2.0) -> void:

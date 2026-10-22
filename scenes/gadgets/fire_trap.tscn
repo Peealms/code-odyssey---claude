@@ -1,0 +1,33 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/gadgets/fire_trap.gd" id="1_script"]
+[ext_resource type="SpriteFrames" path="res://assets/level1_pixel_adventure/traps/fire/fire_frames.tres" id="2_frames"]
+
+[sub_resource type="RectangleShape2D" id="block"]
+size = Vector2(16, 16)
+
+[sub_resource type="RectangleShape2D" id="flame"]
+size = Vector2(12, 18)
+
+[node name="FireTrap" type="StaticBody2D"]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_script")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(0, -16)
+sprite_frames = ExtResource("2_frames")
+animation = &"off"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -8)
+shape = SubResource("block")
+
+[node name="Flames" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Flames"]
+position = Vector2(0, -25)
+shape = SubResource("flame")

@@ -1,0 +1,20 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gadgets/fruit_door.gd" id="1_script"]
+
+[node name="FruitDoor" type="StaticBody2D"]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_script")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+
+[node name="Counter" type="Label" parent="."]
+z_index = 5
+offset_right = 60.0
+offset_bottom = 12.0
+theme_override_colors/font_shadow_color = Color(0.129412, 0.121569, 0.188235, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+text = "0/0"
+horizontal_alignment = 1

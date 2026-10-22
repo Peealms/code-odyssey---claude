@@ -9,7 +9,7 @@ Update this file when the design changes.
   `godot --headless --path . --script res://tools/build_level1.gd`
   (it **overwrites** level1.tscn, so don't hand-edit the scene unless you stop using the script).
 - `tools/test_level1.gd` plays every room (needs a window, not `--headless`):
-  `godot --path . --script res://tools/test_level1.gd` - prints 31 PASS/FAIL checks.
+  `godot --path . --script res://tools/test_level1.gd` - prints 35 PASS/FAIL checks.
   It backs up and restores your save file.
 
 ## Look (matches Pixel Frog's Pixel Adventure demo)
@@ -32,6 +32,23 @@ The camera follows the player (not locked to one screen); each room is one scree
 - Fruit is laid out in rows along the route (over the gap, along the bridge, over the falling
   floor, up the fan column, along path B, between the tunnel spikes).
 - Room styles live in the `ROOMS` table at the top of `tools/build_level1.gd`.
+
+## Fruit, rescues and traps
+- **Fruit unlocks progress.** The HUD shows the current room's fruit (e.g. FRUIT 3/15).
+  - Rooms 0-2: the hero you'll rescue waits (greyed out) beside the flag with a fruit counter.
+    The flag only rescues them once every fruit in that room is collected.
+  - Rooms 3-5: crates block the exit doorway until the room's fruit is collected.
+  - Room 6: the goal only finishes the level once Room 6's fruit is collected.
+- **Optional corners**: some fruit sits off the puzzle path (trampoline shelves in Rooms 0, 1, 4;
+  Rock Head elevators in Rooms 2 and 6; fruit in the wall-jump shaft, over saws, between fire
+  blocks). Trampolines and elevators never lead past a puzzle.
+- **Rescue cutscene**: the game pauses, the camera zooms on the hero, Byte introduces them, then a
+  card shows the ability on a loop, the key, the stamina cost and `hero = "...";`.
+- **Traps** (scenes/gadgets): saws, Spike Heads and Rock Heads (`block_head.gd`), swinging or
+  spinning spiked balls, fire blocks, trampolines, fruit doors.
+- **Backgrounds**: one full-screen background that crossfades to the room's colour as you walk in.
+- Brick walls over the bridge pit, the falling floor and the tunnel reach the ceiling, so you
+  can't climb on top of them to skip the puzzle.
 
 ## Changes made while testing (2026-10-22)
 - Room 2 gap is **11 blocks** (`int bridgeLength = 11;`) under a low ceiling, so Pink Man's dash

@@ -1,20 +1,31 @@
 class_name Room
 extends Area2D
-## One puzzle area of a level. While the player is inside, Byte's terminal uses this room's
-## hints. Set `size` to cover the room (the node's position is the centre).
+## One puzzle area of a level. While the player is inside:
+##   - Byte's terminal uses this room's hints
+##   - the HUD shows this room's fruit (e.g. FRUIT 3/15)
+##   - the background fades to this room's `background`
+## Set `size` to cover the room (the node's position is the centre).
 ##
 ## Wrong lines typed in this room count up:
 ##   3 wrong -> Byte gives `hint`, and "Show answer" appears (costs a star)
 ##   5 wrong -> Byte shows `blanks` (the answer with gaps)
+##
+## Fruit inside the room is counted automatically. Rescue flags, fruit doors and the end goal
+## can require all of it (see all_fruit_collected()).
+
+signal fruit_changed(collected: int, total: int)
 
 @export var size := Vector2(320, 240)  ## Width and height of the room's area.
 @export var title := ""  ## Shown when the player first walks in, e.g. "THE WIDE GAP". Empty = no message.
 @export_multiline var hint := ""  ## Bigger hint after 3 wrong tries.
 @export var blanks := ""  ## The answer with gaps after 5 wrong tries, e.g. int bridgeLength = __;
 @export var answer := ""  ## The exact line "Show answer" reveals.
+@export var background: Texture2D  ## Fades in behind the level while the player is in this room.
 
 var wrong_tries := 0
 var answer_shown := false  ## Only the first "Show answer" in a room costs a star.
+var fruit_total := 0
+var fruit_collected := 0
 var _entered := false
 
 
@@ -25,6 +36,28 @@ func _ready() -> void:
 	$CollisionShape2D.shape = shape
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
+	_count_fruit.call_deferred()
+
+
+func contains(point: Vector2) -> bool:
+	return Rect2(global_position - size / 2.0, size).has_point(point)
+
+
+func all_fruit_collected() -> bool:
+	return fruit_collected >= fruit_total
+
+
+func _count_fruit() -> void:
+	for fruit in get_tree().get_nodes_in_group("fruit"):
+		if contains(fruit.global_position):
+			fruit_total += 1
+			fruit.collected.connect(_on_fruit_collected)
+	fruit_changed.emit(fruit_collected, fruit_total)
+
+
+func _on_fruit_collected() -> void:
+	fruit_collected += 1
+	fruit_changed.emit(fruit_collected, fruit_total)
 
 
 func _on_body_entered(body: Node2D) -> void:
@@ -33,10 +66,14 @@ func _on_body_entered(body: Node2D) -> void:
 	var terminal := get_tree().get_first_node_in_group("code_terminal")
 	if terminal:
 		terminal.current_room = self
-	if not _entered and title != "":
-		var hud := get_tree().get_first_node_in_group("hud")
-		if hud:
+	var hud := get_tree().get_first_node_in_group("hud")
+	if hud:
+		hud.track_room(self)
+		if not _entered and title != "":
 			hud.show_message(title, 1.5)
+	var fader := get_tree().get_first_node_in_group("background_fader")
+	if fader and background:
+		fader.show_background(background)
 	_entered = true
 
 

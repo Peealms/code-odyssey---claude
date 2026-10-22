@@ -28,6 +28,7 @@ extends Node2D
 @onready var byte: Node2D = get_node_or_null("Byte")
 
 const COMPLETE_SCREEN := preload("res://scenes/ui/level_complete.tscn")
+const HERO_CUTSCENE := preload("res://scenes/ui/hero_cutscene.tscn")
 
 var respawn_position := Vector2.ZERO
 var _map_bottom := 0.0
@@ -58,7 +59,10 @@ func _ready() -> void:
 		fruit.collected.connect(hud.add_fruit)
 	for checkpoint in get_tree().get_nodes_in_group("checkpoint"):
 		checkpoint.reached.connect(_on_checkpoint_reached)
+		checkpoint.rescued.connect(_on_hero_rescued)
+		checkpoint.rescue_blocked.connect(_on_rescue_blocked)
 	end_goal.reached.connect(_on_level_complete)
+	end_goal.blocked.connect(_on_goal_blocked)
 	if level_title != "":
 		hud.show_message(level_title, 1.5)
 
@@ -99,16 +103,33 @@ func _on_hero_changed(hero_id: String) -> void:
 func _on_checkpoint_reached(checkpoint: Area2D) -> void:
 	respawn_position = checkpoint.respawn_position()
 	player.restore_vitals()
-	var hero: String = checkpoint.unlock_hero
-	if hero != "none" and not Game.is_hero_unlocked(hero):
-		Game.unlock_hero(hero)
-		var hero_name: String = player.HERO_DATA[hero]["name"]
-		hud.show_message("%s JOINED!" % hero_name.to_upper(), 2.0)
-		if byte:
-			byte.react(true)
-			byte.say("NEW HERO: %s!" % hero_name.to_upper(), 3.0)
-	else:
+	if checkpoint.unlock_hero == "none" or Game.is_hero_unlocked(checkpoint.unlock_hero):
 		hud.show_message("CHECKPOINT", 1.0)
+
+
+## All the room's fruit is collected and the rescue flag was touched: cutscene, then the hero joins.
+func _on_hero_rescued(checkpoint: Area2D) -> void:
+	var hero: String = checkpoint.unlock_hero
+	Game.unlock_hero(hero)
+	var cutscene := HERO_CUTSCENE.instantiate()
+	add_child(cutscene)
+	await cutscene.play(hero, checkpoint, player)
+	checkpoint.hero_joined()
+	if byte:
+		byte.react(true)
+
+
+func _on_rescue_blocked(checkpoint: Area2D) -> void:
+	var hero_name: String = player.HERO_DATA[checkpoint.unlock_hero]["name"]
+	hud.show_message("COLLECT ALL THE FRUIT!", 2.0)
+	if byte:
+		byte.say("%d MORE FRUIT TO FREE %s!" % [checkpoint.fruit_left(), hero_name.to_upper()], 3.0)
+
+
+func _on_goal_blocked(fruit_left: int) -> void:
+	hud.show_message("COLLECT ALL THE FRUIT!", 2.0)
+	if byte:
+		byte.say("%d MORE FRUIT FIRST!" % fruit_left, 3.0)
 
 
 func _on_level_complete() -> void:

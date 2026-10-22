@@ -5,7 +5,11 @@ extends SceneTree
 ## editing the scene by hand (or stop using this script once the level is final).
 ##
 ## Style follows Pixel Frog's Pixel Adventure demo: every room is a closed box with a frame,
-## its own ground colour, background and decorations, joined to the next room by a doorway.
+## its own ground colour, background and decorations, joined to the next room by a doorway,
+## and full of traps (saws, Rock/Spike Heads, spiked balls, fire) and fruit.
+## Fruit matters: rescue flags (rooms 0-2) and exit doors (rooms 3-6) need all of a room's fruit,
+## so the optional fruit corners are worth doing. Trampolines and elevators only lead to those
+## corners - never past a puzzle.
 ## Coordinates are in tiles (16 px): column c, row r. Room interiors are rows 1-21, most floors
 ## are at row 19, and the frame's bottom (row 22) is where pit spikes sit.
 
@@ -33,6 +37,13 @@ const SCENES := {
 	"path": "res://scenes/gadgets/path_platform.tscn",
 	"falling": "res://scenes/gadgets/falling_platform.tscn",
 	"spikes": "res://scenes/gadgets/spikes.tscn",
+	"saw": "res://scenes/gadgets/saw.tscn",
+	"rock_head": "res://scenes/gadgets/rock_head.tscn",
+	"spike_head": "res://scenes/gadgets/spike_head.tscn",
+	"ball": "res://scenes/gadgets/spiked_ball.tscn",
+	"trampoline": "res://scenes/gadgets/trampoline.tscn",
+	"fire": "res://scenes/gadgets/fire_trap.tscn",
+	"fruit_door": "res://scenes/gadgets/fruit_door.tscn",
 }
 
 # ---- Tile sheet (assets/level1_pixel_adventure/tiles/terrain_16x16.png) ----
@@ -65,14 +76,15 @@ const DOORS := [
 	{"c": 40, "r0": 6, "r1": 8},    # R0 plateau -> R1
 	{"c": 80, "r0": 6, "r1": 8},    # R1 -> drop into R2
 	{"c": 120, "r0": 11, "r1": 13}, # R2 step -> R3
-	{"c": 170, "r0": 4, "r1": 6},   # R3 ledge -> drop into R4
-	{"c": 210, "r0": 2, "r1": 4},   # R4 ledge -> R5
-	{"c": 250, "r0": 4, "r1": 6},   # R5 exit -> drop into R6
+	{"c": 170, "r0": 4, "r1": 6},   # R3 ledge -> drop into R4 (fruit door)
+	{"c": 210, "r0": 2, "r1": 4},   # R4 ledge -> R5 (fruit door)
+	{"c": 250, "r0": 4, "r1": 6},   # R5 exit -> drop into R6 (fruit door)
 ]
 
 var level: Node2D
 var interior := {}  # Vector2i -> room index (open space, incl. doorways)
-var solid := {}  # Vector2i -> {"kind": "ground"/"deco"/"bar", ...}
+var solid := {}  # Vector2i -> {"kind": "ground"/"tile", ...}
+var room_nodes: Array[Node] = []
 var f := 0
 
 
@@ -97,7 +109,10 @@ func _build() -> void:
 
 	_carve_rooms()
 	_layout()
-	_backgrounds()
+	var fader := CanvasLayer.new()
+	fader.name = "BackgroundFader"
+	fader.set_script(load("res://scripts/levels/background_fader.gd"))
+	_add(fader)
 	var terrain := TileMapLayer.new()
 	terrain.name = "Terrain"
 	terrain.tile_set = load("res://resources/tilesets/level1_terrain_tileset.tres")
@@ -107,49 +122,74 @@ func _build() -> void:
 	var signs := _group("Signs")
 	var fruits := _group("Fruits")
 	var gadgets := _group("Gadgets")
+	var traps := _group("Traps")
 	var chests := _group("Chests")
 	var rooms := _group("Rooms")
 	var flags := _group("Checkpoints")
 
-	# ---------------- Room 0: Wake-up ----------------
+	# ---------------- Room 0: Wake-up (Ninja Frog only) ----------------
 	_room(rooms, 0, "WAKE UP",
 		"Byte's gate opens when you print something. Use System.out.println with your message in double quotes.",
 		"System.out.println(\"_____\");", "System.out.println(\"Hello Byte\");")
 	_chest(chests, 7, 19, "variables_101")
 	_inst("gate", gadgets, _px(16.5, 19), {"height": 3})
-	_sign(signs, 9, 11, "BYTE'S GATE\nPRINT A MESSAGE\nTO OPEN IT")
-	_sign(signs, 19, 13, "ONLY A WALL JUMP\nCLIMBS THIS SHAFT")
-	_fruit_row(fruits, 3, 6, 15, "apple")  # on top of the floating bar
-	_fruit_row(fruits, 19, 22, 18, "bananas")
-	_fruit_row(fruits, 30, 34, 8, "cherries")
-	_flag(flags, 36, 9, "pink_man")
+	_sign(signs, 3, 3, "BYTE'S GATE: PRINT\nA MESSAGE TO OPEN IT")
+	_sign(signs, 19, 6, "ONLY A WALL JUMP\nCLIMBS THIS SHAFT")
+	# Optional: trampoline up to a shelf against the gate wall
+	_inst("trampoline", traps, _px(9.5, 19), {"bounce_speed": 560.0})
+	_fruit_row(fruits, 3, 6, 15, "apple")  # on the low bar
+	_fruit_row(fruits, 10, 13, 8, "melon")  # on the high shelf
+	# Saw sliding between the gate and the shaft
+	_inst("saw", traps, _px(19.5, 18), {"travel": Vector2(64, 0), "speed": 50.0})
+	_fruit_row(fruits, 19, 22, 17, "bananas")
+	_fruit_column(fruits, 26, 10, 16, "kiwi")  # inside the wall-jump shaft
+	# Plateau: swinging spiked ball and a fire block before the flag
+	_inst("ball", traps, _px(33, 1), {"length": 100.0, "swing_degrees": 40.0, "period": 2.6})  # stays clear of the shaft and the flag
+	_inst("fire", traps, _px(29.5, 9), {"phase": 0.4})
+	_fruit_row(fruits, 31, 34, 8, "cherries")
+	_flag(flags, 36, 9, "pink_man", 0)
 
-	# ---------------- Room 1: The wide gap ----------------
+	# ---------------- Room 1: The wide gap (needs Pink Man) ----------------
 	_room(rooms, 1, "THE WIDE GAP",
 		"Only Pink Man's dash crosses this gap: jump, then press Shift in the air. Store his name in a String called hero.",
 		"String hero = \"_______\";", "String hero = \"PinkMan\";")
 	_sign(signs, 43, 3, "TOO WIDE TO JUMP!\nPINK MAN CAN DASH")
-	_wall_spikes(gadgets, 60, 10, 16)  # far wall of the gap: no wall-climbing across
-	_pit_spikes(gadgets, 52, 59)
+	_inst("ball", traps, _px(46.5, 1), {"length": 104.0, "swing_degrees": 50.0, "period": 2.2})
+	_wall_spikes(traps, 60, 10, 16)  # far wall of the gap: no wall-climbing across
+	_pit_spikes(traps, 52, 59)
 	_fruit_row(fruits, 53, 58, 7, "orange")  # an arc to grab mid-dash
-	_fruit_row(fruits, 64, 72, 8, "kiwi")
-	_flag(flags, 76, 9, "mask_dude")
+	# Landing: a Spike Head patrolling the ground, fire before the flag
+	_inst("spike_head", traps, _px(62.5, 8), {"travel": Vector2(80, 0), "wait_time": 1.0})
+	_fruit_row(fruits, 63, 67, 6, "kiwi")
+	_inst("fire", traps, _px(72.5, 9), {"phase": 0.0})
+	# Optional: trampoline up to a high bar
+	_inst("trampoline", traps, _px(70.5, 9), {"bounce_speed": 420.0})
+	_fruit_row(fruits, 70, 76, 3, "strawberry")
+	_flag(flags, 76, 9, "mask_dude", 1)
 
-	# ---------------- Room 2: The broken bridge ----------------
+	# ---------------- Room 2: The broken bridge (needs Mask Dude) ----------------
 	_room(rooms, 2, "THE BROKEN BRIDGE",
 		"Count the gap: it is 11 blocks wide. Store that whole number in an int called bridgeLength. Then the step is too high for one jump - switch to Mask Dude, and since hero already exists, leave out the type.",
 		"int bridgeLength = __;", "int bridgeLength = 11;")
-	_chest(chests, 84, 19, "numbers")
+	_chest(chests, 83, 19, "numbers")
 	_inst("bridge", gadgets, _px(90, 19), {"max_blocks": 12})
-	_pit_spikes(gadgets, 90, 100)
-	_sign(signs, 83, 8, "BRIDGE BROKEN!\nGAP = 11 BLOCKS")
+	_pit_spikes(traps, 90, 100)
+	_sign(signs, 90, 17, "GAP = 11 BLOCKS")
 	_sign(signs, 102, 8, "TOO HIGH FOR\nONE JUMP")
-	_wall_spikes(gadgets, 106, 15, 18)  # step face: only a double jump gets up
+	_wall_spikes(traps, 106, 15, 18)  # step face: only a double jump gets up
+	# Spiked ball swinging over the bridge from the brick ceiling
+	_inst("ball", traps, _px(95.5, 16), {"length": 30.0, "swing_degrees": 75.0, "period": 2.0})
 	_fruit_row(fruits, 91, 99, 18, "melon")  # along the bridge
-	_fruit_row(fruits, 109, 113, 13, "pineapple")
-	_flag(flags, 116, 14, "virtual_guy")
+	# Optional: Rock Head elevator up to a hidden shelf
+	_inst("rock_head", traps, _px(87, 18), {"travel": Vector2(0, -224), "wait_time": 1.4, "slam_speed": 120.0})
+	_fruit_row(fruits, 82, 85, 2, "pineapple")
+	# Step: Spike Head and fire before the flag
+	_inst("spike_head", traps, _px(111.5, 13), {"travel": Vector2(48, 0), "wait_time": 0.9})
+	_fruit_row(fruits, 109, 113, 12, "apple")
+	_inst("fire", traps, _px(85.5, 19), {"phase": 0.6})  # on the floor below the doorway
+	_flag(flags, 116, 14, "virtual_guy", 2)
 
-	# ---------------- Room 3: The high ledge ----------------
+	# ---------------- Room 3: The high ledge (needs Virtual Guy) ----------------
 	_room(rooms, 3, "THE HIGH LEDGE",
 		"Virtual Guy can sprint over the falling platforms - hold Shift while running. The ledge is too high even for a double jump: make every jump higher with a double called jumpPower (1.0 to 2.0), then double jump as Mask Dude.",
 		"double jumpPower = ___;", "double jumpPower = 1.5;")
@@ -157,26 +197,39 @@ func _build() -> void:
 		# 0.14 s: walking (130 px/s) falls through, Virtual Guy's sprint (247 px/s) makes it.
 		# Tested: 0.10-0.16 all work; 0.20 lets walkers across, 0.08 drops sprinters too.
 		_inst("falling", gadgets, Vector2((128 + i * 2 + 1) * T, 14 * T + 3), {"fall_delay": 0.14, "return_time": 2.0})
-	_pit_spikes(gadgets, 128, 147)
-	_sign(signs, 122, 4, "FALLING FLOOR!\nRUN FAST")
+	_pit_spikes(traps, 128, 147)
+	_sign(signs, 122, 15, "FALLING FLOOR!\nRUN FAST")
 	_sign(signs, 150, 4, "TOO HIGH!\nJUMP HIGHER")
-	_wall_spikes(gadgets, 158, 9, 13)  # ledge face (top 2 tiles left clear for landing)
+	_wall_spikes(traps, 158, 9, 13)  # ledge face (top 2 tiles left clear for landing)
 	_fruit_row(fruits, 129, 146, 13, "strawberry")  # grab them while sprinting
-	_fruit_row(fruits, 160, 164, 6, "apple")
-	_flag(flags, 166, 7, "none")
+	_inst("saw", traps, _px(149.5, 13), {"travel": Vector2(64, 0), "speed": 55.0})
+	_fruit_row(fruits, 149, 153, 11, "orange")  # jump for them over the saw
+	# Ledge top: two fire blocks around the fruit
+	_inst("fire", traps, _px(160.5, 7), {"phase": 0.0})
+	_inst("fire", traps, _px(164.5, 7), {"phase": 1.0})
+	_fruit_row(fruits, 161, 163, 6, "apple")
+	_flag(flags, 167, 7, "none", 3)
+	_fruit_door(traps, 3)
 
 	# ---------------- Room 4: The fan shaft ----------------
 	_room(rooms, 4, "THE FAN SHAFT",
 		"The fan is off. Switch it on with a boolean called fanOn (true or false, no quotes), then ride the air up and step off onto the ledge.",
 		"boolean fanOn = ____;", "boolean fanOn = true;")
-	_chest(chests, 174, 19, "booleans_chars")
+	_chest(chests, 173, 19, "booleans_chars")
 	# The player bobs at the top of the air column; 280 keeps even the low point of the
 	# bob well above the ledge (row 5, y=80) so stepping off always works.
 	_inst("fan", gadgets, _px(181, 19), {"lift_height": 280.0})
-	_sign(signs, 172, 11, "THE FAN IS\nSWITCHED OFF")
+	_sign(signs, 172, 9, "THE FAN IS\nSWITCHED OFF")
 	_fruit_column(fruits, 181, 6, 16, "bananas")  # collected while riding the air
-	_fruit_row(fruits, 192, 200, 4, "cherries")
-	_flag(flags, 190, 5, "none")
+	# Optional: trampoline up to the bar by the shaft wall
+	_inst("trampoline", traps, _px(175.5, 19), {"bounce_speed": 400.0})
+	_fruit_row(fruits, 172, 174, 14, "melon")
+	# Top walkway: saws dropping from the ceiling, fruit between them
+	for i in 3:
+		_inst("saw", traps, _px(192.5 + i * 6, 2), {"travel": Vector2(0, 40), "speed": 45.0 + i * 10.0})
+	_fruit_row(fruits, 190, 204, 4, "cherries")
+	_flag(flags, 186, 5, "none", 4)
+	_fruit_door(traps, 4)
 
 	# ---------------- Room 5: Three paths ----------------
 	_room(rooms, 5, "THREE PATHS",
@@ -188,31 +241,42 @@ func _build() -> void:
 		_inst("path", gadgets, Vector2((c + 1) * T, 7 * T + 3), {"letter": "B", "show_letter": c == 214})
 	for c in range(214, 230, 2):  # path C (low, dead end)
 		_inst("path", gadgets, Vector2((c + 1) * T, 9 * T + 3), {"letter": "C", "show_letter": c == 214})
-	_pit_spikes(gadgets, 214, 241)
-	_sign(signs, 200, 1, "SAFE PATH = THE 2ND\nLETTER OF THE ABC")
+	_pit_spikes(traps, 214, 241)
+	_sign(signs, 233, 12, "SAFE PATH = THE 2ND\nLETTER OF THE ABC")
+	# Spiked balls swinging across path B
+	_inst("ball", traps, _px(221.5, 1), {"length": 70.0, "swing_degrees": 45.0, "period": 2.4})
+	_inst("ball", traps, _px(229.5, 1), {"length": 70.0, "swing_degrees": 45.0, "period": 2.4, "phase": 0.5})
 	_fruit_row(fruits, 216, 231, 6, "kiwi")  # along path B
-	_flag(flags, 246, 7, "none")
+	_fruit_row(fruits, 243, 245, 6, "cherries")
+	_flag(flags, 247, 7, "none", 5)
+	_fruit_door(traps, 5)
 
 	# ---------------- Room 6: The low tunnel ----------------
 	_room(rooms, 6, "THE LOW TUNNEL",
 		"Your jumps are too high for this tunnel! jumpPower already exists, so change it without writing double again - back to 1.0.",
 		"jumpPower = ___;", "jumpPower = 1.0;")
 	_chest(chests, 254, 19, "changing_variables")
-	var ceiling_spikes := _inst("spikes", gadgets, _px(289, 13), {"count": 31})
+	var ceiling_spikes := _inst("spikes", traps, _px(289, 13), {"count": 31})
 	ceiling_spikes.rotation = PI
 	for c in [263, 270, 277, 283]:
-		_inst("spikes", gadgets, _px(c, 19), {"count": 2})
+		_inst("spikes", traps, _px(c, 19), {"count": 2})
 	_sign(signs, 253, 13, "MIND YOUR HEAD!")
 	for c in [266, 273, 280]:
 		_fruit_row(fruits, c, c + 2, 18, "melon")
-	_fruit_row(fruits, 290, 293, 18, "orange")
+	# After the tunnel: a saw, a slamming Spike Head, then the goal
+	_inst("saw", traps, _px(289.5, 18), {"travel": Vector2(48, 0), "speed": 50.0})
+	_inst("spike_head", traps, _px(293.5, 4), {"travel": Vector2(0, 208), "wait_time": 1.0, "slam_speed": 300.0})
+	_fruit_row(fruits, 289, 292, 16, "orange")
+	# Optional: Rock Head elevator up to a high bar
+	_inst("rock_head", traps, _px(298, 18), {"travel": Vector2(0, -144), "wait_time": 1.4, "slam_speed": 120.0})
+	_fruit_row(fruits, 291, 296, 9, "pineapple")
 
 	# ---------------- Start, goal, player, Byte, UI ----------------
 	var spawn := Marker2D.new()
 	spawn.name = "SpawnPoint"
 	spawn.position = Vector2(72, 288)
 	_add(spawn)
-	_inst("goal", level, _px(295, 19), {}, "EndGoal")
+	_inst("goal", level, _px(296, 19), {"room": room_nodes[6]}, "EndGoal")
 
 	var byte := _inst("byte", level, Vector2(52, 266), {}, "Byte")
 	var player := _inst("player", level, Vector2(72, 288), {}, "Player")
@@ -234,7 +298,7 @@ func _build() -> void:
 	var packed := PackedScene.new()
 	print("pack: ", error_string(packed.pack(level)))
 	print("save: ", error_string(ResourceSaver.save(packed, OUT)))
-	print("open cells: ", interior.size(), "  solid cells: ", solid.size())
+	print("open cells: ", interior.size(), "  solid cells: ", solid.size(), "  fruit: ", fruits.get_child_count())
 
 
 # ---------------- Rooms and terrain ----------------
@@ -259,23 +323,26 @@ func _room_at(c: int) -> int:
 
 
 func _layout() -> void:
-	# Room 0: gate ceiling, hanging pillar (2-tile gap under it), plateau
+	# Room 0: gate ceiling, hanging pillar (2-tile gap under it), plateau, two bars
 	_ground(0, 2, 27, 19, BOTTOM)
 	_ground(0, 28, 39, 9, BOTTOM)
 	_brick(15, 17, 1, 14)
 	_brick(24, 25, 1, 16)
-	_bar(0, 3, 6, 16)  # small floating bar near the start, fruit on top
-	# Room 1: plateau, 8-tile gap (cols 52-59), landing
+	_bar(0, 3, 6, 16)
+	_bar(0, 10, 13, 9)  # high shelf, reached with the trampoline
+	# Room 1: plateau, 8-tile gap (cols 52-59), landing, high bar
 	_ground(1, 42, 51, 9, BOTTOM)
 	_ground(1, 60, 79, 9, BOTTOM)
-	# Room 2: floor, 11-tile pit under a low ceiling, far floor, step
+	_bar(1, 70, 76, 4)
+	# Room 2: floor, 11-tile pit under a brick wall that reaches the ceiling, far floor, step
 	_ground(2, 82, 89, 19, BOTTOM)
-	_brick(88, 100, 12, 15)
+	_brick(88, 100, 1, 15)
 	_ground(2, 101, 105, 19, BOTTOM)
 	_ground(2, 106, 119, 14, BOTTOM)
-	# Room 3: falling platforms (cols 128-147) under a low ceiling, then the high ledge
+	_bar(2, 82, 85, 3)  # hidden shelf above the doorway, reached with the Rock Head elevator
+	# Room 3: falling platforms (cols 128-147) under a brick wall, then the high ledge
 	_ground(3, 122, 127, 14, BOTTOM)
-	_brick(126, 149, 8, 11)
+	_brick(126, 149, 1, 11)
 	_ground(3, 148, 169, 14, BOTTOM)
 	_ground(3, 158, 169, 7, 13)
 	# Room 4: floor, hanging shaft wall, ledge block to the right of the shaft
@@ -286,9 +353,10 @@ func _layout() -> void:
 	# Room 5: entrance ledge, chasm (cols 214-241), exit block
 	_ground(5, 212, 213, 5, BOTTOM)
 	_ground(5, 242, 249, 7, BOTTOM)
-	# Room 6: floor, tunnel ceiling
+	# Room 6: floor, tunnel (brick down from the ceiling)
 	_ground(6, 252, 299, 19, BOTTOM)
-	_brick(258, 288, 9, 12)
+	_brick(258, 288, 1, 12)
+	_bar(6, 291, 296, 10)  # high bar, reached with the Rock Head elevator
 	# Decorations in the top corners of every room (kept clear of doorways)
 	for i in ROOMS.size():
 		_corner_deco(i)
@@ -319,16 +387,17 @@ func _bar(room: int, c0: int, c1: int, r: int) -> void:
 		solid[Vector2i(c, r)] = {"kind": "tile", "atlas": Vector2i(col, row)}
 
 
-## A 2x2 block in the top-left corner and a 1x1 in the top-right, unless a doorway is there.
+## A 2x2 block in the top-left corner and a 1x1 in the top-right, unless a doorway or
+## something else is there.
 func _corner_deco(i: int) -> void:
 	var r: Dictionary = ROOMS[i]
 	var tiles: Array = DECO[r.deco]
 	var big: Vector2i = tiles[1]
-	if not _near_door(r.c0, 1, 2) and not _taken(r.c0, r.c0 + 1, 1, 2):
+	if not _near_door(r.c0, 1, 2) and not _taken(r.c0, r.c0 + 1, 1, 3):
 		for dx in 2:
 			for dy in 2:
 				solid[Vector2i(r.c0 + dx, 1 + dy)] = {"kind": "tile", "atlas": big + Vector2i(dx, dy)}
-	if not _near_door(r.c1, 1, 1) and not _taken(r.c1, r.c1, 1, 1):
+	if not _near_door(r.c1, 1, 1) and not _taken(r.c1, r.c1, 1, 2):
 		solid[Vector2i(r.c1, 1)] = {"kind": "tile", "atlas": tiles[0]}
 
 
@@ -415,29 +484,6 @@ func _ground_tile(cell: Vector2i, mat: String) -> Vector2i:
 	return GROUNDS[mat] + Vector2i(col, row)
 
 
-## Each room's own scrolling background, drawn behind everything inside the room.
-func _backgrounds() -> void:
-	var holder := _group("Backgrounds")
-	holder.z_index = -10
-	var shader: Shader = load("res://resources/shaders/scroll_tile.gdshader")
-	for i in ROOMS.size():
-		var r: Dictionary = ROOMS[i]
-		var bg := TextureRect.new()
-		bg.name = "Background%d" % i
-		bg.texture = load("res://assets/level1_pixel_adventure/backgrounds/bg_%s.png" % r.bg)
-		bg.stretch_mode = TextureRect.STRETCH_TILE
-		bg.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
-		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		# A tile wider on each side so it also shows through the doorways.
-		bg.position = Vector2((r.c0 - 2) * T, T)
-		bg.size = Vector2((r.c1 - r.c0 + 5) * T, BOTTOM * T)
-		var mat := ShaderMaterial.new()
-		mat.shader = shader
-		mat.set_shader_parameter("speed", Vector2(0.0, 0.25))
-		bg.material = mat
-		_add(bg, holder)
-
-
 # ---------------- Helpers ----------------
 
 func _px(c: float, r: float) -> Vector2:
@@ -472,16 +518,28 @@ func _room(parent: Node, i: int, title: String, hint: String, blanks: String, an
 	var r: Dictionary = ROOMS[i]
 	var node := _inst("room", parent, Vector2((r.c0 + r.c1 + 1) * T / 2.0, (BOTTOM + 2) * T / 2.0), {
 		"size": Vector2((r.c1 - r.c0 + 1) * T, BOTTOM * T),
-		"title": title, "hint": hint, "blanks": blanks, "answer": answer})
+		"title": title, "hint": hint, "blanks": blanks, "answer": answer,
+		"background": load("res://assets/level1_pixel_adventure/backgrounds/bg_%s.png" % r.bg)})
 	node.name = "Room_" + title.replace(" ", "_").replace("'", "")
+	room_nodes.append(node)
 
 
 func _chest(parent: Node, c: int, r: int, manual: String) -> void:
 	_inst("chest", parent, _px(c + 0.5, r), {"manual_id": manual})
 
 
-func _flag(parent: Node, c: int, r: int, hero: String) -> void:
-	_inst("checkpoint", parent, _px(c + 0.5, r), {"unlock_hero": hero})
+func _flag(parent: Node, c: int, r: int, hero: String, room: int) -> void:
+	var props := {"unlock_hero": hero}
+	if hero != "none":
+		props["room"] = room_nodes[room]  # rescue needs all of this room's fruit
+	_inst("checkpoint", parent, _px(c + 0.5, r), props)
+
+
+## Crates in the room's exit doorway that break once all its fruit is collected.
+func _fruit_door(parent: Node, room: int) -> void:
+	var d: Dictionary = DOORS[room]
+	_inst("fruit_door", parent, _px(d.c + 1, d.r1 + 1), {
+		"room": room_nodes[room], "size": Vector2(32, (d.r1 - d.r0 + 1) * T)})
 
 
 ## Spikes on the left-facing wall of column `c`, from row r0 to r1, pointing left.
