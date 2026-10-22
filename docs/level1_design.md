@@ -12,6 +12,27 @@ Update this file when the design changes.
   `godot --path . --script res://tools/test_level1.gd` - prints 31 PASS/FAIL checks.
   It backs up and restores your save file.
 
+## Look (matches Pixel Frog's Pixel Adventure demo)
+Every room is a closed box with a frame, joined to the next by a doorway in a 2-tile wall.
+The camera follows the player (not locked to one screen); each room is one screen tall and
+39-49 tiles wide.
+
+| Room | Frame | Ground top | Background | Corner blocks |
+|---|---|---|---|---|
+| 0 Wake up | stone | grass | green | pyramid |
+| 1 Wide gap | wood | orange | yellow | box |
+| 2 Bridge | teal | pink | purple | gold |
+| 3 High ledge | stone | grass | blue | metal |
+| 4 Fan shaft | wood | orange | brown | pyramid |
+| 5 Three paths | teal | pink | gray | gold |
+| 6 Low tunnel | stone | orange | pink | box |
+
+- Hanging walls and low ceilings are red bricks.
+- Pits have spikes on the floor; touching them costs HP and sends you to the last checkpoint.
+- Fruit is laid out in rows along the route (over the gap, along the bridge, over the falling
+  floor, up the fan column, along path B, between the tunnel spikes).
+- Room styles live in the `ROOMS` table at the top of `tools/build_level1.gd`.
+
 ## Changes made while testing (2026-10-22)
 - Room 2 gap is **11 blocks** (`int bridgeLength = 11;`) under a low ceiling, so Pink Man's dash
   can't jump it. The ceiling stops one tile before the far floor so the step jump has headroom.

@@ -227,7 +227,7 @@ func _run() -> void:
 		await wait(0.3)
 	release_all()
 	await wait(0.5)
-	check("R2 Ninja Frog can't wall-climb the step", p.global_position.y > 250, "pos=%s stamina=%.0f" % [p.global_position, p.stamina])
+	check("R2 Ninja Frog can't wall-climb the step", not (p.global_position.x > 1696 and p.global_position.y < 230), "pos=%s stamina=%.0f" % [p.global_position, p.stamina])
 	await code('hero = "PinkMan";')
 	tp(1650, 288)
 	await wait(0.3)

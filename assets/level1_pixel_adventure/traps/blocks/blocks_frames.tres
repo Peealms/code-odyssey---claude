@@ -1,10 +1,10 @@
-[gd_resource type="SpriteFrames" load_steps=19 format=3]
+[gd_resource type="SpriteFrames" format=3 uid="uid://dj0du4wgu5q5n"]
 
-[ext_resource type="Texture2D" path="res://assets/level1_pixel_adventure/traps/blocks/hitside.png" id="1_tex"]
-[ext_resource type="Texture2D" path="res://assets/level1_pixel_adventure/traps/blocks/hittop.png" id="2_tex"]
-[ext_resource type="Texture2D" path="res://assets/level1_pixel_adventure/traps/blocks/idle.png" id="3_tex"]
-[ext_resource type="Texture2D" path="res://assets/level1_pixel_adventure/traps/blocks/part_1.png" id="4_tex"]
-[ext_resource type="Texture2D" path="res://assets/level1_pixel_adventure/traps/blocks/part_2.png" id="5_tex"]
+[ext_resource type="Texture2D" uid="uid://bvvmni864ov63" path="res://assets/level1_pixel_adventure/traps/blocks/hitside.png" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://beoggoqpjkcbt" path="res://assets/level1_pixel_adventure/traps/blocks/hittop.png" id="2_tex"]
+[ext_resource type="Texture2D" uid="uid://cyvnsgl0r0nrs" path="res://assets/level1_pixel_adventure/traps/blocks/idle.png" id="3_tex"]
+[ext_resource type="Texture2D" uid="uid://dmur17q3pgt5b" path="res://assets/level1_pixel_adventure/traps/blocks/part_1.png" id="4_tex"]
+[ext_resource type="Texture2D" uid="uid://b6k48lvs6reey" path="res://assets/level1_pixel_adventure/traps/blocks/part_2.png" id="5_tex"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_1"]
 atlas = ExtResource("1_tex")
@@ -70,7 +70,7 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_3")
 }],
-"loop": false,
+"loop": 0,
 "name": &"hitside",
 "speed": 20.0
 }, {
@@ -84,7 +84,7 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_6")
 }],
-"loop": false,
+"loop": 0,
 "name": &"hittop",
 "speed": 20.0
 }, {
@@ -92,7 +92,7 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_7")
 }],
-"loop": true,
+"loop": 1,
 "name": &"idle",
 "speed": 20.0
 }, {
@@ -106,7 +106,7 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_10")
 }],
-"loop": true,
+"loop": 1,
 "name": &"part_1",
 "speed": 20.0
 }, {
@@ -120,7 +120,7 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_13")
 }],
-"loop": true,
+"loop": 1,
 "name": &"part_2",
 "speed": 20.0
 }]

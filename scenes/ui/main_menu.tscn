@@ -1,17 +1,17 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene format=3 uid="uid://c4es1l3o3bi5y"]
 
-[ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/level1_pixel_adventure/backgrounds/bg_blue.png" id="2_bg"]
-[ext_resource type="Texture2D" path="res://assets/shared/ui/menu/menu_ground_strip.png" id="3_ground"]
-[ext_resource type="SpriteFrames" path="res://assets/shared/heroes/ninja_frog/ninja_frog_frames.tres" id="4_frog"]
-[ext_resource type="SpriteFrames" path="res://assets/shared/heroes/pink_man/pink_man_frames.tres" id="5_pink"]
-[ext_resource type="SpriteFrames" path="res://assets/shared/heroes/mask_dude/mask_dude_frames.tres" id="6_mask"]
-[ext_resource type="SpriteFrames" path="res://assets/shared/heroes/virtual_guy/virtual_guy_frames.tres" id="7_virtual"]
+[ext_resource type="Script" uid="uid://b7bvcny76020e" path="res://scripts/ui/main_menu.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://cnkfkkuj334md" path="res://assets/level1_pixel_adventure/backgrounds/bg_blue.png" id="2_bg"]
+[ext_resource type="Texture2D" uid="uid://tnpl3ibvuwn5" path="res://assets/shared/ui/menu/menu_ground_strip.png" id="3_ground"]
+[ext_resource type="SpriteFrames" uid="uid://4ejpcwowa026" path="res://assets/shared/heroes/ninja_frog/ninja_frog_frames.tres" id="4_frog"]
+[ext_resource type="SpriteFrames" uid="uid://dx8g5shnxf6e6" path="res://assets/shared/heroes/pink_man/pink_man_frames.tres" id="5_pink"]
+[ext_resource type="SpriteFrames" uid="uid://bbjaobmhiftn" path="res://assets/shared/heroes/mask_dude/mask_dude_frames.tres" id="6_mask"]
+[ext_resource type="SpriteFrames" uid="uid://btoj7w7yeggpc" path="res://assets/shared/heroes/virtual_guy/virtual_guy_frames.tres" id="7_virtual"]
 
 [sub_resource type="StyleBoxFlat" id="title_band"]
 bg_color = Color(0.129412, 0.121569, 0.188235, 0.55)
 
-[node name="MainMenu" type="Control"]
+[node name="MainMenu" type="Control" unique_id=925588965]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -20,14 +20,14 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 
-[node name="Background" type="TextureRect" parent="."]
+[node name="Background" type="TextureRect" parent="." unique_id=1823494202]
 layout_mode = 0
 offset_right = 704.0
 offset_bottom = 424.0
 texture = ExtResource("2_bg")
 stretch_mode = 1
 
-[node name="TitleBand" type="Panel" parent="."]
+[node name="TitleBand" type="Panel" parent="." unique_id=850135139]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -36,7 +36,7 @@ offset_bottom = 110.0
 grow_horizontal = 2
 theme_override_styles/panel = SubResource("title_band")
 
-[node name="Title" type="Label" parent="."]
+[node name="Title" type="Label" parent="." unique_id=1312320537]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -51,7 +51,7 @@ theme_override_font_sizes/font_size = 30
 text = "CODE ODYSSEY"
 horizontal_alignment = 1
 
-[node name="Prompt" type="Label" parent="."]
+[node name="Prompt" type="Label" parent="." unique_id=1854702493]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -62,7 +62,7 @@ theme_override_colors/font_color = Color(0.556863, 0.913725, 0.611765, 1)
 text = "> PRESS PLAY TO COMPILE_"
 horizontal_alignment = 1
 
-[node name="MenuButtons" type="VBoxContainer" parent="."]
+[node name="MenuButtons" type="VBoxContainer" parent="." unique_id=1866161916]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
@@ -74,23 +74,23 @@ offset_bottom = 250.0
 grow_horizontal = 2
 theme_override_constants/separation = 6
 
-[node name="PlayButton" type="Button" parent="MenuButtons"]
+[node name="PlayButton" type="Button" parent="MenuButtons" unique_id=1110993193]
 layout_mode = 2
 text = "PLAY"
 
-[node name="ContinueButton" type="Button" parent="MenuButtons"]
+[node name="ContinueButton" type="Button" parent="MenuButtons" unique_id=239515479]
 layout_mode = 2
 text = "CONTINUE"
 
-[node name="SettingsButton" type="Button" parent="MenuButtons"]
-layout_mode = 2
-text = "SETTINGS"
-
-[node name="QuitButton" type="Button" parent="MenuButtons"]
+[node name="QuitButton" type="Button" parent="MenuButtons" unique_id=223107970]
 layout_mode = 2
 text = "QUIT"
 
-[node name="SettingsPanel" type="PanelContainer" parent="."]
+[node name="SettingsButton" type="Button" parent="MenuButtons" unique_id=897601245]
+layout_mode = 2
+text = "SETTINGS"
+
+[node name="SettingsPanel" type="PanelContainer" parent="." unique_id=2058195554]
 visible = false
 layout_mode = 1
 anchors_preset = 5
@@ -102,27 +102,27 @@ offset_right = 110.0
 offset_bottom = 254.0
 grow_horizontal = 2
 
-[node name="VBox" type="VBoxContainer" parent="SettingsPanel"]
+[node name="VBox" type="VBoxContainer" parent="SettingsPanel" unique_id=1838043564]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="Heading" type="Label" parent="SettingsPanel/VBox"]
+[node name="Heading" type="Label" parent="SettingsPanel/VBox" unique_id=1835848581]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.239216, 0.141176, 0.164706, 1)
 theme_override_font_sizes/font_size = 20
 text = "SETTINGS"
 horizontal_alignment = 1
 
-[node name="VolumeRow" type="HBoxContainer" parent="SettingsPanel/VBox"]
+[node name="VolumeRow" type="HBoxContainer" parent="SettingsPanel/VBox" unique_id=96889763]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="VolumeLabel" type="Label" parent="SettingsPanel/VBox/VolumeRow"]
+[node name="VolumeLabel" type="Label" parent="SettingsPanel/VBox/VolumeRow" unique_id=1944281504]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.239216, 0.141176, 0.164706, 1)
 text = "VOLUME"
 
-[node name="VolumeSlider" type="HSlider" parent="SettingsPanel/VBox/VolumeRow"]
+[node name="VolumeSlider" type="HSlider" parent="SettingsPanel/VBox/VolumeRow" unique_id=416496162]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
@@ -130,15 +130,15 @@ max_value = 1.0
 step = 0.05
 value = 0.8
 
-[node name="FullscreenCheck" type="CheckButton" parent="SettingsPanel/VBox"]
+[node name="FullscreenCheck" type="CheckButton" parent="SettingsPanel/VBox" unique_id=1278575276]
 layout_mode = 2
 text = "FULLSCREEN"
 
-[node name="BackButton" type="Button" parent="SettingsPanel/VBox"]
+[node name="BackButton" type="Button" parent="SettingsPanel/VBox" unique_id=1086450347]
 layout_mode = 2
 text = "BACK"
 
-[node name="Ground" type="TextureRect" parent="."]
+[node name="Ground" type="TextureRect" parent="." unique_id=898539740]
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
@@ -150,37 +150,37 @@ grow_vertical = 0
 texture = ExtResource("3_ground")
 stretch_mode = 1
 
-[node name="Heroes" type="Node2D" parent="."]
+[node name="Heroes" type="Node2D" parent="." unique_id=150431587]
 position = Vector2(0, 296)
 
-[node name="NinjaFrog" type="AnimatedSprite2D" parent="Heroes"]
+[node name="NinjaFrog" type="AnimatedSprite2D" parent="Heroes" unique_id=1848815197]
 position = Vector2(64, 0)
 sprite_frames = ExtResource("4_frog")
 animation = &"idle"
 autoplay = "idle"
 
-[node name="PinkMan" type="AnimatedSprite2D" parent="Heroes"]
+[node name="PinkMan" type="AnimatedSprite2D" parent="Heroes" unique_id=415484270]
 position = Vector2(100, 0)
 sprite_frames = ExtResource("5_pink")
 animation = &"idle"
 autoplay = "idle"
 frame_progress = 0.3
 
-[node name="MaskDude" type="AnimatedSprite2D" parent="Heroes"]
+[node name="MaskDude" type="AnimatedSprite2D" parent="Heroes" unique_id=58894100]
 position = Vector2(540, 0)
 sprite_frames = ExtResource("6_mask")
 animation = &"idle"
 autoplay = "idle"
 flip_h = true
 
-[node name="VirtualGuy" type="AnimatedSprite2D" parent="Heroes"]
+[node name="VirtualGuy" type="AnimatedSprite2D" parent="Heroes" unique_id=1117931154]
 position = Vector2(576, 0)
 sprite_frames = ExtResource("7_virtual")
 animation = &"idle"
 autoplay = "idle"
 flip_h = true
 
-[node name="Version" type="Label" parent="."]
+[node name="Version" type="Label" parent="." unique_id=1335937070]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0

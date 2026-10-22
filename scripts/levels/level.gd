@@ -17,6 +17,8 @@ extends Node2D
 @export var starting_heroes: Array[String] = []
 @export var next_scene := "res://scenes/ui/main_menu.tscn"
 @export var fall_limit_margin := 64.0  ## How far below the map the player can fall before respawning.
+## Extra space the camera may show above the map (0 for framed rooms with a ceiling).
+@export var camera_top_margin := 64.0
 
 @onready var terrain: TileMapLayer = $Terrain
 @onready var player: CharacterBody2D = $Player
@@ -71,7 +73,7 @@ func _setup_camera_limits() -> void:
 	var tile := terrain.tile_set.tile_size
 	var cam: Camera2D = player.get_node("Camera2D")
 	cam.limit_left = used.position.x * tile.x
-	cam.limit_top = used.position.y * tile.y - 64
+	cam.limit_top = used.position.y * tile.y - int(camera_top_margin)
 	cam.limit_right = used.end.x * tile.x
 	cam.limit_bottom = used.end.y * tile.y
 	_map_bottom = used.end.y * tile.y
