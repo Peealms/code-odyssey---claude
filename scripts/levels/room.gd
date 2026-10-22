@@ -21,6 +21,9 @@ signal fruit_changed(collected: int, total: int)
 @export var blanks := ""  ## The answer with gaps after 5 wrong tries, e.g. int bridgeLength = __;
 @export var answer := ""  ## The exact line "Show answer" reveals.
 @export var background: Texture2D  ## Fades in behind the level while the player is in this room.
+## Rooms with the same zone (e.g. the sections of a big final room) count as one place for
+## code gadgets: code typed anywhere in the zone reaches every gadget in it.
+@export var zone := ""
 
 var wrong_tries := 0
 var answer_shown := false  ## Only the first "Show answer" in a room costs a star.
@@ -39,8 +42,19 @@ func _ready() -> void:
 	_count_fruit.call_deferred()
 
 
-func contains(point: Vector2) -> bool:
-	return Rect2(global_position - size / 2.0, size).has_point(point)
+## True if `point` is inside the room (or within `margin` px of it).
+func contains(point: Vector2, margin := 0.0) -> bool:
+	return Rect2(global_position - size / 2.0, size).grow(margin).has_point(point)
+
+
+## True if `other` is this room or shares its zone.
+func same_place(other: Room) -> bool:
+	return other == self or (zone != "" and other.zone == zone)
+
+
+## The title without its "EXAM 1:" style prefix, e.g. "THE LOW TUNNEL".
+func short_title() -> String:
+	return title.get_slice(":", 1).strip_edges() if ":" in title else title
 
 
 func all_fruit_collected() -> bool:

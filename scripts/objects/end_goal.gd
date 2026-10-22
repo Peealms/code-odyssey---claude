@@ -1,11 +1,12 @@
 extends Area2D
-## The trophy at the end of a level. Touching it finishes the level - if `room` is set,
-## only once every fruit in that room is collected (otherwise `blocked` fires).
+## The trophy at the end of a level. Touching it finishes the level - if `rooms` are set,
+## only once every fruit in those rooms is collected (otherwise `blocked` fires, with the
+## rooms that still have fruit, e.g. "THE LOW TUNNEL 2").
 
 signal reached
-signal blocked(fruit_left: int)
+signal blocked(fruit_left: int, where: String)
 
-@export var room: Node  ## Room whose fruit must be collected first (empty = none).
+@export var rooms: Array[Node] = []  ## Rooms whose fruit must be collected first (empty = none).
 
 var _done := false
 
@@ -19,8 +20,15 @@ func _ready() -> void:
 func _on_body_entered(body: Node2D) -> void:
 	if _done or not body.is_in_group("player"):
 		return
-	if room and not room.all_fruit_collected():
-		blocked.emit(room.fruit_total - room.fruit_collected)
+	var left := 0
+	var where: Array[String] = []
+	for room in rooms:
+		var missing: int = room.fruit_total - room.fruit_collected
+		if missing > 0:
+			left += missing
+			where.append("%s %d" % [room.short_title(), missing])
+	if left > 0:
+		blocked.emit(left, ", ".join(where))
 		return
 	_done = true
 	sprite.play("pressed")

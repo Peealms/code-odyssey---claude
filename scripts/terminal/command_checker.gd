@@ -12,6 +12,7 @@ extends RefCounted
 ##   steps   [{ "label": String, "ok": bool }]  (the checklist Byte shows)
 ##   error   friendly explanation of the first failed step ("" when ok)
 ##   action  what the game should do, e.g. { "type": "set", "name": "hero", "value": "pink_man", "declare": true }
+##   fix     (only sometimes) the corrected line, e.g. hero = "MaskDude"; for a redeclaration
 ##
 ## The variables it knows come from VariableLibrary (a level picks which ones).
 
@@ -98,7 +99,10 @@ func _check_assignment(line: String, unlocked: Array, declared: Array) -> Dictio
 		if type != spec["type"]:
 			return _fail("Type matches", "%s is %s, so it must be a %s, not %s." % [name, spec["about"], spec["type"], type])
 		if name in declared and not allow_redeclare:
-			return _fail("New variable", "%s already exists, so Java won't make it again. To change it, leave out the type: %s = %s;" % [name, name, value_text])
+			var fixed := "%s = %s;" % [name, value_text]
+			var result := _fail("New variable", "%s already exists, so Java won't make it again. To change it, leave out the type: %s I put it in for you - press Enter." % [name, fixed])
+			result["fix"] = fixed
+			return result
 		_pass("Name is " + name)
 	else:
 		if not name in declared:

@@ -5,6 +5,7 @@ extends CodeGadget
 
 @export var start_on := false
 @export var lift_height := 160.0  ## How tall the column of air is.
+@export var width := 24.0  ## How wide the column of air is (put fans 2 tiles apart with 32 to make a wall of air).
 @export var lift_speed := 220.0  ## Top upward speed the air gives the player.
 @export var lift_accel := 2200.0  ## How hard the air pushes (must beat gravity, 900).
 
@@ -21,11 +22,12 @@ func _ready() -> void:
 		variable_name = "fanOn"
 	super()
 	var rect := RectangleShape2D.new()
-	rect.size = Vector2(24, lift_height)
+	rect.size = Vector2(width, lift_height)
 	air_shape.shape = rect
 	air_shape.position = Vector2(0, -lift_height / 2.0)
 	streaks.lifetime = lift_height / streaks.initial_velocity_min
 	streaks.texture = _streak_texture()
+	streaks.emission_rect_extents = Vector2(width / 2.0 - 2.0, 1)
 	_set_on(start_on)
 
 

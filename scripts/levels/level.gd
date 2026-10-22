@@ -126,10 +126,10 @@ func _on_rescue_blocked(checkpoint: Area2D) -> void:
 		byte.say("%d MORE FRUIT TO FREE %s!" % [checkpoint.fruit_left(), hero_name.to_upper()], 3.0)
 
 
-func _on_goal_blocked(fruit_left: int) -> void:
+func _on_goal_blocked(fruit_left: int, where: String) -> void:
 	hud.show_message("COLLECT ALL THE FRUIT!", 2.0)
 	if byte:
-		byte.say("%d MORE FRUIT FIRST!" % fruit_left, 3.0)
+		byte.say("%d MORE FRUIT: %s" % [fruit_left, where], 4.0)
 
 
 func _on_level_complete() -> void:

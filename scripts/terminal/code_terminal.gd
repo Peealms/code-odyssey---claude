@@ -153,7 +153,12 @@ func _on_submitted(text: String) -> void:
 		if byte:
 			byte.react(false)
 			byte.say("OOPS!", 1.5)
-		_count_wrong_try()
+		if result.has("fix"):
+			# Byte types the corrected line for the player (e.g. the type left out).
+			input.text = result["fix"]
+			input.caret_column = input.text.length()
+		else:
+			_count_wrong_try()
 	_running = false
 
 
