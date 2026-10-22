@@ -203,6 +203,16 @@ func _java_text(name: String, value) -> String:
 
 # ---------------- Hints, "Show answer" and stars ----------------
 
+## For gadgets: the line was valid Java, but the value doesn't solve the puzzle (e.g. a bridge
+## that's too long). Byte explains, and it counts as a wrong try for the room's hints.
+func report_wrong(text: String) -> void:
+	_byte_line(text)
+	if byte:
+		byte.react(false)
+		byte.say("OOPS!", 1.5)
+	_count_wrong_try()
+
+
 func _count_wrong_try() -> void:
 	Game.mistakes += 1
 	if current_room == null:

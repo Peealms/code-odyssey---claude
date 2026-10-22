@@ -1,6 +1,8 @@
 extends CodeGadget
 ## A bridge that builds itself from the player's int: `int bridgeLength = 6;` pops in 6
 ## crate blocks, one by one, going right. Changing the number adds or removes blocks.
+## If `gap_blocks` is set, the number must fit the gap exactly: too few leaves a hole, and too
+## many jams against the far side so the whole bridge collapses (and Byte explains why).
 ## The node's position is the top-left corner of the first block (line it up with the ground).
 
 const TILE := preload("res://assets/level1_pixel_adventure/tiles/terrain_16x16.png")
@@ -9,10 +11,12 @@ const SIZE := 16
 const POP_TIME := 0.09  ## Seconds between blocks appearing.
 
 @export var max_blocks := 12
+@export var gap_blocks := 0  ## Width of the gap in blocks (0 = any length is fine).
 
 var _blocks: Array[StaticBody2D] = []
 var _target := 0
 var _building := false
+var _collapsing := false
 
 
 func _ready() -> void:
@@ -22,9 +26,40 @@ func _ready() -> void:
 
 
 func _on_value(value: Variant) -> void:
-	_target = clampi(int(value), 0, max_blocks)
+	var wanted := clampi(int(value), 0, max_blocks)
+	if gap_blocks > 0 and wanted > gap_blocks:
+		_too_long(wanted)
+		return
+	_target = wanted
 	if not _building:
 		_build()
+
+
+## Builds up to the far side, jams, then the whole bridge falls into the pit.
+func _too_long(wanted: int) -> void:
+	if _collapsing:
+		return
+	_collapsing = true
+	var terminal := get_tree().get_first_node_in_group("code_terminal")
+	if terminal:
+		terminal.report_wrong("Your Java is right, but %d blocks are too long - they don't fit in the gap and the bridge collapsed! Count the gap again." % wanted)
+	_target = gap_blocks
+	if not _building:
+		await _build()
+	else:
+		while _building:
+			await get_tree().process_frame
+	# Jam: shake, then everything drops.
+	for b in _blocks:
+		var shake := b.create_tween()
+		shake.tween_property(b, "position:x", b.position.x + 2, 0.05)
+		shake.tween_property(b, "position:x", b.position.x - 2, 0.05)
+		shake.tween_property(b, "position:x", b.position.x, 0.05)
+	await get_tree().create_timer(0.3).timeout
+	while not _blocks.is_empty():
+		_remove_block(_blocks.pop_back())
+	_target = 0
+	_collapsing = false
 
 
 ## Adds or removes one block at a time until the bridge matches the latest number.

@@ -172,7 +172,7 @@ func _build() -> void:
 		"Count the gap: it is 11 blocks wide. Store that whole number in an int called bridgeLength. Then the step is too high for one jump - switch to Mask Dude, and since hero already exists, leave out the type.",
 		"int bridgeLength = __;", "int bridgeLength = 11;")
 	_chest(chests, 83, 19, "numbers")
-	_inst("bridge", gadgets, _px(90, 19), {"max_blocks": 12})
+	_inst("bridge", gadgets, _px(90, 19), {"max_blocks": 12, "gap_blocks": 11})  # 11 exactly: more jams and collapses
 	_pit_spikes(traps, 90, 100)
 	_sign(signs, 90, 17, "GAP = 11 BLOCKS")
 	_sign(signs, 102, 8, "TOO HIGH FOR\nONE JUMP")
