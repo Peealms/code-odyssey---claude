@@ -64,15 +64,15 @@ func dash() -> void:
 
 
 ## Jump, then double jump at the top and steer toward `dir` (Mask Dude). Each jump is held
-## until its peak (longer when jumpPower is high), so letting go doesn't cut it short.
+## until its peak (the first one longer when jumpPower is high; the double jump never uses
+## jumpPower), so letting go doesn't cut it short.
 func double_jump_to(dir: String) -> void:
-	var hold := 0.28 * sqrt(p.jump_power)
-	await jump(hold)
+	await jump(0.28 * sqrt(p.jump_power))
 	await wait(0.04)
 	Input.action_press("jump")
-	await wait(hold * 0.6)
+	await wait(0.08)
 	Input.action_press(dir)
-	await wait(hold * 0.4)
+	await wait(0.22)
 	Input.action_release("jump")
 
 
@@ -186,6 +186,48 @@ func ride_rock_head(rock: Node2D, top_y: float, timeout := 15.0) -> void:
 	await wait(0.2)
 
 
+## Tries to get past a hero-only obstacle the wrong way: `hero` at jumpPower 2.0 runs from
+## `start` toward `dir`, and at `edge_x` (0 = straight away) jumps as high/far as it can
+## (Mask Dude double jumps, Virtual Guy sprint-jumps, Pink Man dashes). With `hop_time` it
+## keeps hopping every time it lands, for that long. Returns where the player ended up.
+## (Sets the hero and jumpPower directly, not through the terminal.)
+func cheat(hero: String, start: Vector2, dir: String, edge_x: float, hop_time := 0.0) -> Vector2:
+	p.set_hero(hero)
+	p.jump_power = 2.0
+	tp(start.x, start.y)
+	p.restore_vitals()
+	await wait(0.5)
+	if hero == "virtual_guy":
+		Input.action_press("dash")
+	Input.action_press(dir)
+	if edge_x > 0.0:
+		if dir == "move_right":
+			await until_x(edge_x)
+		else:
+			await until_x_left(edge_x)
+	if hop_time > 0.0:
+		var t0 := Time.get_ticks_msec()
+		while Time.get_ticks_msec() - t0 < hop_time * 1000:
+			if p.is_on_floor():
+				await jump(0.1)
+				if hero == "pink_man":
+					await dash()
+				elif hero == "mask_dude":
+					await jump(0.1)
+			await process_frame
+	elif hero == "pink_man":
+		await dash()
+	else:
+		await jump(0.28 * sqrt(2.0))
+		if hero == "mask_dude":
+			await wait(0.04)
+			await jump(0.28)
+	await wait(1.5)
+	release_all()
+	await wait(0.6)
+	return p.global_position
+
+
 func shot(name: String) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT))
 	root.get_texture().get_image().save_png(OUT + "bot_" + name + ".png")
@@ -261,32 +303,34 @@ func _run() -> void:
 	shown = await dismiss_cutscene() and shown
 	check("R0 all fruit + flag: cutscene, then Pink Man joins", shown and "pink_man" in game.unlocked_heroes and not paused, str(game.unlocked_heroes))
 
-	# ---------------- Room 1: top floor y=128, gap x=880-1008 ----------------
+	# ---------------- Room 1: top floor y=128, crawlspace gap x=896-976 ----------------
 	ensure_hero("pink_man")
 	tp(720, 112)
 	p.restore_vitals()
 	await wait(0.3)
 	Input.action_press("move_right")
-	await until_x(872)
+	await until_x(886)
 	await jump()
 	await wait(2.0)
 	release_all()
-	check("R1 Ninja Frog can't jump the gap", not (p.global_position.x > 1010 and p.global_position.y < 130), "pos=%s" % p.global_position)
+	check("R1 Ninja Frog can't cross the gap", not (p.global_position.x > 980 and p.global_position.y < 130), "pos=%s" % p.global_position)
 	await code('String hero = "PinkMan";')
 	check("R1 String hero = \"PinkMan\" switches hero", p.hero_id == "pink_man", last_byte())
 	tp(720, 112)
 	p.restore_vitals()
 	await wait(0.3)
 	Input.action_press("move_right")
-	await until_x(872)
-	Input.action_press("jump")
-	await wait(0.22)
+	await until_x(886)
 	await dash()
-	await wait(0.2)
-	Input.action_release("jump")
 	await wait(1.0)
 	release_all()
-	check("R1 Pink Man dash-jumps the gap", p.global_position.x > 1010 and p.global_position.y < 130, "pos=%s" % p.global_position)
+	check("R1 Pink Man dashes over the gap", p.global_position.x > 980 and p.global_position.y < 130, "pos=%s" % p.global_position)
+	var won := await cheat("mask_dude", Vector2(720, 112), "move_right", 886)
+	check("R1 cheat: Mask Dude at jumpPower 2.0 can't cross", not (won.x > 980 and won.y < 130), "pos=%s" % won)
+	won = await cheat("virtual_guy", Vector2(720, 112), "move_right", 886)
+	check("R1 cheat: Virtual Guy at jumpPower 2.0 can't cross", not (won.x > 980 and won.y < 130), "pos=%s" % won)
+	p.set_hero("pink_man")
+	p.jump_power = 1.0
 	await collect_room(1)
 	await touch_flag(1224, 496)
 	var shown1 := await dismiss_cutscene()
@@ -352,7 +396,7 @@ func _run() -> void:
 	var shown2 := await dismiss_cutscene()
 	check("R2 all fruit + flag rescues Virtual Guy", shown2 and "virtual_guy" in game.unlocked_heroes, str(game.unlocked_heroes))
 
-	# ---------------- Room 3: floor y=432, falling floor x=2128-2448, ledge top y=304 at x>=2528 ----------------
+	# ---------------- Room 3: floor y=432, falling floor x=2128-2448 (crawlspace), ledge top y=320 at x>=2528 ----------------
 	ensure_hero("virtual_guy")
 	check("R3 exit door is shut while fruit is missing", door_closed(3), "fruit %d/%d" % [room(3).fruit_collected, room(3).fruit_total])
 	await collect_room(3)
@@ -366,13 +410,18 @@ func _run() -> void:
 	await wait(3.6)
 	release_all()
 	check("R3 walking over the falling floor fails", p.global_position.x < 2440, "x=%.0f" % p.global_position.x)
+	won = await cheat("mask_dude", Vector2(2060, 416), "move_right", 2120, 4.0)
+	check("R3 cheat: Mask Dude at 2.0 can't hop the falling floor", not (won.x > 2450 and won.y < 430), "pos=%s" % won)
+	won = await cheat("pink_man", Vector2(2060, 416), "move_right", 2120, 4.0)
+	check("R3 cheat: Pink Man can't dash the falling floor", not (won.x > 2450 and won.y < 430), "pos=%s" % won)
+	p.jump_power = 1.0
 	await code('hero = "VirtualGuy";')
 	tp(2060, 416)
 	p.restore_vitals()
 	await wait(2.5)  # let the platforms come back
 	Input.action_press("dash")
 	Input.action_press("move_right")
-	await wait(2.1)
+	await wait(1.8)
 	release_all()
 	check("R3 Virtual Guy sprints across", p.global_position.x > 2450 and p.global_position.y < 430, "pos=%s" % p.global_position)
 	await code('hero = "MaskDude";')
@@ -383,103 +432,114 @@ func _run() -> void:
 	await wait(0.5)
 	release_all()
 	await wait(1.0)
-	check("R3 double jump alone can't reach the ledge", not (p.global_position.x > 2530 and p.global_position.y < 300), "pos=%s" % p.global_position)
-	await code("double jumpPower = 1.5;")
+	check("R3 double jump alone can't reach the ledge", not (p.global_position.x > 2530 and p.global_position.y < 316), "pos=%s" % p.global_position)
+	for h in ["virtual_guy", "pink_man"]:
+		won = await cheat(h, Vector2(2488, 416), "move_right", 0.0)
+		check("R3 cheat: %s at jumpPower 2.0 can't reach the ledge" % h, not (won.x > 2530 and won.y < 316), "pos=%s" % won)
+	p.set_hero("mask_dude")
+	p.jump_power = 1.0
+	await code("double jumpPower = 2.0;")
 	tp(2488, 416)
 	p.restore_vitals()
 	await wait(0.4)
 	await double_jump_to("move_right")
 	await wait(0.6)
 	release_all()
-	check("R3 jumpPower 1.5 + double jump reaches the ledge", p.global_position.y < 300 and p.global_position.x > 2530, "pos=%s" % p.global_position)
+	check("R3 jumpPower 2.0 + double jump reaches the ledge", p.global_position.y < 316 and p.global_position.x > 2530, "pos=%s" % p.global_position)
 
-	# ---------------- Room 4: bottom y=816, fan x=2968, platform top y=384, top floor y=224 ----------------
+	# ---------------- Room 4: bottom y=832, fan x=2968, platform top y=400, top floor y=240 ----------------
 	await code('hero = "NinjaFrog";')
-	tp(2968, 800)
+	tp(2968, 816)
 	p.restore_vitals()
 	await wait(1.0)
-	check("R4 fan is off: nothing happens", p.global_position.y > 790, "y=%.0f" % p.global_position.y)
+	check("R4 fan is off: nothing happens", p.global_position.y > 806, "y=%.0f" % p.global_position.y)
 	await code("boolean fanOn = true;")
-	tp(2968, 800)
+	tp(2968, 816)
 	await wait(3.2)
-	check("R4 fan lifts the player above the platform", p.global_position.y < 360, "y=%.0f" % p.global_position.y)
+	check("R4 fan lifts the player above the platform", p.global_position.y < 376, "y=%.0f" % p.global_position.y)
 	shot("r4_fan")
 	Input.action_press("move_right")
 	await wait(0.6)
 	release_all()
 	await wait(0.5)
-	check("R4 steps off the fan onto the platform", p.global_position.y < 372 and p.global_position.x > 2995, "pos=%s" % p.global_position)
-	await ride_rock_head(gadget_near("block_head.gd", Vector2(3136, 400)), 240.0)
+	check("R4 steps off the fan onto the platform", p.global_position.y < 388 and p.global_position.x > 2995, "pos=%s" % p.global_position)
+	await ride_rock_head(gadget_near("block_head.gd", Vector2(3136, 416)), 256.0)
 	Input.action_press("move_right")
 	await wait(0.8)
 	release_all()
-	check("R4 Rock Head elevator reaches the top floor", p.global_position.y < 212 and p.global_position.x > 3170, "pos=%s" % p.global_position)
+	check("R4 Rock Head elevator reaches the top floor", p.global_position.y < 228 and p.global_position.x > 3170, "pos=%s" % p.global_position)
 
-	# ---------------- Room 5: ledge top y=224, path B to x=3760, exit at x>=3888 ----------------
-	tp(3420, 208)
+	# ---------------- Room 5: ledge top y=240, path B to x=3792, crawlspace gap, exit at x>=3872 ----------------
+	tp(3420, 224)
 	await wait(0.4)
 	Input.action_press("move_right")
 	await wait(1.0)
 	release_all()
 	await wait(1.0)
-	check("R5 no path chosen: you can't get across", not (p.global_position.x > 3880 and p.global_position.y < 230), "pos=%s" % p.global_position)
+	check("R5 no path chosen: you can't get across", not (p.global_position.x > 3870 and p.global_position.y < 240), "pos=%s" % p.global_position)
 	await code("char path = 'A';")
-	var a_on: bool = not gadget_near("path_platform.gd", Vector2(3450, 192)).shape.disabled
+	var a_on: bool = not gadget_near("path_platform.gd", Vector2(3456, 211)).shape.disabled
 	check("R5 path = 'A' makes path A solid", a_on)
 	await code("path = 'B';")
+	for h in ["mask_dude", "virtual_guy"]:
+		won = await cheat(h, Vector2(3700, 224), "move_right", 3782)
+		check("R5 cheat: %s at jumpPower 2.0 can't cross the dash gap" % h, not (won.x > 3875 and won.y < 240), "pos=%s" % won)
+	p.jump_power = 2.0
 	await code('hero = "PinkMan";')
-	tp(3420, 208)
+	tp(3420, 224)
 	p.restore_vitals()
 	await wait(0.4)
 	Input.action_press("move_right")
-	await until_x(3744, 6.0)
-	Input.action_press("jump")
-	await wait(0.22)
+	await until_x(3782, 6.0)
 	await dash()
-	await wait(0.2)
-	Input.action_release("jump")
 	await wait(1.0)
 	release_all()
 	shot("r5_paths")
-	check("R5 path B + dash reaches the exit", p.global_position.x > 3890 and p.global_position.y < 230, "pos=%s" % p.global_position)
+	check("R5 path B + dash reaches the exit", p.global_position.x > 3875 and p.global_position.y < 240, "pos=%s" % p.global_position)
 
-	# ---------------- Exam 1 (high wall): floor y=224, wall x>=4336, wall top y=48 ----------------
+	# ---------------- Exam 1 (high wall): floor y=240, wall x>=4336, wall top y=128 ----------------
+	for h in ["pink_man", "virtual_guy"]:
+		won = await cheat(h, Vector2(4305, 224), "move_right", 0.0)
+		check("Exam 1 cheat: %s at jumpPower 2.0 can't climb the wall" % h, not (won.x > 4340 and won.y < 120), "pos=%s" % won)
+	p.set_hero("pink_man")
+	p.jump_power = 2.0
 	await code('hero = "MaskDude";')
-	tp(4290, 208)
+	await code("jumpPower = 1.0;")
+	tp(4305, 224)
 	p.restore_vitals()
 	await wait(0.4)
 	await double_jump_to("move_right")
 	await wait(0.6)
 	release_all()
 	await wait(0.8)
-	check("Exam 1: double jump at 1.5 can't climb the wall", not (p.global_position.x > 4340 and p.global_position.y < 40), "pos=%s" % p.global_position)
+	check("Exam 1: double jump at 1.0 can't climb the wall", not (p.global_position.x > 4340 and p.global_position.y < 120), "pos=%s" % p.global_position)
 	await code("double jumpPower = 2.0;")
-	check("Exam 1: writing double again is refused", p.jump_power == 1.5 and "already exists" in last_byte(), last_byte())
+	check("Exam 1: writing double again is refused", p.jump_power == 1.0 and "already exists" in last_byte(), last_byte())
 	await code("jumpPower = 2.0;")
-	tp(4290, 208)
+	tp(4305, 224)
 	p.restore_vitals()
 	await wait(0.4)
 	await double_jump_to("move_right")
 	await wait(0.8)
 	release_all()
-	check("Exam 1: jumpPower = 2.0 + double jump climbs the wall", p.global_position.x > 4340 and p.global_position.y < 40, "pos=%s" % p.global_position)
+	check("Exam 1: Mask Dude at jumpPower 2.0 climbs the wall", p.global_position.x > 4340 and p.global_position.y < 120, "pos=%s" % p.global_position)
 
-	# ---------------- Exam 2 (low tunnel): floor y=224, tunnel x=4528-4912 ----------------
+	# ---------------- Exam 2 (low tunnel): floor y=240, tunnel x=4528-4912 ----------------
 	await code('hero = "NinjaFrog";')
-	tp(4620, 208)
+	tp(4620, 224)
 	p.restore_vitals()
 	await wait(0.4)
 	await jump()
 	await wait(0.8)
 	check("Exam 2: at 2.0 a jump hits the ceiling spikes", p.health < 100 or p.global_position.x < 4540, "hp=%.0f pos=%s" % [p.health, p.global_position])
 	await code("jumpPower = 1.0;")
-	tp(4620, 208)
+	tp(4620, 224)
 	p.restore_vitals()
 	await wait(1.2)
 	await jump()
 	await wait(0.8)
 	check("Exam 2: at 1.0 the jump is safe", p.health == 100 and p.global_position.x > 4540, "hp=%.0f" % p.health)
-	tp(4500, 208)
+	tp(4500, 224)
 	p.restore_vitals()
 	await wait(0.4)
 	Input.action_press("move_right")
@@ -490,24 +550,30 @@ func _run() -> void:
 	release_all()
 	check("Exam 2: runs the tunnel", p.global_position.x > 4880, "hp=%.0f x=%.0f" % [p.health, p.global_position.x])
 
-	# ---------------- Exam 3 (short bridge): floor y=224, pit x=4992-5136 ----------------
+	# ---------------- Exam 3 (long bridge, crawlspace): floor y=240, pit x=4960-5152 ----------------
+	for h in ["virtual_guy", "mask_dude", "pink_man"]:
+		won = await cheat(h, Vector2(4920, 224), "move_right", 4954)
+		check("Exam 3 cheat: %s at jumpPower 2.0 can't cross without the bridge" % h, not (won.x > 5160 and won.y < 236), "pos=%s" % won)
+	p.set_hero("ninja_frog")
+	p.jump_power = 1.0
 	var old_bridge := gadget_near("code_bridge.gd", Vector2(1488, 512))
-	await code("bridgeLength = 9;")
+	tp(4920, 224)
+	await code("bridgeLength = 12;")
 	await wait(1.4)
 	check("Exam 3: Room 2's bridge keeps its 11 blocks", old_bridge._blocks.size() == 11, "blocks=%d" % old_bridge._blocks.size())
-	tp(4930, 208)
+	tp(4920, 224)
 	p.restore_vitals()
 	await wait(0.3)
 	Input.action_press("move_right")
-	await until_x(5150)
+	await until_x(5170)
 	release_all()
 	await wait(0.3)
-	check("Exam 3: walks across the 9-block bridge", p.global_position.x > 5140 and p.global_position.y < 220, "pos=%s" % p.global_position)
-	await ride_rock_head(gadget_near("block_head.gd", Vector2(5280, 208)), -96.0, 20.0)
-	check("Exam 3: Rock Head elevator rises to the fan trap", p.global_position.y < -110, "pos=%s" % p.global_position)
+	check("Exam 3: walks across the 12-block bridge", p.global_position.x > 5160 and p.global_position.y < 236, "pos=%s" % p.global_position)
+	await ride_rock_head(gadget_near("block_head.gd", Vector2(5280, 224)), -80.0, 20.0)
+	check("Exam 3: Rock Head elevator rises to the fan trap", p.global_position.y < -94, "pos=%s" % p.global_position)
 
-	# ---------------- Exam 4 (fan trap): corridor floor y=-112, fans x=4992-5152 ----------------
-	tp(5220, -128)
+	# ---------------- Exam 4 (fan trap): corridor floor y=-96, fans x=4992-5152 ----------------
+	tp(5220, -112)
 	p.restore_vitals()
 	await wait(0.4)
 	Input.action_press("move_left")
@@ -515,23 +581,27 @@ func _run() -> void:
 	release_all()
 	await wait(0.5)
 	# The spikes send you back to a checkpoint, so "through" means past the fans and still up here.
-	check("Exam 4: fans on: you can't get through", not (p.global_position.x < 4980 and p.global_position.y < -100), "pos=%s hp=%.0f" % [p.global_position, p.health])
-	tp(5220, -128)
+	check("Exam 4: fans on: you can't get through", not (p.global_position.x < 4980 and p.global_position.y < -90), "pos=%s hp=%.0f" % [p.global_position, p.health])
+	tp(5220, -112)
 	p.restore_vitals()
 	await code("fanOn = false;")
-	var old_fan := gadget_near("code_fan.gd", Vector2(2968, 816))
+	var old_fan := gadget_near("code_fan.gd", Vector2(2968, 832))
 	check("Exam 4: Room 4's fan stays on", old_fan.is_on)
 	await wait(0.4)
 	Input.action_press("move_left")
 	await wait(2.1)  # stop before the chasm (no path chosen yet)
 	release_all()
-	check("Exam 4: fans off: walk through", p.global_position.x < 4975 and p.global_position.y < -110, "pos=%s" % p.global_position)
+	check("Exam 4: fans off: walk through", p.global_position.x < 4975 and p.global_position.y < -94, "pos=%s" % p.global_position)
 
-	# ---------------- Exam 5 (last path): path C y=-112 x=4592-4912, gap to x=4464 ----------------
+	# ---------------- Exam 5 (last path): path C y=-96 x=4560-4912, block x=4544-4560, crawlspace gap to x=4464 ----------------
 	await code("path = 'C';")  # typed in the fan corridor: same exam, so path C still appears
-	check("Exam 5: path = 'C' from the fan corridor reaches the paths", not gadget_near("path_platform.gd", Vector2(4900, -109)).shape.disabled)
+	check("Exam 5: path = 'C' from the fan corridor reaches the paths", not gadget_near("path_platform.gd", Vector2(4900, -93)).shape.disabled)
+	for h in ["mask_dude", "virtual_guy"]:
+		won = await cheat(h, Vector2(4600, -112), "move_left", 4554)
+		check("Exam 5 cheat: %s at jumpPower 2.0 can't cross the dash gap" % h, not (won.x < 4462 and won.y < -94), "pos=%s" % won)
+	p.jump_power = 1.0
 	await code('hero = "PinkMan";')
-	tp(4890, -128)
+	tp(4890, -112)
 	p.restore_vitals()
 	await wait(0.4)
 	# Three Spike Heads slam down onto path C: stop before each, go when it has just gone up.
@@ -539,24 +609,20 @@ func _run() -> void:
 		Input.action_press("move_left")
 		await until_x_left(head_x + 36, 5.0)
 		release_all()
-		var head: Node2D = gadget_near("block_head.gd", Vector2(head_x, -240))
+		var head: Node2D = gadget_near("block_head.gd", Vector2(head_x, -224))
 		while absf(head.position.y - head._start.y) < 1.0:
 			await process_frame
 		while absf(head.position.y - head._start.y) > 1.0:
 			await process_frame
 	Input.action_press("move_left")
-	await until_x_left(4608, 5.0)
-	Input.action_press("jump")
-	await wait(0.22)
+	await until_x_left(4554, 5.0)
 	await dash()
-	await wait(0.2)
-	Input.action_release("jump")
 	await wait(1.0)
 	release_all()
-	check("Exam 5: path C + dash reaches the last ledge", p.global_position.x < 4478 and p.global_position.y < -110, "pos=%s" % p.global_position)
+	check("Exam 5: path C + dash reaches the last ledge", p.global_position.x < 4462 and p.global_position.y < -94, "pos=%s" % p.global_position)
 
-	# ---------------- Exam 6 (final gate): gate x=4376, falling floor x=4176-4368, shaft x=4048-4096 ----------------
-	tp(4440, -128)
+	# ---------------- Exam 6 (final gate): gate x=4376, falling floor x=4176-4368 (crawlspace), shaft x=4048-4096 ----------------
+	tp(4440, -112)
 	await wait(0.3)
 	Input.action_press("move_left")
 	await wait(1.0)
@@ -564,40 +630,46 @@ func _run() -> void:
 	check("Exam 6: the gate blocks the way", p.global_position.x > 4380, "x=%.0f" % p.global_position.x)
 	await code('System.out.println("Hello");')
 	await wait(0.5)
-	check("Exam 6: the gate needs the exact text", gadget_near("byte_gate.gd", Vector2(4376, -112)).is_open == false)
+	check("Exam 6: the gate needs the exact text", gadget_near("byte_gate.gd", Vector2(4376, -96)).is_open == false)
 	await code('System.out.println("I can code!");')
 	await wait(0.6)
-	check("Exam 6: \"I can code!\" opens the gate", gadget_near("byte_gate.gd", Vector2(4376, -112)).is_open)
-	tp(4420, -128)
+	check("Exam 6: \"I can code!\" opens the gate", gadget_near("byte_gate.gd", Vector2(4376, -96)).is_open)
+	tp(4420, -112)
 	p.restore_vitals()
 	await wait(0.4)
 	Input.action_press("move_left")
 	await wait(3.0)
 	release_all()
 	check("Exam 6: walking over the falling floor fails", p.global_position.x > 4180, "x=%.0f" % p.global_position.x)
+	won = await cheat("mask_dude", Vector2(4420, -112), "move_left", 4374, 4.0)
+	check("Exam 6 cheat: Mask Dude at 2.0 can't hop the falling floor", not (won.x < 4170 and won.y < -94 and won.y > -130), "pos=%s" % won)
+	p.jump_power = 1.0
 	await code('hero = "VirtualGuy";')
-	tp(4420, -128)
+	tp(4420, -112)
 	p.restore_vitals()
 	await wait(2.5)
 	Input.action_press("dash")
 	Input.action_press("move_left")
 	await wait(1.3)
 	release_all()
-	check("Exam 6: Virtual Guy sprints across", p.global_position.x < 4170 and p.global_position.y < -110, "pos=%s" % p.global_position)
+	check("Exam 6: Virtual Guy sprints across", p.global_position.x < 4170 and p.global_position.y < -94, "pos=%s" % p.global_position)
+	won = await cheat("mask_dude", Vector2(4072, -112), "move_left", 0.0)
+	check("Exam 6 cheat: Mask Dude at 2.0 can't jump up the shaft", won.y > -300, "pos=%s" % won)
+	p.jump_power = 1.0
 	await code('hero = "NinjaFrog";')
-	tp(4072, -128)
+	tp(4072, -112)
 	p.restore_vitals()
 	await wait(0.3)
 	wall_dir = -1
-	exit_y = -356.0
+	exit_y = -340.0
 	exit_dir = 1
 	wall_bot = true
 	await wait(7.0)
 	wall_bot = false
 	release_all()
-	check("Exam 6: Ninja Frog wall-jumps up to the goal floor", p.global_position.y < -340 and p.global_position.x > 4100, "pos=%s" % p.global_position)
+	check("Exam 6: Ninja Frog wall-jumps up to the goal floor", p.global_position.y < -324 and p.global_position.x > 4100, "pos=%s" % p.global_position)
 	# The goal needs every fruit of the final exam.
-	tp(4340, -352)
+	tp(4340, -336)
 	p.restore_vitals()
 	Input.action_press("move_right")
 	await wait(1.0)
@@ -605,7 +677,7 @@ func _run() -> void:
 	check("Goal won't finish while exam fruit is missing", level.get_node_or_null("LevelComplete") == null and not paused, "")
 	for i in range(6, 12):
 		await collect_room(i)
-	tp(4340, -352)
+	tp(4340, -336)
 	Input.action_press("move_right")
 	await wait(1.5)
 	release_all()

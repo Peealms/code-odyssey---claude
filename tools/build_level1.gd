@@ -52,18 +52,19 @@ const R0 := [
 	"########################################",
 ]
 
-# Room 1 - the wide gap: dash over the gap at the top, then down three floors of saws.
+# Room 1 - the wide gap: dash over the gap in a crawlspace, then down three floors of saws.
+# The crawlspace is 2 tiles high, so nobody can jump over the gap - only Pink Man's dash crosses.
 const R1 := [
-	"........................................",
-	"........................................",
-	"........................................",
+	"........BBBBBBBBBBBBBBBBB...............",
+	"........BBBBBBBBBBBBBBBBB...............",
+	"........BBBBBBBBBBBBBBBBB...............",
+	"<.......BBBBBBBBBBBBBBBBB...............",
 	"<.......................................",
-	"<............ffffff.....................",
-	"<.........................1.............",
-	"BBBBBBBBBBBB.......wBBBBBBBBBBBBBBBB....",
-	"BBBBBBBBBBBB.......wBBBBBBBBBBBBBBBB....",
-	"...........BxxxxxxxxB...................",
-	"...........BBBBBBBBBB...................",
+	"<............fffff.........1............",
+	"BBBBBBBBBBBBBxxxxxBBBBBBBBBBBBBBBBBB....",
+	"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB....",
+	"........................................",
+	"........................................",
 	"............................2...........",
 	"........................................",
 	"........................................",
@@ -105,16 +106,17 @@ const R2 := [
 	"BBBBBBBBBBBBBBBBBBBBB............k.....>",
 	"BBBBBBBBBBBBBBBBBBBBBw...###############",
 	"BBBBBBBBBBBBBBBBBBBBBw..w###############",
-	"<............9..........w###############",
+	"<..BBBBBBBBBBBBBBBBBB...w###############",
 	"<........fffffffff.......###############",
 	"<..h....q................###############",
 	"########...........#####################",
-	"########...........#####################",
 	"########xxxxxxxxxxx#####################",
+	"########################################",
 ]
 
 # Room 3 - the high ledge: sprint the falling floor, jump the ledge, falling stairs to a balcony.
 const R3 := [
+	"........................................",
 	"........................................",
 	"........................................",
 	"........................................",
@@ -134,13 +136,12 @@ const R3 := [
 	"........................................",
 	"...........................ll..........>",
 	".......................................>",
-	".................................k.....>",
-	"....ff......ffff......ff.......#########",
+	"....ff......ffff......ff.........k.....>",
 	"BBBBBBBBBBBBBBBBBBBBBBBBBB.....#########",
 	"BBBBBBBBBBBBBBBBBBBBBBBBBBw...w#########",
 	"BBBBBBBBBBBBBBBBBBBBBBBBBBw...w#########",
 	"BBBBBBBBBBBBBBBBBBBBBBBBBBw...w#########",
-	"<.............................w#########",
+	"<.....BBBBBBBBBBBBBBBBBBBBw...w#########",
 	"<......f.f.f.f.f.f.f.f.f.......#########",
 	"<..............................#########",
 	"######LLLLLLLLLLLLLLLLLLLL##############",
@@ -197,28 +198,29 @@ const R4 := [
 ]
 
 # Room 5 - three paths over a spike chasm; fruit on paths A and C too.
+# Path B ends in a crawlspace over a spike trench: only Pink Man's dash crosses it.
 const R5 := [
-	"........................................",
-	".......T....T....T......................",
-	"........................................",
-	"........................................",
-	"<.........ffffff.......................>",
-	"<...aaaaaaaaaaaa..........ffff.........>",
+	"....................BBBBBBBBBBB.........",
+	".......T....T....T..BBBBBBBBBBB.........",
+	"....................BBBBBBBBBBB.........",
+	"....................BBBBBBBBBBB.........",
+	"<.........ffffff....BBBBBBBBBBB........>",
+	"<...aaaaaaaaaaaa..........fffff........>",
 	"<K......ffffffffff................k....>",
-	"####bbbbbbbbbbbbbbbbbbbb........########",
-	"####............................########",
-	"####..........ffffff...........w########",
-	"####cccccccccccccccc...........w########",
-	"####...........................w########",
-	"####...........................w########",
-	"####...........................w########",
-	"####...........................w########",
-	"####...........................w########",
-	"####...........................w########",
-	"####...........................w########",
-	"####...........................w########",
-	"####...........................w########",
-	"####xxxxxxxxxxxxxxxxxxxxxxxxxxxx########",
+	"####bbbbbbbbbbbbbbbbbbbbbb.....#########",
+	"####......................xxxxx#########",
+	"####..........ffffff......##############",
+	"####cccccccccccccccc.....w##############",
+	"####.....................w##############",
+	"####.....................w##############",
+	"####.....................w##############",
+	"####.....................w##############",
+	"####.....................w##############",
+	"####.....................w##############",
+	"####.....................w##############",
+	"####.....................w##############",
+	"####.....................w##############",
+	"####xxxxxxxxxxxxxxxxxxxxxx##############",
 ]
 
 # Final exam, bottom half (left to right): high wall, low tunnel, short bridge.
@@ -228,14 +230,14 @@ const S1 := [
 	"..........................",
 	"..........................",
 	"..........................",
+	"..........................",
+	"..........................",
+	"..........................",
+	"..........................",
 	"...................fffff..",
 	"..........................",
 	"..................########",
-	"..................########",
-	"...ffff..........w########",
-	".................w########",
-	".................w########",
-	".................w########",
+	"...ffff...........########",
 	".................w########",
 	".................w########",
 	"<................w########",
@@ -284,11 +286,11 @@ const S3 := [
 	"BBBBBBBBBBBBBBB...........",
 	"BBBBBBBBBBBBBBB...........",
 	"BBBBBBBBBBBBBBB...........",
-	".........8................",
-	".....fffffffff........R...",
-	"..K..q....................",
-	"#####.........############",
-	"#####xxxxxxxxx############",
+	"BBBBBBBBBBBBBBB...........",
+	"...ffffffffffff.......R...",
+	"...q...........K..........",
+	"###............###########",
+	"###xxxxxxxxxxxx###########",
 	"##########################",
 ]
 # Final exam, top half (right to left): fan trap, last path, final gate.
@@ -316,26 +318,26 @@ const S4 := [
 	"BBBBBBBBBBBBBBBBBBBBB...BB",
 ]
 const S5 := [
-	"............................",
-	"............................",
-	"............................",
-	"............................",
-	"............................",
-	"............................",
-	"............................",
-	"............................",
-	"............................",
-	"...........T.....T.....T....",
-	"............................",
-	"............................",
-	"............................",
-	"......................fffff.",
-	"............................",
-	"..ffff............aaaaaaaaaa",
-	"............................",
+	"BBBBBBBBBB..................",
+	"BBBBBBBBBB..................",
+	"BBBBBBBBBB..................",
+	"BBBBBBBBBB..................",
+	"BBBBBBBBBB..................",
+	"BBBBBBBBBB..................",
+	"BBBBBBBBBB..................",
+	"BBBBBBBBBB..................",
+	"BBBBBBBBBB..................",
+	"BBBBBBBBBB.T.....T.....T....",
+	"BBBBBBBBBB..................",
+	"BBBBBBBBBB..................",
+	"BBBBBBBBBB..................",
+	"BBBBBBBBBB............fffff.",
+	"BBBBBBBBBB..................",
+	"BBBBBBBBBB........aaaaaaaaaa",
+	"fffff.......................",
 	"........f.f.f.f.f.f.f.f.f.f.",
-	"........cccccccccccccccccccc",
-	"xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+	".....Bcccccccccccccccccccccc",
+	"xxxxxBxxxxxxxxxxxxxxxxxxxxxx",
 	"BBBBBBBBBBBBBBBBBBBBBBBBBBBB",
 ]
 const S6 := [
@@ -353,10 +355,10 @@ const S6 := [
 	"...BBBBBBBBBBBBBBBBBB.....",
 	"...BBBBBBBBBBBBBBBBBB===..",
 	"...BBBBBBBBBBBBBBBBBB.....",
-	".f........................",
-	".....................===..",
+	".f.BBBBBBBBBBBBBBBBB......",
+	"...BBBBBBBBBBBBBBBBB.===..",
 	"..........f.f.f.f.........",
-	"......K.............g...K.",
+	".K..................g...K.",
 	"########LLLLLLLLLLLL######",
 	"########xxxxxxxxxxxx######",
 	"##########################",
@@ -486,7 +488,7 @@ func _build() -> void:
 
 	# ---------------- Room 1: The wide gap (needs Pink Man) - saws ----------------
 	_room(rooms, 1, 0, "THE WIDE GAP",
-		"Only Pink Man's dash crosses this gap: jump, then press Shift in the air. Store his name in a String called hero.",
+		"The crawlspace is too low to jump over the gap - only Pink Man's dash crosses it: walk to the edge and press Shift. Store his name in a String called hero.",
 		"String hero = \"_______\";", "String hero = \"PinkMan\";")
 	_saw(traps, _a(1, "1"), Vector2(96, 0), 50.0, true)
 	_saw(traps, _a(1, "2"), Vector2(0, 80), 45.0)
@@ -494,7 +496,7 @@ func _build() -> void:
 	_saw(traps, _a(1, "4"), Vector2(0, 112), 55.0)
 	_saw(traps, _a(1, "5"), Vector2(96, 0), 50.0, true)
 	_flag(flags, 1, _a(1, "k"), "mask_dude")
-	_sign(signs, 1, 1, 0, "TOO WIDE TO JUMP!\nPINK MAN CAN DASH")
+	_sign(signs, 1, 1, 0, "TOO LOW TO JUMP!\nPINK MAN CAN DASH")
 
 	# ---------------- Room 2: The broken bridge (needs Mask Dude) - spiked balls ----------------
 	_room(rooms, 2, 0, "THE BROKEN BRIDGE",
@@ -505,18 +507,17 @@ func _build() -> void:
 	_ball(traps, _a(2, "6"), 160.0, 40.0, 2.4, 0.0)
 	_ball(traps, _a(2, "7"), 160.0, 45.0, 2.8, 0.5)
 	_ball(traps, _a(2, "8"), 185.0, 35.0, 2.2, 0.0)  # over the step, just reaches your head
-	_ball(traps, _a(2, "9"), 30.0, 75.0, 2.0, 0.0)  # under the low ceiling, over the bridge
 	_flag(flags, 2, _a(2, "k"), "virtual_guy")
 	_sign(signs, 2, 1, 15, "GAP = 11 BLOCKS")
 	_sign(signs, 2, 26, 9, "TOO HIGH FOR\nONE JUMP")
 
 	# ---------------- Room 3: The high ledge (needs Virtual Guy) - falling platforms ----------------
 	_room(rooms, 3, 0, "THE HIGH LEDGE",
-		"Virtual Guy can sprint over the falling floor - hold Shift while running. The ledge is too high even for a double jump: make every jump higher with a double called jumpPower (1.0 to 2.0), then double jump as Mask Dude.",
-		"double jumpPower = ___;", "double jumpPower = 1.5;")
+		"Virtual Guy can sprint over the falling floor - hold Shift while running. The ledge is too high even for a double jump: make your first jump higher with a double called jumpPower (1.0 to 2.0 - try the highest), then double jump as Mask Dude.",
+		"double jumpPower = ___;", "double jumpPower = 2.0;")
 	_flag(flags, 3, _a(3, "k"), "none")
 	_fruit_door(traps, 3)
-	_sign(signs, 3, 1, 25, "FALLING FLOOR! RUN FAST")
+	_sign(signs, 3, 1, 25, "RUN FAST!")
 	_sign(signs, 3, 33, 14, "TOO HIGH!\nJUMP HIGHER")
 
 	# ---------------- Room 4: The fan shaft - Rock Heads ----------------
@@ -542,19 +543,19 @@ func _build() -> void:
 		_spike_head(traps, _a(5, "T", i), Vector2(0, 192), i * 0.7)
 	_flag(flags, 5, _a(5, "k"), "none")
 	_fruit_door(traps, 5)
-	_sign(signs, 5, 25, 1, "SAFE PATH = THE 2ND\nLETTER OF THE ABC")
-	_sign(signs, 5, 25, 11, "GO BACK TO THE LEDGE\nBEFORE YOU SWITCH PATH")
+	_sign(signs, 5, 31, 0, "SAFE PATH = THE 2ND\nLETTER OF THE ABC")
+	_sign(signs, 5, 5, 13, "GO BACK TO THE LEDGE\nBEFORE YOU SWITCH PATH")
 
 	# ---------------- Room 6: The final exam - every trap, every variable ----------------
 	_room(rooms, 6, 0, "EXAM 1: THE HIGH WALL",
-		"Even a double jump at 1.5 can't climb this wall. jumpPower already exists, so change it (no type!) to 2.0, then double jump as Mask Dude.",
-		"jumpPower = ___;", "jumpPower = 2.0;")
+		"Only Mask Dude's double jump climbs this wall (with jumpPower 2.0 from Room 3). hero already exists, so switch without the type.",
+		"hero = \"________\";", "hero = \"MaskDude\";")
 	_room(rooms, 6, 1, "EXAM 2: THE LOW TUNNEL",
-		"At jumpPower 2.0 every jump hits the spikes. Change jumpPower back to 1.0.",
+		"With a high jumpPower every jump hits the spikes. Change jumpPower back to 1.0.",
 		"jumpPower = ___;", "jumpPower = 1.0;")
-	_room(rooms, 6, 2, "EXAM 3: THE SHORT BRIDGE",
-		"This gap is 9 blocks wide. bridgeLength already exists - give it the new number.",
-		"bridgeLength = _;", "bridgeLength = 9;")
+	_room(rooms, 6, 2, "EXAM 3: THE LONG BRIDGE",
+		"This gap is 12 blocks wide. bridgeLength already exists - give it the new number.",
+		"bridgeLength = __;", "bridgeLength = 12;")
 	_room(rooms, 6, 3, "EXAM 4: THE FAN TRAP",
 		"These fans are ON and blow you into the spikes. Change fanOn to false.",
 		"fanOn = _____;", "fanOn = false;")
@@ -564,11 +565,10 @@ func _build() -> void:
 	_room(rooms, 6, 5, "EXAM 6: THE FINAL GATE",
 		"Print exactly: I can code! Then sprint over the falling floor as Virtual Guy and wall-jump up the shaft as Ninja Frog.",
 		"System.out.println(\"__________\");", "System.out.println(\"I can code!\");")
-	_saw(traps, _a(6, "1", 1), Vector2(96, 0), 60.0, true)  # high wall (anchors count from the top)
+	_saw(traps, _a(6, "1", 1), Vector2(64, 0), 60.0, true)  # high wall (anchors count from the top)
 	q = _a(6, "q")
-	_inst("bridge", gadgets, _px(q.x, q.y + 1), {"max_blocks": 12, "gap_blocks": 9})
+	_inst("bridge", gadgets, _px(q.x, q.y + 1), {"max_blocks": 12, "gap_blocks": 12})
 	_ball(traps, _a(6, "7"), 250.0, 20.0, 2.6, 0.0)  # in front of the elevator
-	_ball(traps, _a(6, "8"), 30.0, 75.0, 2.0, 0.3)  # over the bridge
 	_rock(traps, _a(6, "R"), Vector2(0, -304), 1.5, 140.0)  # elevator up to the fan trap
 	for cell in anchors[6]["n"]:
 		_inst("fan", gadgets, _foot(cell), {"start_on": true, "lift_height": 64.0, "width": 32.0})
@@ -577,9 +577,9 @@ func _build() -> void:
 		_spike_head(traps, _a(6, "T", i), Vector2(0, 112), i * 0.6)
 	_inst("gate", gadgets, _foot(_a(6, "g")), {"height": 3, "required_text": "I can code!"})
 	_saw(traps, _a(6, "1", 0), Vector2(128, 0), 55.0, true)  # final gate gallery
-	_sign(signs, 6, 6, 31, "TOO HIGH FOR\nA DOUBLE JUMP")
+	_sign(signs, 6, 6, 31, "WHO CAN DOUBLE\nJUMP THIS HIGH?")
 	_sign(signs, 6, 31, 34, "MIND YOUR HEAD!")
-	_sign(signs, 6, 55, 36, "GAP = 9 BLOCKS")
+	_sign(signs, 6, 48, 34, "GAP = 12 BLOCKS")
 	_sign(signs, 6, 74, 10, "FANS ARE ON!")
 	_sign(signs, 6, 36, 4, "SAFE PATH = THE\n3RD LETTER")
 	_sign(signs, 6, 21, 13, "PRINT\n\"I can code!\"")
@@ -752,6 +752,16 @@ func _paint(layer: TileMapLayer) -> void:
 	for cell in frame_cells:
 		var base: Vector2i = FRAMES[ROOMS[frame_cells[cell]].frame]
 		layer.set_cell(cell, 0, _frame_tile(cell, base))
+	# Everything else in the map's bounding box is the frames' dark fill, so the scrolling
+	# background is only ever seen inside the rooms (rooms have different heights).
+	var box := Rect2i(frame_cells.keys()[0], Vector2i.ONE)
+	for cell in frame_cells:
+		box = box.expand(cell).expand(cell + Vector2i.ONE)
+	for x in range(box.position.x, box.end.x):
+		for y in range(box.position.y, box.end.y):
+			var c := Vector2i(x, y)
+			if not interior.has(c) and not frame_cells.has(c):
+				layer.set_cell(c, 0, FRAMES.stone + Vector2i(1, 1))
 	for cell in solid:
 		var info: Dictionary = solid[cell]
 		if info.kind == "tile":

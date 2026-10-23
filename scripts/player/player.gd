@@ -72,7 +72,7 @@ const HERO_DATA := {
 @export var wall_slide_speed := 60.0
 @export var wall_jump_push := 170.0
 @export var dash_speed := 300.0
-@export var dash_time := 0.16
+@export var dash_time := 0.3  ## 0.3 s at 300 px/s = 90 px: crosses the 5-tile crawlspace gaps with room to spare.
 @export var dash_cooldown := 0.5
 
 @export_group("Sword")
@@ -230,13 +230,15 @@ func _handle_jump() -> void:
 	elif _air_jumps_left > 0 and can_use_stamina(double_jump_stamina_cost):
 		_spend_stamina(double_jump_stamina_cost)
 		_air_jumps_left -= 1
-		_do_jump()
+		_do_jump(false)
 		sprite.play("double_jump")
 
 
-func _do_jump() -> void:
+## `powered`: the first jump (and wall jumps) use jumpPower; the double jump never does, so
+## Mask Dude at jumpPower 2.0 can't clear everything with 200 px double jumps.
+func _do_jump(powered := true) -> void:
 	# Jump height grows with the square of the speed, so sqrt makes jump_power scale the height.
-	velocity.y = jump_velocity * sqrt(jump_power)
+	velocity.y = jump_velocity * (sqrt(jump_power) if powered else 1.0)
 	_jump_buffer_timer = 0.0
 	_coyote_timer = 0.0
 
@@ -271,8 +273,13 @@ func _try_start_dash() -> void:
 		velocity = Vector2(facing * dash_speed, 0.0)
 
 
+## The dash drifts up very slightly (about 2 px in total) so it glides onto a floor at the
+## same height instead of catching on its corner.
+const DASH_LIFT := -8.0
+
+
 func _process_dash(_delta: float) -> void:
-	velocity = Vector2(facing * dash_speed, 0.0)
+	velocity = Vector2(facing * dash_speed, DASH_LIFT)
 	if is_on_wall():
 		_dash_timer = 0.0
 
