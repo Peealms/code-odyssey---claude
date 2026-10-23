@@ -6,8 +6,12 @@ extends Area2D
 
 signal first_opened(manual_id: String)
 
+const POTION := preload("res://scenes/objects/health_potion.tscn")
+
 ## Which manual from ManualLibrary is inside. Add new ids here when you add manuals.
 @export_enum("variables_101", "data_types", "numbers", "booleans_chars", "changing_variables") var manual_id: String = "variables_101"
+## Health potions that jump out the first time the chest is opened (touch one to heal 30 HP).
+@export_range(0, 3) var potions := 1
 
 ## What's in the chest right now ("" = empty slot). Filled from manual_id at start.
 var slots: Array[String] = ["", "", "", "", ""]
@@ -46,6 +50,7 @@ func _open() -> void:
 		await sprite.animation_finished
 		_opened = true
 		first_opened.emit(manual_id)
+		_throw_potions()
 	var window := get_tree().get_first_node_in_group("chest_window")
 	if window:
 		window.open(self)
@@ -63,3 +68,17 @@ func _on_body_exited(body: Node2D) -> void:
 	if body.is_in_group("player"):
 		_player_near = false
 		prompt.visible = false
+
+
+## Potions hop out of the chest in an arc and land on the ground beside it.
+func _throw_potions() -> void:
+	for i in potions:
+		var potion: Node2D = POTION.instantiate()
+		get_parent().add_child(potion)
+		var side := 1.0 if i % 2 == 0 else -1.0
+		var land := global_position + Vector2(side * (34 + 14 * (i / 2)), 0)
+		potion.global_position = global_position + Vector2(0, -10)
+		var tween := potion.create_tween()
+		tween.tween_property(potion, "global_position:x", land.x, 0.45)
+		tween.parallel().tween_property(potion, "global_position:y", land.y - 30, 0.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+		tween.chain().tween_property(potion, "global_position:y", land.y, 0.25).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)

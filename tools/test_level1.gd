@@ -277,6 +277,22 @@ func _run() -> void:
 	await wait(0.6)
 	release_all()
 	check("R0 gate opens with println", p.global_position.x > 200, "x=%.0f" % p.global_position.x)
+	# Health potion on the corridor floor (x=424): ignored at full HP, heals 30 when hurt.
+	var potion := level.get_node("Potions").get_child(0)
+	tp(424, 288)
+	p.restore_vitals()
+	await wait(0.4)
+	check("Potion stays put at full HP", is_instance_valid(potion) and not potion._used)
+	p.health = 50.0
+	await wait(0.4)
+	check("Potion heals 30 HP when hurt", p.health == 80.0 and (not is_instance_valid(potion) or potion._used), "hp=%.0f" % p.health)
+	var chest := level.get_node("Chests").get_child(0)
+	var before := level.get_node("Chests").get_child_count()
+	chest._throw_potions()
+	await wait(0.8)
+	var thrown: Node2D = level.get_node("Chests").get_child(before) if level.get_node("Chests").get_child_count() > before else null
+	check("Opening a chest throws out a potion", thrown != null and absf(thrown.global_position.y - chest.global_position.y) < 1.0, "pos=%s" % (thrown.global_position if thrown else Vector2.ZERO))
+	p.restore_vitals()
 	tp(520, 288)
 	await wait(0.3)
 	await jump()

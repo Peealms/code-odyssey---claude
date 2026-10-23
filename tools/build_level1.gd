@@ -411,6 +411,7 @@ const SCENES := {
 	"ball": "res://scenes/gadgets/spiked_ball.tscn",
 	"fire": "res://scenes/gadgets/fire_trap.tscn",
 	"fruit_door": "res://scenes/gadgets/fruit_door.tscn",
+	"potion": "res://scenes/objects/health_potion.tscn",
 }
 
 # ---- Tile sheet (assets/level1_pixel_adventure/tiles/terrain_16x16.png) ----
@@ -583,6 +584,12 @@ func _build() -> void:
 	_sign(signs, 6, 74, 10, "FANS ARE ON!")
 	_sign(signs, 6, 36, 4, "SAFE PATH = THE\n3RD LETTER")
 	_sign(signs, 6, 21, 13, "PRINT\n\"I can code!\"")
+
+	# ---------------- Health potions (heal 30; chests throw out one more each) ----------------
+	var potions := _group("Potions")
+	for spot in [[0, 25, 17], [1, 37, 16], [1, 20, 29], [2, 27, 12], [3, 37, 20], [3, 11, 6], [4, 24, 40], [4, 36, 3],
+			[5, 37, 6], [6, 11, 38], [6, 27, 38], [6, 72, 38], [6, 77, 17], [6, 22, 17], [6, 5, 3]]:
+		_inst("potion", potions, _foot(origins[spot[0]] + Vector2i(spot[1], spot[2])))
 
 	# ---------------- Map characters: fruit, spikes, platforms, fire, flags, chests ----------------
 	for i in ROOMS.size():

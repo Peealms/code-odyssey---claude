@@ -301,6 +301,12 @@ func restore_vitals() -> void:
 	stamina_changed.emit(stamina, max_stamina, exhausted)
 
 
+## Gives back up to `amount` HP (health potions).
+func heal(amount: float) -> void:
+	health = minf(health + amount, max_health)
+	health_changed.emit(health, max_health)
+
+
 func can_use_stamina(cost: float) -> bool:
 	return not exhausted and stamina >= cost
 
