@@ -10,6 +10,7 @@ extends CodeGadget
 @export var lift_accel := 2200.0  ## How hard the air pushes (must beat gravity, 900).
 
 var is_on := false
+var _hum: AudioStreamPlayer2D
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var air: Area2D = $Air
@@ -28,6 +29,7 @@ func _ready() -> void:
 	streaks.lifetime = lift_height / streaks.initial_velocity_min
 	streaks.texture = _streak_texture()
 	streaks.emission_rect_extents = Vector2(width / 2.0 - 2.0, 1)
+	_hum = Sound.loop_player("fan_loop", self)
 	_set_on(start_on)
 
 
@@ -47,6 +49,10 @@ func _set_on(on: bool) -> void:
 	is_on = on
 	sprite.play("on" if on else "off")
 	streaks.emitting = on
+	if on and not _hum.playing:
+		_hum.play()
+	elif not on:
+		_hum.stop()
 
 
 func _physics_process(delta: float) -> void:

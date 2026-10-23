@@ -17,6 +17,8 @@ func _ready() -> void:
 	super()
 	_start = position
 	sprite.play("on")
+	if not Engine.is_editor_hint():
+		Sound.loop_player("saw_loop", self).play()
 	queue_redraw()
 
 

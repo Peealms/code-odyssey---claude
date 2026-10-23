@@ -59,6 +59,7 @@ func react(correct: bool) -> void:
 func talk(seconds: float) -> void:
 	var id := _start_busy()
 	sprite.play("talk")
+	_blips(seconds)
 	await get_tree().create_timer(seconds).timeout
 	_end_busy(id)
 
@@ -90,3 +91,11 @@ func _end_busy(id: int) -> void:
 func _play(anim: String) -> void:
 	if sprite.animation != anim:
 		sprite.play(anim)
+
+
+## Byte's voice: quick little bleeps while the talk animation plays.
+func _blips(seconds: float) -> void:
+	var end := Time.get_ticks_msec() + int(seconds * 1000)
+	while Time.get_ticks_msec() < end and is_inside_tree():
+		Sound.play("byte_talk", 0.2)
+		await get_tree().create_timer(0.09).timeout

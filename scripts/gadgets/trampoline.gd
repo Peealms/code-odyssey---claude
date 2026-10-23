@@ -17,6 +17,7 @@ func _on_body_entered(body: Node2D) -> void:
 	if not body.is_in_group("player") or body.velocity.y < -50.0:
 		return  # already flying upward
 	body.velocity.y = -bounce_speed
+	Sound.play("trampoline")
 	sprite.play("jump")
 	await sprite.animation_finished
 	sprite.play("idle")

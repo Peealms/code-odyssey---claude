@@ -21,6 +21,7 @@ func _on_body_entered(body: Node2D) -> void:
 		return
 	_taken = true
 	collected.emit()
+	Sound.play("fruit", 0.08)
 	sprite.play("collected")
 	await sprite.animation_finished
 	queue_free()

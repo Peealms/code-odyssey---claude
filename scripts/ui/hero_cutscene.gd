@@ -53,6 +53,7 @@ func play(hero_id: String, checkpoint: Node, player: Node2D) -> void:
 	var data: Dictionary = ABILITIES[hero_id]
 	var hero_name: String = PLAYER.HERO_DATA[hero_id]["name"]
 	get_tree().paused = true
+	Sound.play("rescue")
 	# Hide the HUD, hotbar and other screen layers so the scene is clean.
 	var hidden: Array[CanvasLayer] = []
 	for n in get_parent().get_children():
@@ -133,6 +134,8 @@ func _say(text: String) -> void:
 	_dialog_text.visible_characters = 0
 	for i in text.length():
 		_dialog_text.visible_characters = i + 1
+		if i % 3 == 0 and text[i] != " ":
+			Sound.play("byte_talk", 0.2)
 		await get_tree().create_timer(0.02).timeout
 	_accept_ready = true
 	var auto := get_tree().create_timer(3.0)

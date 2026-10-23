@@ -28,6 +28,7 @@ func _run() -> void:
 		await sprite.animation_finished
 		is_on = true
 		sprite.play("on")
+		Sound.play_at("fire", global_position)
 		await get_tree().create_timer(on_time, false).timeout
 		is_on = false
 		sprite.play("off")

@@ -47,6 +47,7 @@ func _on_fruit_changed(collected: int, total: int) -> void:
 
 func _open() -> void:
 	is_open = true
+	Sound.play_at("crates_break", global_position)
 	shape.set_deferred("disabled", true)
 	counter.text = "OPEN!"
 	counter.add_theme_color_override("font_color", Color("7cf07c"))

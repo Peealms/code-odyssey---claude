@@ -50,6 +50,7 @@ func _slam_to(target: Vector2) -> void:
 	tween.tween_property(self, "position", target, dist / slam_speed * 1.6) \
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	await tween.finished
+	Sound.play_at("spike_slam" if spiky else "rock_slam", global_position)
 	if absf(dir.x) > absf(dir.y):
 		sprite.play("right_hit" if dir.x > 0 else "left_hit")
 	else:

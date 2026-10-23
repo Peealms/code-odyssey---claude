@@ -149,6 +149,7 @@ func set_hero(new_hero: String, play_effect := true) -> void:
 	if play_effect:
 		swap_fx.visible = true
 		swap_fx.play("appearing")
+		Sound.play("hero_swap")
 	hero_changed.emit(new_hero)
 
 
@@ -168,7 +169,10 @@ func _physics_process(delta: float) -> void:
 		_handle_horizontal(dir, delta)
 		_try_start_dash()
 
+	var falling_fast := velocity.y > 200.0
 	move_and_slide()
+	if falling_fast and is_on_floor():
+		Sound.play("land", 0.1)
 	_update_animation(dir)
 	_update_sword()
 
@@ -220,6 +224,7 @@ func _handle_jump() -> void:
 		return
 	if _coyote_timer > 0.0:
 		_do_jump()
+		Sound.play("jump", 0.05)
 	elif has_trait("wall_jump") and is_on_wall_only() and can_use_stamina(wall_jump_stamina_cost):
 		_spend_stamina(wall_jump_stamina_cost)
 		var wall_dir := -signf(get_wall_normal().x)
@@ -227,11 +232,13 @@ func _handle_jump() -> void:
 		facing = int(-wall_dir)
 		_wall_jump_lock = 0.18
 		_do_jump()
+		Sound.play("wall_jump", 0.05)
 	elif _air_jumps_left > 0 and can_use_stamina(double_jump_stamina_cost):
 		_spend_stamina(double_jump_stamina_cost)
 		_air_jumps_left -= 1
 		_do_jump(false)
 		sprite.play("double_jump")
+		Sound.play("double_jump")
 
 
 ## `powered`: the first jump (and wall jumps) use jumpPower; the double jump never does, so
@@ -269,6 +276,7 @@ func _try_start_dash() -> void:
 			and can_use_stamina(dash_stamina_cost):
 		_spend_stamina(dash_stamina_cost)
 		_dash_timer = dash_time
+		Sound.play("dash")
 		_dash_cooldown_timer = dash_cooldown
 		velocity = Vector2(facing * dash_speed, 0.0)
 
@@ -305,6 +313,7 @@ func restore_vitals() -> void:
 func heal(amount: float) -> void:
 	health = minf(health + amount, max_health)
 	health_changed.emit(health, max_health)
+	Sound.play("heal")
 
 
 func can_use_stamina(cost: float) -> bool:
@@ -404,6 +413,7 @@ func _update_sword() -> void:
 ## The white trail follows the blade during the slash and fades after it.
 func _swing() -> void:
 	_sword_cooldown_timer = sword_cooldown
+	Sound.play("sword", 0.08)
 	_hit_this_swing.clear()
 	if _swing_tween:
 		_swing_tween.kill()
@@ -454,6 +464,7 @@ func take_hit(from_position: Vector2, damage := 20.0) -> void:
 	health = maxf(health - damage, 0.0)
 	health_changed.emit(health, max_health)
 	DamageNumber.spawn(self, damage, DamageNumber.PLAYER_HIT)
+	Sound.play("hurt", 0.05)
 	_invulnerable_timer = invulnerable_time
 	if health <= 0.0:
 		died.emit()

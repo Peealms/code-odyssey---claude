@@ -24,6 +24,8 @@ signal fruit_changed(collected: int, total: int)
 ## Rooms with the same zone (e.g. the sections of a big final room) count as one place for
 ## code gadgets: code typed anywhere in the zone reaches every gadget in it.
 @export var zone := ""
+## Music track (see Sound.MUSIC) that plays while the player is in this room.
+@export var music := "rooms"
 
 var wrong_tries := 0
 var answer_shown := false  ## Only the first "Show answer" in a room costs a star.
@@ -88,6 +90,8 @@ func _on_body_entered(body: Node2D) -> void:
 	var fader := get_tree().get_first_node_in_group("background_fader")
 	if fader and background:
 		fader.show_background(background)
+	if music != "":
+		Sound.music(music)
 	_entered = true
 
 

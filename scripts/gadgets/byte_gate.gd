@@ -42,6 +42,7 @@ func _on_value(value: Variant) -> void:
 
 func _open() -> void:
 	is_open = true
+	Sound.play_at("gate_break", global_position)
 	shape.set_deferred("disabled", true)
 	var blocks := body.get_children().filter(func(c): return c is AnimatedSprite2D)
 	for s in blocks:

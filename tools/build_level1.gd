@@ -936,7 +936,8 @@ func _room(parent: Node, i: int, s: int, title: String, hint: String, blanks: St
 	var node := _inst("room", parent, Vector2(origins[i] + at) * T + size / 2.0, {
 		"size": size, "title": title, "hint": hint, "blanks": blanks, "answer": answer,
 		"background": load("res://assets/level1_pixel_adventure/backgrounds/bg_%s.png" % ROOMS[i].bg),
-		"zone": "room%d" % i if ROOMS[i].sections.size() > 1 else ""})
+		"zone": "room%d" % i if ROOMS[i].sections.size() > 1 else "",
+		"music": "final_exam" if ROOMS[i].sections.size() > 1 else "rooms"})
 	node.name = "Room_" + title.replace(":", "").replace(" ", "_").replace("'", "")
 	while room_nodes.size() <= i:
 		room_nodes.append([])

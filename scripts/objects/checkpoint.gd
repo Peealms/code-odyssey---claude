@@ -45,6 +45,7 @@ func _on_body_entered(body: Node2D) -> void:
 	if not activated:
 		activated = true
 		sprite.play("flag_out")
+		Sound.play("checkpoint")
 		reached.emit(self)
 		sprite.animation_finished.connect(func(): sprite.play("flag_idle"), CONNECT_ONE_SHOT)
 	if unlock_hero != "none" and not is_rescued and not Game.is_hero_unlocked(unlock_hero):

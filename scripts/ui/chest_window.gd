@@ -80,6 +80,7 @@ func _process(_delta: float) -> void:
 # ---------------- Moving items ----------------
 
 func _on_slot_clicked(kind: String, index: int) -> void:
+	Sound.play("ui_select")
 	if kind == "chest":
 		var id: String = _chest.slots[index]
 		if id == "":

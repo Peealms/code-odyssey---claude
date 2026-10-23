@@ -44,6 +44,7 @@ func _shake() -> Signal:
 
 func _fall() -> Signal:
 	sprite.play("off")
+	Sound.play_at("platform_crumble", global_position)
 	shape.set_deferred("disabled", true)
 	var tween := create_tween().set_parallel()
 	tween.tween_property(self, "position:y", _home.y + 160.0, 0.8).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)

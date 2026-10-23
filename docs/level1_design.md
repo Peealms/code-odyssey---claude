@@ -175,3 +175,24 @@ Stars, fruits collected, time, and mistakes made.
    falling platforms, Byte's gate.
 3. The level map (rooms 0–6), manuals, level-complete screen.
 4. Playtest, tune, commit.
+
+## Sound (added 2026-10-23)
+- `Sound` autoload (`scripts/autoload/sound.gd`): `Sound.play("jump")`, `Sound.play_at("rock_slam", pos)`
+  (trap sounds fade out away from the camera), `Sound.music("rooms")`, `Sound.loop_player(...)`
+  for fans and saws (only heard nearby).
+- Music: `rooms` in Rooms 0-5, `final_exam` in the exam (Room's **Music** setting), `menu` on
+  the main menu. Rescue and level-complete fanfares.
+- Music and Sounds volume sliders in the pause menu and main menu settings (saved).
+- All audio is CC0 - sources in `assets/shared/audio/CREDITS.md`.
+
+## Health potions and the book (added 2026-10-23)
+- Red potions heal 30 HP on touch (not an item); they stay put at full HP. 15 in Level 1, plus
+  one thrown out by each chest the first time it's opened (`ManualChest.potions`).
+- Manuals open as a two-page book (`scripts/manuals/manual_reader.gd`, built in code).
+
+## Anti-skip rules (added 2026-10-23)
+- Hero-only obstacles are inside 2-tile crawlspaces (no jumping): dash gaps are 5 tiles over a
+  1-tile spike trench, falling floors need the sprint, bridges can't be jumped.
+- Mask Dude's double jump ignores jumpPower; Room 3's ledge needs jumpPower 2.0 + double jump.
+- Dash: 0.3 s, 90 px. `tools/test_level1.gd` tries every hero-only obstacle with the other
+  heroes at jumpPower 2.0 (75 checks).

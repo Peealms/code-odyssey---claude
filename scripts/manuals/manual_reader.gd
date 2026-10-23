@@ -55,6 +55,7 @@ func open(manual_id: String) -> void:
 	_spread = 0
 	_title.text = _manual["title"]
 	_show_spread()
+	Sound.play("page_turn")
 	visible = true
 	get_tree().paused = true
 	# Pop open.
@@ -68,6 +69,7 @@ func open(manual_id: String) -> void:
 
 func close() -> void:
 	visible = false
+	Sound.play("terminal_close")
 	get_tree().paused = false
 	closed.emit()
 
@@ -92,6 +94,7 @@ func _turn(step: int) -> void:
 	if spread == _spread:
 		return
 	_spread = spread
+	Sound.play("page_turn", 0.1)
 	# A quick fade of the text, as if the page turned.
 	for p in _pages:
 		p.modulate.a = 0.0

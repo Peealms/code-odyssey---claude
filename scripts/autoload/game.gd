@@ -20,6 +20,8 @@ var mistakes := 0  ## Wrong lines typed in the terminal.
 var _level_start_ms := 0
 
 var master_volume: float = 0.8
+var music_volume: float = 0.7
+var sfx_volume: float = 0.8
 var fullscreen: bool = false
 
 var _fade_layer: CanvasLayer
@@ -113,9 +115,25 @@ func finish_level() -> Dictionary:
 
 func set_master_volume(value: float) -> void:
 	master_volume = clampf(value, 0.0, 1.0)
-	var bus := AudioServer.get_bus_index("Master")
-	AudioServer.set_bus_volume_db(bus, linear_to_db(maxf(master_volume, 0.0001)))
-	AudioServer.set_bus_mute(bus, master_volume <= 0.0)
+	_set_bus("Master", master_volume)
+
+
+func set_music_volume(value: float) -> void:
+	music_volume = clampf(value, 0.0, 1.0)
+	_set_bus("Music", music_volume)
+
+
+func set_sfx_volume(value: float) -> void:
+	sfx_volume = clampf(value, 0.0, 1.0)
+	_set_bus("SFX", sfx_volume)
+
+
+func _set_bus(bus_name: String, value: float) -> void:
+	var bus := AudioServer.get_bus_index(bus_name)
+	if bus == -1:
+		return
+	AudioServer.set_bus_volume_db(bus, linear_to_db(maxf(value, 0.0001)))
+	AudioServer.set_bus_mute(bus, value <= 0.0)
 
 
 func set_fullscreen(value: bool) -> void:
@@ -131,6 +149,8 @@ func set_fullscreen(value: bool) -> void:
 func save_settings() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("audio", "master_volume", master_volume)
+	cfg.set_value("audio", "music_volume", music_volume)
+	cfg.set_value("audio", "sfx_volume", sfx_volume)
 	cfg.set_value("video", "fullscreen", fullscreen)
 	cfg.save(SETTINGS_PATH)
 
@@ -139,8 +159,12 @@ func load_settings() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(SETTINGS_PATH) == OK:
 		master_volume = cfg.get_value("audio", "master_volume", master_volume)
+		music_volume = cfg.get_value("audio", "music_volume", music_volume)
+		sfx_volume = cfg.get_value("audio", "sfx_volume", sfx_volume)
 		fullscreen = cfg.get_value("video", "fullscreen", fullscreen)
 	set_master_volume(master_volume)
+	set_music_volume(music_volume)
+	set_sfx_volume(sfx_volume)
 	set_fullscreen(fullscreen)
 
 

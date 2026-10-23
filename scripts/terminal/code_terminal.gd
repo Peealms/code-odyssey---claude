@@ -98,6 +98,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func open() -> void:
 	is_open = true
+	Sound.play("terminal_open")
 	panel.visible = true
 	open_hint.visible = false
 	if player:
@@ -116,6 +117,7 @@ func open() -> void:
 
 func close() -> void:
 	is_open = false
+	Sound.play("terminal_close")
 	panel.visible = false
 	open_hint.visible = true
 	input.release_focus()
@@ -147,8 +149,10 @@ func _on_submitted(text: String) -> void:
 			_append("   [color=#%s]X [/color]  %s" % [COLOR_BAD, _escape(step["label"])])
 
 	if result["ok"]:
+		Sound.play("code_ok")
 		_run_action(result["action"])
 	else:
+		Sound.play("code_error")
 		_byte_line(result["error"])
 		if byte:
 			byte.react(false)
@@ -211,6 +215,7 @@ func _java_text(name: String, value) -> String:
 ## For gadgets: the line was valid Java, but the value doesn't solve the puzzle (e.g. a bridge
 ## that's too long). Byte explains, and it counts as a wrong try for the room's hints.
 func report_wrong(text: String) -> void:
+	Sound.play("code_error")
 	_byte_line(text)
 	if byte:
 		byte.react(false)

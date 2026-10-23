@@ -49,6 +49,7 @@ func _too_long(wanted: int) -> void:
 	else:
 		while _building:
 			await get_tree().process_frame
+	Sound.play_at("bridge_collapse", global_position + Vector2(gap_blocks * SIZE / 2.0, 0))
 	# Jam: shake, then everything drops.
 	for b in _blocks:
 		var shake := b.create_tween()
@@ -75,6 +76,7 @@ func _build() -> void:
 
 
 func _add_block(index: int) -> void:
+	Sound.play_at("bridge_block", global_position + Vector2(index * SIZE, 0), 0.0)
 	var body := StaticBody2D.new()
 	body.collision_layer = 1
 	body.position = Vector2(index * SIZE + SIZE / 2.0, SIZE / 2.0)

@@ -47,6 +47,7 @@ func _open() -> void:
 	_busy = true
 	if not _opened:
 		sprite.play("unlocked")
+		Sound.play("chest_open")
 		await sprite.animation_finished
 		_opened = true
 		first_opened.emit(manual_id)

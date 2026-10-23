@@ -120,6 +120,7 @@ func _on_hero_rescued(checkpoint: Area2D) -> void:
 
 
 func _on_rescue_blocked(checkpoint: Area2D) -> void:
+	Sound.play("blocked")
 	var hero_name: String = player.HERO_DATA[checkpoint.unlock_hero]["name"]
 	hud.show_message("COLLECT ALL THE FRUIT!", 2.0)
 	if byte:
@@ -127,6 +128,7 @@ func _on_rescue_blocked(checkpoint: Area2D) -> void:
 
 
 func _on_goal_blocked(fruit_left: int, where: String) -> void:
+	Sound.play("blocked")
 	hud.show_message("COLLECT ALL THE FRUIT!", 2.0)
 	if byte:
 		byte.say("%d MORE FRUIT: %s" % [fruit_left, where], 4.0)
@@ -134,6 +136,8 @@ func _on_goal_blocked(fruit_left: int, where: String) -> void:
 
 func _on_level_complete() -> void:
 	_finished = true
+	Sound.stop_music()
+	Sound.play("level_complete")
 	player.input_enabled = false
 	var result := Game.finish_level()
 	result["fruits"] = hud.fruits

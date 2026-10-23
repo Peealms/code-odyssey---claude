@@ -22,6 +22,7 @@ func _physics_process(_delta: float) -> void:
 			body.take_hit(_hit_from(body), damage)
 			var level := get_tree().current_scene
 			if send_to_checkpoint and level.has_method("respawn"):
+				Sound.play("fall")
 				level.respawn()
 
 

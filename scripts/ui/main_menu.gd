@@ -18,6 +18,8 @@ const FIRST_LEVEL := "res://scenes/levels/level1/level1.tscn"
 @onready var fullscreen_check: CheckButton = $SettingsPanel/VBox/FullscreenCheck
 @onready var back_button: Button = $SettingsPanel/VBox/BackButton
 
+var _music_slider: HSlider
+var _sfx_slider: HSlider
 var _time := 0.0
 var _title_base_y := 0.0
 
@@ -30,6 +32,11 @@ func _ready() -> void:
 	back_button.pressed.connect(_close_settings)
 	volume_slider.value_changed.connect(func(v): Game.set_master_volume(v))
 	fullscreen_check.toggled.connect(func(on): Game.set_fullscreen(on))
+	_music_slider = _add_volume_row("MUSIC", 1, Game.set_music_volume)
+	_sfx_slider = _add_volume_row("SOUNDS", 2, Game.set_sfx_volume)
+	for b in find_children("*", "BaseButton", true, false):
+		b.pressed.connect(Sound.play.bind("ui_select"))
+	Sound.music("menu")
 
 	continue_button.disabled = not Game.has_save()
 	settings_panel.visible = false
@@ -63,6 +70,8 @@ func _on_continue() -> void:
 
 func _open_settings() -> void:
 	volume_slider.value = Game.master_volume
+	_music_slider.value = Game.music_volume
+	_sfx_slider.value = Game.sfx_volume
 	fullscreen_check.button_pressed = Game.fullscreen
 	settings_panel.visible = true
 	menu_buttons.visible = false
@@ -74,3 +83,17 @@ func _close_settings() -> void:
 	settings_panel.visible = false
 	menu_buttons.visible = true
 	settings_button.grab_focus()
+
+
+## A copy of the VOLUME row for another sound bus, placed at `index` in the settings list.
+func _add_volume_row(text: String, index: int, setter: Callable) -> HSlider:
+	var row: HBoxContainer = $SettingsPanel/VBox/VolumeRow.duplicate()
+	row.name = text.capitalize() + "Row"
+	$SettingsPanel/VBox.add_child(row)
+	$SettingsPanel/VBox.move_child(row, $SettingsPanel/VBox/VolumeRow.get_index() + index)
+	row.get_child(0).text = text
+	for label in [row.get_child(0), $SettingsPanel/VBox/VolumeRow.get_child(0)]:
+		label.custom_minimum_size.x = 56  # line the sliders up
+	var slider: HSlider = row.get_child(1)
+	slider.value_changed.connect(setter)
+	return slider
