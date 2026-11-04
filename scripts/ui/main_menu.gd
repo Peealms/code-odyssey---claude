@@ -1,12 +1,13 @@
 extends Control
 ## Main menu: Play / Continue / Settings / Quit.
 
+const LEVEL_SELECT := "res://scenes/ui/level_select.tscn"
 const FIRST_LEVEL := "res://scenes/levels/level1/level1.tscn"
 ## The test room (all heroes, Crabby, sword) is still at res://scenes/levels/test/test_room.tscn -
 ## open it in the editor and press F6 to play it.
 
 @onready var background: TextureRect = $Background
-@onready var title: Label = $Title
+@onready var title: TextureRect = $Title
 @onready var prompt: Label = $Prompt
 @onready var menu_buttons: VBoxContainer = $MenuButtons
 @onready var play_button: Button = $MenuButtons/PlayButton
@@ -60,8 +61,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_play() -> void:
-	Game.reset_progress()
-	Game.change_scene(FIRST_LEVEL)
+	Game.change_scene(LEVEL_SELECT)
 
 
 func _on_continue() -> void:
@@ -75,6 +75,8 @@ func _open_settings() -> void:
 	fullscreen_check.button_pressed = Game.fullscreen
 	settings_panel.visible = true
 	menu_buttons.visible = false
+	title.visible = false
+	prompt.visible = false
 	volume_slider.grab_focus()
 
 
@@ -82,6 +84,8 @@ func _close_settings() -> void:
 	Game.save_settings()
 	settings_panel.visible = false
 	menu_buttons.visible = true
+	title.visible = true
+	prompt.visible = true
 	settings_button.grab_focus()
 
 
