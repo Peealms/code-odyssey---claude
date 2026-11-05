@@ -13,7 +13,7 @@ extends Node2D
 @export var level_title := ""  ## Shown when the level starts.
 @export var level_number := 0  ## Shown on the level-complete screen (0 = use the title).
 ## Heroes the player has when this level starts (empty = keep whatever is unlocked).
-## Level 1 starts with just Ninja Frog; the other heroes are rescued room by room.
+## Level 1 starts with just Chelzy; the other heroes are rescued room by room.
 @export var starting_heroes: Array[String] = []
 @export var next_scene := "res://scenes/ui/main_menu.tscn"
 @export var fall_limit_margin := 64.0  ## How far below the map the player can fall before respawning.

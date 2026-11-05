@@ -1,7 +1,7 @@
 [gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/player/player.gd" id="1_script"]
-[ext_resource type="SpriteFrames" path="res://assets/shared/heroes/ninja_frog/ninja_frog_frames.tres" id="2_frames"]
+[ext_resource type="SpriteFrames" path="res://assets/shared/heroes/chelzy/chelzy_frames.tres" id="2_frames"]
 [ext_resource type="SpriteFrames" path="res://assets/shared/heroes/swap_fx/swap_fx_frames.tres" id="3_fx"]
 [ext_resource type="Texture2D" path="res://assets/level2_treasure_hunters/characters/captain_clown_nose/sword_idle.png" id="4_sword"]
 [ext_resource type="Script" path="res://scripts/player/sword_trail.gd" id="5_trail"]
@@ -22,6 +22,7 @@ script = ExtResource("1_script")
 sprite_frames = ExtResource("2_frames")
 animation = &"idle"
 autoplay = "idle"
+offset = Vector2(0, -4)
 
 [node name="SwordHolder" type="Node2D" parent="."]
 

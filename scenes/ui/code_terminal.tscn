@@ -164,6 +164,6 @@ theme_override_fonts/font = SubResource("mono")
 theme_override_font_sizes/font_size = 9
 theme_override_styles/normal = SubResource("input_box")
 theme_override_styles/focus = SubResource("empty")
-placeholder_text = "String hero = \"PinkMan\";"
+placeholder_text = "String hero = \"Sarah\";"
 caret_blink = true
 keep_editing_on_text_submit = true

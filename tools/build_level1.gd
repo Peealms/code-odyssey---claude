@@ -7,7 +7,7 @@ extends SceneTree
 ## Style follows Pixel Frog's Pixel Adventure demo: every room is a closed box with a frame,
 ## its own ground, building blocks, background and trap, joined to the next room by a doorway.
 ## Rooms have floors: you may start at the bottom and finish at the top, or the other way round.
-## Fruit matters: rescue flags (rooms 0-2), exit doors (rooms 3-5) and the goal need all of it.
+## Fruit matters: rescue flags (rooms 0-3), exit doors (rooms 3-5) and the goal need all of it.
 ##
 ## Each room is a text map, one character per 16 px tile (legend below). Rooms are placed
 ## left to right with a 2-tile wall between them, and moved up or down so the `>` doorway of
@@ -53,7 +53,7 @@ const R0 := [
 ]
 
 # Room 1 - the wide gap: dash over the gap in a crawlspace, then down three floors of saws.
-# The crawlspace is 2 tiles high, so nobody can jump over the gap - only Pink Man's dash crosses.
+# The crawlspace is 2 tiles high, so nobody can jump over the gap - only Sarah's dash crosses.
 const R1 := [
 	"........BBBBBBBBBBBBBBBBB...............",
 	"........BBBBBBBBBBBBBBBBB...............",
@@ -150,7 +150,8 @@ const R3 := [
 	"######xxxxxxxxxxxxxxxxxxxx##############",
 ]
 
-# Room 4 - the fan shaft: drop to the bottom, ride the fan up, Rock Head elevator to the top.
+# Room 4 - the fan shaft: drop to the bottom, crawl under the wall as tiny Psalm (the gap is
+# 1 tile high), ride the fan up, Rock Head elevator to the top.
 const R4 := [
 	"............BB..........................",
 	"............BB.fffff...................>",
@@ -183,22 +184,22 @@ const R4 := [
 	"............BB..........................",
 	"............BB..........................",
 	"..ff........BB..........................",
-	"........................................",
-	"........ff..............................",
-	"................f.......................",
-	"........................................",
-	"........................................",
-	"................f.......................",
-	"........................................",
-	"........................................",
-	"..r.....r...............................",
+	"............BB..........................",
+	"........ff..BB..........................",
+	"............BB..f.......................",
+	"............BB..........................",
+	"............BB..........................",
+	"............BB..f.......................",
+	"............BB..........................",
+	"............BB..........................",
+	"..r.....r...BB..........................",
 	".....h..........n.......................",
 	"########################################",
 	"########################################",
 ]
 
 # Room 5 - three paths over a spike chasm; fruit on paths A and C too.
-# Path B ends in a crawlspace over a spike trench: only Pink Man's dash crosses it.
+# Path B ends in a crawlspace over a spike trench: only Sarah's dash crosses it.
 const R5 := [
 	"....................BBBBBBBBBBB.........",
 	".......T....T....T..BBBBBBBBBBB.........",
@@ -247,6 +248,7 @@ const S1 := [
 	"##########################",
 	"##########################",
 ]
+# Exam 2's tunnel has a wall halfway with a 1-tile gap under it (and a fruit in it): Psalm only.
 const S2 := [
 	"..........................BB",
 	"..........................BB",
@@ -260,12 +262,12 @@ const S2 := [
 	"....BBBBBBBBBBBBBBBBBBBBBBBB",
 	"....BBBBBBBBBBBBBBBBBBBBBBBB",
 	"....BBBBBBBBBBBBBBBBBBBBBBBB",
-	".....VVVVVVVVVVVVVVVVVVVVV..",
-	"............................",
-	"............................",
-	".......f....ff....f....ff...",
-	"............................",
-	"..K....F....^^....F....^^...",
+	".....VVVVVVVVVVVVBBVVVVVVV..",
+	".................BB.........",
+	".................BB.........",
+	".......f....ff...BB....ff...",
+	".................BB.........",
+	"..K....F....^^...f.....^^...",
 	"############################",
 	"############################",
 	"############################",
@@ -452,7 +454,7 @@ func _build() -> void:
 	level.set("level_title", "LEVEL 1 - VARIABLES")
 	level.set("level_number", 1)
 	level.set("camera_top_margin", 0.0)
-	var heroes: Array[String] = ["ninja_frog"]
+	var heroes: Array[String] = ["chelzy"]
 	level.set("starting_heroes", heroes)
 
 	if not _read_maps():
@@ -477,53 +479,55 @@ func _build() -> void:
 	var rooms := _group("Rooms")
 	var flags := _group("Checkpoints")
 
-	# ---------------- Room 0: Wake up (Ninja Frog only) - spikes ----------------
+	# ---------------- Room 0: Wake up (Chelzy only) - spikes ----------------
 	_room(rooms, 0, 0, "WAKE UP",
 		"Byte's gate opens when you print something. Use System.out.println with your message in double quotes.",
 		"System.out.println(\"_____\");", "System.out.println(\"Hello Byte\");")
 	_inst("gate", gadgets, _foot(_a(0, "g")), {"height": 3})
-	_flag(flags, 0, _a(0, "k"), "pink_man")
+	_flag(flags, 0, _a(0, "k"), "sarah")
 	_sign(signs, 0, 1, 13, "BYTE'S GATE: PRINT\nA MESSAGE TO OPEN IT")
 	_sign(signs, 0, 21, 13, "ONLY A WALL JUMP\nCLIMBS THIS SHAFT")
 	_sign(signs, 0, 1, 1, "FRUIT GALLERY")
 
-	# ---------------- Room 1: The wide gap (needs Pink Man) - saws ----------------
+	# ---------------- Room 1: The wide gap (needs Sarah) - saws ----------------
 	_room(rooms, 1, 0, "THE WIDE GAP",
-		"The crawlspace is too low to jump over the gap - only Pink Man's dash crosses it: walk to the edge and press Shift. Store his name in a String called hero.",
-		"String hero = \"_______\";", "String hero = \"PinkMan\";")
+		"The crawlspace is too low to jump over the gap - only Sarah's dash crosses it: walk to the edge and press Shift. Store Sarah's name in a String called hero.",
+		"String hero = \"_____\";", "String hero = \"Sarah\";")
 	_saw(traps, _a(1, "1"), Vector2(96, 0), 50.0, true)
 	_saw(traps, _a(1, "2"), Vector2(0, 80), 45.0)
 	_saw(traps, _a(1, "3"), Vector2(112, 0), 60.0, true)
 	_saw(traps, _a(1, "4"), Vector2(0, 112), 55.0)
 	_saw(traps, _a(1, "5"), Vector2(96, 0), 50.0, true)
-	_flag(flags, 1, _a(1, "k"), "mask_dude")
-	_sign(signs, 1, 1, 0, "TOO LOW TO JUMP!\nPINK MAN CAN DASH")
+	_flag(flags, 1, _a(1, "k"), "april")
+	_sign(signs, 1, 1, 0, "TOO LOW TO JUMP!\nSARAH CAN DASH")
 
-	# ---------------- Room 2: The broken bridge (needs Mask Dude) - spiked balls ----------------
+	# ---------------- Room 2: The broken bridge (needs April) - spiked balls ----------------
 	_room(rooms, 2, 0, "THE BROKEN BRIDGE",
-		"Count the gap: it is 11 blocks wide. Store that whole number in an int called bridgeLength. Then the step is too high for one jump - switch to Mask Dude, and since hero already exists, leave out the type.",
+		"Count the gap: it is 11 blocks wide. Store that whole number in an int called bridgeLength. Then the step is too high for one jump - switch to April, and since hero already exists, leave out the type.",
 		"int bridgeLength = __;", "int bridgeLength = 11;")
 	var q := _a(2, "q")
 	_inst("bridge", gadgets, _px(q.x, q.y + 1), {"max_blocks": 12, "gap_blocks": 11})  # 11 exactly: more jams and collapses
 	_ball(traps, _a(2, "6"), 160.0, 40.0, 2.4, 0.0)
 	_ball(traps, _a(2, "7"), 160.0, 45.0, 2.8, 0.5)
 	_ball(traps, _a(2, "8"), 185.0, 35.0, 2.2, 0.0)  # over the step, just reaches your head
-	_flag(flags, 2, _a(2, "k"), "virtual_guy")
+	_flag(flags, 2, _a(2, "k"), "kervin")
 	_sign(signs, 2, 1, 15, "GAP = 11 BLOCKS")
 	_sign(signs, 2, 26, 9, "TOO HIGH FOR\nONE JUMP")
 
-	# ---------------- Room 3: The high ledge (needs Virtual Guy) - falling platforms ----------------
+	# ---------------- Room 3: The high ledge (needs Kervin) - falling platforms ----------------
 	_room(rooms, 3, 0, "THE HIGH LEDGE",
-		"Virtual Guy can sprint over the falling floor - hold Shift while running. The ledge is too high even for a double jump: make your first jump higher with a double called jumpPower (1.0 to 2.0 - try the highest), then double jump as Mask Dude.",
+		"Kervin can sprint over the falling floor - hold Shift while running. The ledge is too high even for a double jump: make your first jump higher with a double called jumpPower (1.0 to 2.0 - try the highest), then double jump as April.",
 		"double jumpPower = ___;", "double jumpPower = 2.0;")
-	_flag(flags, 3, _a(3, "k"), "none")
-	_fruit_door(traps, 3)
+	# The crates also wait for Psalm's rescue: without him you'd be stuck at the bottom of
+	# Room 4 (no way back up the shaft) in front of the gap only he fits through.
+	var psalm_flag := _flag(flags, 3, _a(3, "k"), "psalm")
+	_fruit_door(traps, 3, psalm_flag)
 	_sign(signs, 3, 1, 25, "RUN FAST!")
 	_sign(signs, 3, 33, 14, "TOO HIGH!\nJUMP HIGHER")
 
-	# ---------------- Room 4: The fan shaft - Rock Heads ----------------
+	# ---------------- Room 4: The fan shaft (needs Psalm) - Rock Heads ----------------
 	_room(rooms, 4, 0, "THE FAN SHAFT",
-		"The fan is off. Switch it on with a boolean called fanOn (true or false, no quotes), ride the air up and step onto the platform. Then ride the Rock Head up.",
+		"Only Psalm fits under the wall at the bottom: switch to him and hold Down to shrink. The fan is off. Switch it on with a boolean called fanOn (true or false, no quotes), ride the air up and step onto the platform. Then ride the Rock Head up.",
 		"boolean fanOn = ____;", "boolean fanOn = true;")
 	# The player bobs at the top of the air column; 540 keeps even the low point of the
 	# bob above the platform (27 tiles up) so stepping off always works.
@@ -535,10 +539,11 @@ func _build() -> void:
 	_flag(flags, 4, _a(4, "k"), "none")
 	_fruit_door(traps, 4)
 	_sign(signs, 4, 18, 36, "THE FAN IS\nSWITCHED OFF")
+	_sign(signs, 4, 3, 36, "TINY GAP!\nPSALM CAN SHRINK")
 
 	# ---------------- Room 5: Three paths - Spike Heads ----------------
 	_room(rooms, 5, 0, "THREE PATHS",
-		"The sign's riddle: the 2nd letter of the alphabet. Choose it with a char called path - single quotes! Fruit is on paths A and C too: go back to the ledge, change path, collect, come back. The gap at the end needs Pink Man's dash.",
+		"The sign's riddle: the 2nd letter of the alphabet. Choose it with a char called path - single quotes! Fruit is on paths A and C too: go back to the ledge, change path, collect, come back. The gap at the end needs Sarah's dash.",
 		"char path = '_';", "char path = 'B';")
 	for i in 3:
 		_spike_head(traps, _a(5, "T", i), Vector2(0, 192), i * 0.7)
@@ -549,10 +554,10 @@ func _build() -> void:
 
 	# ---------------- Room 6: The final exam - every trap, every variable ----------------
 	_room(rooms, 6, 0, "EXAM 1: THE HIGH WALL",
-		"Only Mask Dude's double jump climbs this wall (with jumpPower 2.0 from Room 3). hero already exists, so switch without the type.",
-		"hero = \"________\";", "hero = \"MaskDude\";")
+		"Only April's double jump climbs this wall (with jumpPower 2.0 from Room 3). hero already exists, so switch without the type.",
+		"hero = \"_____\";", "hero = \"April\";")
 	_room(rooms, 6, 1, "EXAM 2: THE LOW TUNNEL",
-		"With a high jumpPower every jump hits the spikes. Change jumpPower back to 1.0.",
+		"With a high jumpPower every jump hits the spikes. Change jumpPower back to 1.0. Halfway along, only Psalm fits under the wall: switch to him and hold Down.",
 		"jumpPower = ___;", "jumpPower = 1.0;")
 	_room(rooms, 6, 2, "EXAM 3: THE LONG BRIDGE",
 		"This gap is 12 blocks wide. bridgeLength already exists - give it the new number.",
@@ -564,7 +569,7 @@ func _build() -> void:
 		"The safe path is the 3rd letter. Change path (single quotes!), then dash or double jump over the gap at the end.",
 		"path = '_';", "path = 'C';")
 	_room(rooms, 6, 5, "EXAM 6: THE FINAL GATE",
-		"Print exactly: I can code! Then sprint over the falling floor as Virtual Guy and wall-jump up the shaft as Ninja Frog.",
+		"Print exactly: I can code! Then sprint over the falling floor as Kervin and wall-jump up the shaft as Chelzy.",
 		"System.out.println(\"__________\");", "System.out.println(\"I can code!\");")
 	_saw(traps, _a(6, "1", 1), Vector2(64, 0), 60.0, true)  # high wall (anchors count from the top)
 	q = _a(6, "q")
@@ -580,6 +585,7 @@ func _build() -> void:
 	_saw(traps, _a(6, "1", 0), Vector2(128, 0), 55.0, true)  # final gate gallery
 	_sign(signs, 6, 6, 31, "WHO CAN DOUBLE\nJUMP THIS HIGH?")
 	_sign(signs, 6, 31, 34, "MIND YOUR HEAD!")
+	_sign(signs, 6, 38, 34, "WHO FITS\nUNDER HERE?")
 	_sign(signs, 6, 48, 34, "GAP = 12 BLOCKS")
 	_sign(signs, 6, 74, 10, "FANS ARE ON!")
 	_sign(signs, 6, 36, 4, "SAFE PATH = THE\n3RD LETTER")
@@ -848,7 +854,7 @@ func _place_map_things(i: int, fruits: Node, gadgets: Node, traps: Node, chests:
 				"L", "l":
 					for k in range(0, run, 2):
 						_inst("falling", gadgets, Vector2((c.x + k + 1) * T, c.y * T + 3), {
-							# 0.14 s: walking (130 px/s) falls through, Virtual Guy's sprint (247 px/s) makes it.
+							# 0.14 s: walking (130 px/s) falls through, Kervin's sprint (247 px/s) makes it.
 							"fall_delay": 0.14 if ch == "L" else 0.45, "return_time": 2.0})
 				"a", "b", "c":
 					for k in range(0, run, 2):
@@ -864,8 +870,8 @@ func _place_map_things(i: int, fruits: Node, gadgets: Node, traps: Node, chests:
 					_inst("chest", chests, _foot(c), {"manual_id": ROOMS[i].manual})
 			x += run
 	# Wall spikes run down a column and point away from the wall next to them. They send you
-	# back to the checkpoint: with plain damage Ninja Frog could climb through them while he
-	# blinks after the first hit.
+	# back to the checkpoint: with plain damage Chelzy could climb through them while
+	# blinking after the first hit.
 	for x in sizes[i].x:
 		var y := 0
 		while y < sizes[i].y:
@@ -945,19 +951,20 @@ func _room(parent: Node, i: int, s: int, title: String, hint: String, blanks: St
 
 
 ## A checkpoint; with a hero it's a rescue flag that needs all of the room's fruit.
-func _flag(parent: Node, i: int, cell: Vector2i, hero: String) -> void:
+func _flag(parent: Node, i: int, cell: Vector2i, hero: String) -> Node:
 	var props := {"unlock_hero": hero}
 	if hero != "none":
 		props["room"] = room_nodes[i][0]
-	_inst("checkpoint", parent, _foot(cell), props)
+	return _inst("checkpoint", parent, _foot(cell), props)
 
 
-## Crates in the room's exit doorway that break once all its fruit is collected.
-func _fruit_door(parent: Node, i: int) -> void:
+## Crates in the room's exit doorway that break once all its fruit is collected (and, with
+## `rescue_flag`, once that flag's hero is rescued).
+func _fruit_door(parent: Node, i: int, rescue_flag: Node = null) -> void:
 	var rows := _door_rows(i, sizes[i].x - 1, ">")
 	var wall_x := origins[i].x + sizes[i].x
 	_inst("fruit_door", parent, _px(wall_x + 1, origins[i].y + rows[-1] + 1), {
-		"room": room_nodes[i][0], "size": Vector2(32, rows.size() * T)})
+		"room": room_nodes[i][0], "rescue_flag": rescue_flag, "size": Vector2(32, rows.size() * T)})
 
 
 ## A saw. On the floor (`on_floor`) it sits half a tile above the ground under its anchor;

@@ -14,7 +14,7 @@ const PLAYER := preload("res://scripts/player/player.gd")
 const LOCKED_TINT := Color(0.55, 0.55, 0.65, 1)
 
 ## Hero rescued here.
-@export_enum("none", "pink_man", "mask_dude", "virtual_guy") var unlock_hero: String = "none"
+@export_enum("none", "sarah", "april", "kervin", "psalm") var unlock_hero: String = "none"
 ## The room whose fruit must all be collected before the rescue (empty = no fruit needed).
 @export var room: Node
 
@@ -67,6 +67,7 @@ func _add_waiting_hero() -> void:
 	npc.name = "WaitingHero"
 	npc.sprite_frames = load(PLAYER.HERO_DATA[unlock_hero]["frames"])
 	npc.play("idle")
+	npc.offset = PLAYER.SPRITE_OFFSET
 	npc.position = Vector2(26, -16)
 	npc.modulate = LOCKED_TINT
 	npc.flip_h = true  # faces the flag and the player coming toward it

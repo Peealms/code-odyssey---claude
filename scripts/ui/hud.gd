@@ -7,6 +7,7 @@ const TRAIT_TEXT := {
 	"dash": "DASH - SHIFT",
 	"double_jump": "DOUBLE JUMP",
 	"sprint": "SPRINT - SHIFT",
+	"shrink": "SHRINK",
 }
 const STAMINA_COLOR := Color(1, 0.827451, 0.301961)
 const EXHAUSTED_COLOR := Color(0.5, 0.48, 0.52)

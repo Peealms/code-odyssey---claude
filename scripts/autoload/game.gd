@@ -5,11 +5,14 @@ extends Node
 const SETTINGS_PATH := "user://settings.cfg"
 const SAVE_PATH := "user://save.cfg"
 
-## Hero ids, in the order they are rescued.
-const HEROES := ["ninja_frog", "pink_man", "mask_dude", "virtual_guy"]
+## Hero ids (the five of us), in the order they are rescued. Psalm isn't placed in a level yet.
+const HEROES := ["chelzy", "sarah", "april", "kervin", "psalm"]
+## Saves from before the team replaced the Pixel Adventure heroes: each old hero becomes the
+## teammate with the same ability.
+const OLD_HERO_IDS := {"ninja_frog": "chelzy", "pink_man": "sarah", "mask_dude": "april", "virtual_guy": "kervin"}
 
-var current_hero: String = "ninja_frog"
-var unlocked_heroes: Array = ["ninja_frog"]
+var current_hero: String = "chelzy"
+var unlocked_heroes: Array = ["chelzy"]
 ## Best stars per level id, e.g. {"level1": 3}. Saved with progress.
 var best_stars: Dictionary = {}
 
@@ -184,6 +187,20 @@ func load_progress() -> void:
 		unlocked_heroes = cfg.get_value("progress", "unlocked_heroes", unlocked_heroes)
 		current_hero = cfg.get_value("progress", "current_hero", current_hero)
 		best_stars = cfg.get_value("progress", "best_stars", best_stars)
+		_update_old_hero_ids()
+
+
+## Turns hero ids from an older save into the team's ids and drops any it doesn't know.
+func _update_old_hero_ids() -> void:
+	var heroes: Array = [HEROES[0]]
+	for id in unlocked_heroes:
+		var new_id: String = OLD_HERO_IDS.get(id, id)
+		if new_id in HEROES and not new_id in heroes:
+			heroes.append(new_id)
+	unlocked_heroes = heroes
+	current_hero = OLD_HERO_IDS.get(current_hero, current_hero)
+	if not current_hero in unlocked_heroes:
+		current_hero = HEROES[0]
 
 
 func has_save() -> bool:
@@ -191,7 +208,7 @@ func has_save() -> bool:
 
 
 func reset_progress() -> void:
-	unlocked_heroes = ["ninja_frog"]
-	current_hero = "ninja_frog"
+	unlocked_heroes = [HEROES[0]]
+	current_hero = HEROES[0]
 	best_stars = {}
 	save_progress()

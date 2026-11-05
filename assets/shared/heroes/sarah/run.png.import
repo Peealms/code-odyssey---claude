@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dsg3u4po8wv7t"
-path="res://.godot/imported/title_logo.png-4a7f79973bdad84a07b540f73554d041.ctex"
+uid="uid://cub8kqwe4fyjf"
+path="res://.godot/imported/run.png-4c8d7e8aade527d17d585d0b842bbe8e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/shared/ui/menu/title_logo.png"
-dest_files=["res://.godot/imported/title_logo.png-4a7f79973bdad84a07b540f73554d041.ctex"]
+source_file="res://assets/shared/heroes/sarah/run.png"
+dest_files=["res://.godot/imported/run.png-4c8d7e8aade527d17d585d0b842bbe8e.ctex"]
 
 [params]
 

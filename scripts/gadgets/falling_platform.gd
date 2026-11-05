@@ -1,6 +1,6 @@
 extends AnimatableBody2D
 ## A small platform that shakes when stood on, then drops. It comes back after `return_time`.
-## A short `fall_delay` makes a row of them a sprint challenge (Virtual Guy's room).
+## A short `fall_delay` makes a row of them a sprint challenge (Kervin's room).
 ## You can jump up through it from below.
 
 @export var fall_delay := 0.35  ## Seconds after landing on it before it drops.

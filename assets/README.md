@@ -2,7 +2,9 @@
 
 All art is from Pixel Frog's free packs (Pixel Adventure 1, Treasure Hunters,
 Kings and Pigs, Pirate Bomb). Credit "Pixel Frog" in the game and the paper.
-The exceptions are made for this game: Byte (`shared/byte/`) and the manual book icons
+The exceptions are made for this game: Byte (`shared/byte/`), the team heroes
+(`shared/team/` and `shared/heroes/<name>/`, drawn by `tools/make_team_sprites.gd` and
+`tools/make_team_heroes.gd`) and the manual book icons
 (`shared/items/books.png`, drawn by `tools/make_item_icons.gd`).
 The chest window uses the Minecraftia font by Andrew Tyler (`shared/ui/fonts/minecraftia/`) -
 its readme has no licence terms, so confirm it may be used before release and credit him.
@@ -12,7 +14,8 @@ its readme has no licence terms, so confirm it may be used before release and cr
 ```
 assets/
   shared/                     used in every level
-    heroes/                   Ninja Frog, Pink Man, Mask Dude, Virtual Guy (+ swap effect)
+    heroes/                   the team: Chelzy, Sarah, April, Kervin, Psalm (+ swap effect;
+                              the old Pixel Adventure heroes are still here but unused)
     byte/                     Byte, the helper robot (24×24, original art)
     ui/                       buttons, level numbers, pixel font, wood & paper UI, speech bubbles
     fx/                       dust, confetti, transition

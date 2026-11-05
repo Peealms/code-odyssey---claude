@@ -6,7 +6,7 @@ extends RefCounted
 ## Each manual has a title, a book cover colour and a list of pages.
 ##   book   0 red, 1 blue, 2 green, 3 purple, 4 orange  (see tools/make_item_icons.gd)
 ## Pages use BBCode:
-##   [b]bold[/b]   [code]String hero = "PinkMan";[/code]   [color=#c0392b]red[/color]
+##   [b]bold[/b]   [code]String hero = "Sarah";[/code]   [color=#c0392b]red[/color]
 ## Keep pages short - about 8 lines fit on one page.
 ## Byte's hint for the next challenge goes on the last page.
 
@@ -26,13 +26,13 @@ Java needs three things to make a box:
 
 			"""[b]The structure of a declaration[/b]
 
-[code]  String   hero   =   "PinkMan"   ;[/code]
-[code]  ------   ----   -   ---------   -[/code]
-[code]   type    name   |     value     end[/code]
+[code]  String   hero   =   "Sarah"   ;[/code]
+[code]  ------   ----   -   -------   -[/code]
+[code]   type    name   |    value    end[/code]
 [code]                  |[/code]
 [code]            "store this in"[/code]
 
-Read it out loud: [i]"Make a String called hero and store PinkMan in it."[/i]""",
+Read it out loud: [i]"Make a String called hero and store Sarah in it."[/i]""",
 
 			"""[b]Rules Java is strict about[/b]
 - Every statement ends with a semicolon [code];[/code]
@@ -47,7 +47,7 @@ Press [b]E[/b] to open Byte's terminal. Your first line of Java prints a message
 
 [code]System.out.println("Hello Byte");[/code]
 
-[color=#2e7d32][b]Byte's hint:[/b] my gate opens when I hear you say something! Then climb the narrow shaft - only Ninja Frog can wall-jump.
+[color=#2e7d32][b]Byte's hint:[/b] my gate opens when I hear you say something! Then climb the narrow shaft - only Chelzy can wall-jump.
 Later, when a gap is too wide, rescue a new hero and store their name in a [b]String[/b] called [code]hero[/code].[/color]""",
 		],
 	},
@@ -58,7 +58,7 @@ Later, when a gap is too wide, rescue a new hero and store their name in a [b]St
 			"""[b]Every value has a type[/b]
 The type tells Java what kind of value a variable holds.
 
-[code]String [/code] text, in double quotes   [code]"PinkMan"[/code]
+[code]String [/code] text, in double quotes   [code]"Sarah"[/code]
 [code]int    [/code] whole numbers            [code]3[/code]  [code]-12[/code]
 [code]double [/code] numbers with decimals    [code]1.5[/code]
 [code]boolean[/code] only true or false       [code]true[/code]
@@ -69,7 +69,7 @@ The value must fit the type, or Java refuses it:
 
 [color=#2e7d32]OK[/color]   [code]double speed = 1.5;[/code]
 [color=#c0392b]NO[/color]   [code]int speed = 1.5;[/code]   int can't hold decimals
-[color=#c0392b]NO[/color]   [code]String hero = PinkMan;[/code]   text needs quotes
+[color=#c0392b]NO[/color]   [code]String hero = Sarah;[/code]   text needs quotes
 [color=#c0392b]NO[/color]   [code]boolean ready = "true";[/code]   no quotes on true/false""",
 
 			"""[b]boolean: the yes-or-no type[/b]

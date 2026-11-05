@@ -2,13 +2,17 @@ extends StaticBody2D
 ## A stack of crates blocking a doorway until every fruit in `room` is collected.
 ## A counter above it shows how much is left; when the last fruit is picked up the crates
 ## break apart and the way opens.
+## With a `rescue_flag` the crates also wait for that flag's hero to be rescued (it needs the
+## same fruit), so you can't jump over the flag and leave without the hero the next room needs.
 ## The node's position is the bottom-middle of the doorway; `size` is the opening (px).
 
 const FRAMES := preload("res://assets/level1_pixel_adventure/objects/boxes/box2/box2_frames.tres")
 const PIECES := preload("res://assets/level1_pixel_adventure/objects/boxes/box2/break_pieces.png")
 const APPLE := preload("res://assets/level1_pixel_adventure/collectibles/fruits/apple.png")
+const PLAYER := preload("res://scripts/player/player.gd")
 
 @export var room: Node  ## The Room whose fruit opens this door.
+@export var rescue_flag: Area2D  ## Optional: a rescue Checkpoint whose hero must be rescued too.
 @export var size := Vector2(32, 48)
 
 var is_open := false
@@ -33,8 +37,11 @@ func _ready() -> void:
 		add_child(crate)
 		_crates.append(crate)
 	counter.position = Vector2(-30, -size.y - 18)
+	counter.grow_horizontal = Control.GROW_DIRECTION_BOTH  # longer text stays centred
 	if room:
 		room.fruit_changed.connect(_on_fruit_changed)
+	if rescue_flag:
+		rescue_flag.rescued.connect(func(_flag): _on_fruit_changed(room.fruit_collected, room.fruit_total))
 
 
 func _on_fruit_changed(collected: int, total: int) -> void:
@@ -42,7 +49,10 @@ func _on_fruit_changed(collected: int, total: int) -> void:
 		return
 	counter.text = "%d/%d" % [collected, total]
 	if total > 0 and collected >= total:
-		_open()
+		if rescue_flag == null or rescue_flag.is_rescued:
+			_open()
+		else:
+			counter.text = "FREE %s" % PLAYER.HERO_DATA[rescue_flag.unlock_hero]["name"].to_upper()
 
 
 func _open() -> void:

@@ -13,7 +13,7 @@ Update this file when the design changes.
   (it **overwrites** level1.tscn, so don't hand-edit the scene unless you stop using the script).
   Rooms of different heights are lined up automatically by their doorway rows.
 - `tools/test_level1.gd` plays every room (needs a window, not `--headless`):
-  `godot --path . --script res://tools/test_level1.gd` - prints 55 PASS/FAIL checks.
+  `godot --path . --script res://tools/test_level1.gd` - prints 94 PASS/FAIL checks.
   It backs up and restores your save file.
 
 ## Look (matches Pixel Frog's Pixel Adventure demo)
@@ -34,15 +34,18 @@ screens tall; the final room is 2 screens wide and 2 tall.
 
 - Floors and walls are the demo's bevelled blocks (2x2, 3-wide bars, 3-tall pillars), not bricks.
 - Pits have spikes on the floor that send you to the last checkpoint.
-- Walls you must *not* climb (Ninja Frog can wall-jump up any wall) have wall spikes that also
-  send you to the checkpoint - with plain damage he could climb through them while blinking.
+- Walls you must *not* climb (Chelzy can wall-jump up any wall) have wall spikes that also
+  send you to the checkpoint - with plain damage Chelzy could climb through them while blinking.
 - Room styles live in the `ROOMS` table in `tools/build_level1.gd`.
 
 ## Fruit, rescues and traps
 - **Fruit unlocks progress.** The HUD shows the current room's fruit (e.g. FRUIT 3/15).
-  - Rooms 0-2: the hero you'll rescue waits (greyed out) beside the flag with a fruit counter.
+  - Rooms 0-3: the hero you'll rescue waits (greyed out) beside the flag with a fruit counter.
     The flag only rescues them once every fruit in that room is collected.
-  - Rooms 3-5: crates block the exit doorway until the room's fruit is collected.
+  - Rooms 3-5: crates block the exit doorway until the room's fruit is collected. Room 3's
+    crates also wait for Psalm's rescue (they say FREE PSALM): Room 4's shaft has no way back
+    up, so without him you'd be stuck at its bottom. With jumpPower 2.0 you could jump over
+    the flag, so the crates are the real guard.
   - Final room: the goal needs **all** the final exam's fruit; if some is missing Byte says
     where (e.g. "2 MORE FRUIT: THE LOW TUNNEL 2").
 - Fruit per room: 16, 22, 20, 23, 23, 26, then 15 / 12 / 12 / 11 / 15 / 20 in the exam sections.
@@ -63,8 +66,8 @@ code typed anywhere in the exam reaches all of them (e.g. `path = 'C';` typed in
 corridor still makes path C appear in the next section).
 
 ## Byte fixes redeclarations
-Typing `String hero = "MaskDude";` when `hero` already exists is refused (Java's rule), Byte
-explains why and puts the corrected line `hero = "MaskDude";` in the input - press Enter.
+Typing `String hero = "April";` when `hero` already exists is refused (Java's rule), Byte
+explains why and puts the corrected line `hero = "April";` in the input - press Enter.
 This doesn't count as a wrong try.
 
 ## Goal
@@ -73,38 +76,54 @@ already made**. Instead of fighting, the player changes the level by writing var
 Byte's terminal. About 10–15 minutes.
 
 ## Heroes are unlocked room by room
-The game starts with **only Ninja Frog**. Clearing a room unlocks the next hero, and the very
+The game starts with **only Chelzy**. Clearing a room unlocks the next hero, and the very
 next room has an obstacle **only that new hero can pass** – so the player must switch with
 `String hero = "...";`.
 
+The heroes are the five members of our team, drawn in the style of the art packs
+(`tools/make_team_sprites.gd` draws them, `tools/make_team_heroes.gd` animates them; each hero
+only has the animations of their own ability).
+
 | Hero | Trait | Unlocked after |
 |---|---|---|
-| Ninja Frog | Wall jump (stamina) | start |
-| Pink Man | Dash (stamina) | Room 0 |
-| Mask Dude | Double jump (stamina) | Room 1 |
-| Virtual Guy | Sprint (stamina) | Room 2 |
+| Chelzy | Wall jump (stamina) | start |
+| Sarah | Dash (stamina) | Room 0 |
+| April | Double jump (stamina) | Room 1 |
+| Kervin | Sprint (stamina) | Room 2 |
+| Psalm | Shrink (stamina) | Room 3 |
+
+### Psalm's Shrink (`scripts/player/player.gd`)
+- Hold **Down** (S or the Down arrow) to shrink; let go to grow back. The `shrink` animation
+  plays forwards to shrink and backwards to grow; tiny Psalm has `small_idle`, `small_run`,
+  `small_jump` and `small_fall`.
+- The hitbox goes from 16x24 to 10x12 (same feet), so he fits a **1-tile (16 px) gap** that
+  stops everyone else. Tiny Psalm runs at 0.6x speed and can't swing the sword.
+- Staying small drains 20 stamina a second. Under a low ceiling he can't grow back (letting go
+  does nothing), the stamina bar holds still, and Byte refuses `hero = "...";` ("No room!").
+  He grows as soon as the full hitbox fits, nudged up to 3 px off a wall if needed.
+- Sounds: `shrink` and `grow`, two 8-bit slides made by `tools/make_shrink_sounds.gd`.
 
 ## Rooms
 
 | Room | Flow | Puzzle code | Hero-only obstacle | Unlocks |
 |---|---|---|---|---|
-| 0 Wake-up | Start bottom-left, gate, spike corridor, shaft up, finish top-right (gallery above the corridor) | `System.out.println("Hi");` opens Byte's gate | Wall-jump shaft → **Ninja Frog** | Pink Man |
-| 1 Wide gap | Start top-left, gap, then down three floors of saws | `String hero = "PinkMan";` | Gap only the dash crosses → **Pink Man** | Mask Dude |
-| 2 Broken bridge | Low corridor, bridge, step up; upper floor back over the bridge | `int bridgeLength = 11;` builds 11 blocks over a pit (12 is too long and collapses) | Step after the bridge → **Mask Dude** double jump | Virtual Guy |
-| 3 High ledge | Falling floor at the bottom, ledge, falling stairs up to a balcony | `double jumpPower = 1.5;` (range 1.0–2.0) | Falling floor → **Virtual Guy** sprint; ledge → jumpPower + double jump | – |
-| 4 Fan shaft | Drop to the bottom, fan up 27 tiles, Rock Head elevator to the top | `boolean fanOn = true;` | (none - any hero rides the fan) | – |
-| 5 Three paths | Paths over a chasm; fruit on A and C too, so `path` changes several times | `char path = 'B';` (clue tells the letter) | Gap at the end of path B → **Pink Man** dash | – |
-| 6 Final exam | 2 x 2 screens, six sections with flags (below) | changes **every** variable | all four heroes | Level complete |
+| 0 Wake-up | Start bottom-left, gate, spike corridor, shaft up, finish top-right (gallery above the corridor) | `System.out.println("Hi");` opens Byte's gate | Wall-jump shaft → **Chelzy** | Sarah |
+| 1 Wide gap | Start top-left, gap, then down three floors of saws | `String hero = "Sarah";` | Gap only the dash crosses → **Sarah** | April |
+| 2 Broken bridge | Low corridor, bridge, step up; upper floor back over the bridge | `int bridgeLength = 11;` builds 11 blocks over a pit (12 is too long and collapses) | Step after the bridge → **April**'s double jump | Kervin |
+| 3 High ledge | Falling floor at the bottom, ledge, falling stairs up to a balcony | `double jumpPower = 1.5;` (range 1.0–2.0) | Falling floor → **Kervin**'s sprint; ledge → jumpPower + double jump | Psalm |
+| 4 Fan shaft | Drop to the bottom, crawl under the wall to the fan, fan up 27 tiles, Rock Head elevator to the top | `boolean fanOn = true;` | 1-tile gap under the wall → **Psalm**'s shrink | – |
+| 5 Three paths | Paths over a chasm; fruit on A and C too, so `path` changes several times | `char path = 'B';` (clue tells the letter) | Gap at the end of path B → **Sarah**'s dash | – |
+| 6 Final exam | 2 x 2 screens, six sections with flags (below) | changes **every** variable | all five heroes | Level complete |
 
 ### The final exam (every variable gets a new value)
 | Section | Code | Hero | Traps |
 |---|---|---|---|
-| 1 High wall | `jumpPower = 2.0;` (1.5 isn't enough) | Mask Dude double jump | saw, wall spikes |
-| 2 Low tunnel | `jumpPower = 1.0;` (at 2.0 you hit the deadly ceiling spikes) | any | fire blocks, spikes |
+| 1 High wall | `jumpPower = 2.0;` (1.5 isn't enough) | April's double jump | saw, wall spikes |
+| 2 Low tunnel | `jumpPower = 1.0;` (at 2.0 you hit the deadly ceiling spikes) | Psalm's shrink (halfway, a 1-tile gap under a wall with a fruit in it) | fire block, spikes |
 | 3 Short bridge | `bridgeLength = 9;` | any | spiked balls, Rock Head elevator up |
 | 4 Fan trap | `fanOn = false;` (the fans blow you into deadly spikes) | any | fans, ceiling spikes, saw |
-| 5 Last path | `path = 'C';` | Pink Man dash (or a double jump / sprint jump) | Spike Heads slam onto the path |
-| 6 Final gate | `System.out.println("I can code!");` | Virtual Guy sprint, then Ninja Frog wall jump | falling floor, fire, saw |
+| 5 Last path | `path = 'C';` | Sarah's dash (or a double jump / sprint jump) | Spike Heads slam onto the path |
+| 6 Final gate | `System.out.println("I can code!");` | Kervin's sprint, then Chelzy's wall jump | falling floor, fire, saw |
 
 Notes
 - Room 2: the sign says how many blocks the gap is. Too few blocks = you fall; `5.5` = Byte
@@ -112,11 +131,11 @@ Notes
 - The exam reuses every variable, so the lesson is that a variable that already exists is
   changed with `name = value;` (writing the type again is a redeclaration error).
 - The terminal follows Java here from the start: once `hero` is declared (Room 1), switching
-  again in Room 2 must be `hero = "MaskDude";`. Byte explains this the first time
+  again in Room 2 must be `hero = "April";`. Byte explains this the first time
   ("hero already exists... leave out the type") and fills in the fixed line.
   (CodeTerminal has an "Allow Redeclare" switch if we ever want to relax this.)
-- Section 5 doesn't force Pink Man: an 8-tile gap is also crossed by Mask Dude's double jump or
-  Virtual Guy's sprint jump. A gap only the dash crosses would need a low ceiling, and that
+- Section 5 doesn't force Sarah: an 8-tile gap is also crossed by April's double jump or
+  Kervin's sprint jump. A gap only the dash crosses would need a low ceiling, and that
   stops the dash-jump too.
 - Very careful tap-jumps can get through the low tunnel at jumpPower 2.0 without typing the
   code. Normal jumps can't.
@@ -193,6 +212,13 @@ Stars, fruits collected, time, and mistakes made.
 ## Anti-skip rules (added 2026-10-23)
 - Hero-only obstacles are inside 2-tile crawlspaces (no jumping): dash gaps are 5 tiles over a
   1-tile spike trench, falling floors need the sprint, bridges can't be jumped.
-- Mask Dude's double jump ignores jumpPower; Room 3's ledge needs jumpPower 2.0 + double jump.
+- April's double jump ignores jumpPower; Room 3's ledge needs jumpPower 2.0 + double jump.
+- Tiny Psalm: the only 1-tile-high gaps in the maps are Room 4's and Exam 2's. In a 2-tile
+  crawlspace he has more headroom to hop than the others, so tiny Psalm runs at 0.6x speed:
+  fast enough hops would cross a falling floor before each platform drops.
+- Heroes step up onto a lip of 2 px or less without jumping (`_step_onto_lip` in player.gd).
+  A falling platform that has just started to sink leaves the ground beside it a hair
+  higher, and Kervin could stick on that corner at the end of Room 3's falling floor.
+  A real wall still stops everyone.
 - Dash: 0.3 s, 90 px. `tools/test_level1.gd` tries every hero-only obstacle with the other
-  heroes at jumpPower 2.0 (75 checks).
+  heroes at jumpPower 2.0, tiny Psalm included (94 checks).

@@ -15,18 +15,21 @@ const SWAP_FX := preload("res://assets/shared/heroes/swap_fx/swap_fx_frames.tres
 
 ## What each hero's card says, and which demo to play.
 const ABILITIES := {
-	"ninja_frog": {"ability": "WALL JUMP", "code": "NinjaFrog",
+	"chelzy": {"ability": "WALL JUMP", "code": "Chelzy",
 		"how": "Jump at a wall and press JUMP again while touching it to kick off and climb.",
 		"cost": "Clinging and each wall jump use stamina."},
-	"pink_man": {"ability": "DASH", "code": "PinkMan",
+	"sarah": {"ability": "DASH", "code": "Sarah",
 		"how": "Press SHIFT to dash forward - in the air it carries you over wide gaps.",
 		"cost": "Each dash uses 35 stamina."},
-	"mask_dude": {"ability": "DOUBLE JUMP", "code": "MaskDude",
+	"april": {"ability": "DOUBLE JUMP", "code": "April",
 		"how": "Press JUMP a second time while in the air to jump again, twice as high.",
 		"cost": "Each double jump uses 35 stamina."},
-	"virtual_guy": {"ability": "SPRINT", "code": "VirtualGuy",
+	"kervin": {"ability": "SPRINT", "code": "Kervin",
 		"how": "Hold SHIFT while running to sprint almost twice as fast.",
 		"cost": "Sprinting drains stamina while you hold it."},
+	"psalm": {"ability": "SHRINK", "code": "Psalm",
+		"how": "Hold DOWN to shrink into tiny tunnels. Let go to grow back.",
+		"cost": "Staying small drains stamina, but not while you're squeezed in a tunnel."},
 }
 
 const INK := Color("33323d")
@@ -229,6 +232,7 @@ func _build_card(hero_id: String, hero_name: String, data: Dictionary) -> void:
 	col.add_child(_demo_stage)
 	_demo_hero = AnimatedSprite2D.new()
 	_demo_hero.sprite_frames = load(PLAYER.HERO_DATA[hero_id]["frames"])
+	_demo_hero.offset = PLAYER.SPRITE_OFFSET
 	_demo_hero.scale = Vector2(1.5, 1.5)
 	_demo_stage.add_child(_demo_hero)
 	_run_demo.call_deferred(hero_id)
@@ -275,9 +279,12 @@ func _draw_stage(hero_id: String) -> void:
 	_demo_stage.draw_rect(Rect2(Vector2.ZERO, s), STAGE)
 	_demo_stage.draw_rect(Rect2(0, s.y - 10, s.x, 10), Color("5b8c3a"))
 	_demo_stage.draw_rect(Rect2(0, s.y - 10, s.x, 2), Color("7cbf4a"))
-	if hero_id == "ninja_frog":
+	if hero_id == "chelzy":
 		_demo_stage.draw_rect(Rect2(110, 0, 8, s.y - 10), Color("9aa3b5"))
 		_demo_stage.draw_rect(Rect2(160, 0, 8, s.y - 10), Color("9aa3b5"))
+	elif hero_id == "psalm":
+		# A tunnel too low for him until he shrinks.
+		_demo_stage.draw_rect(Rect2(110, 0, 60, s.y - 32), Color("9aa3b5"))
 
 
 ## Loops a short tween that acts out the ability.
@@ -287,21 +294,20 @@ func _run_demo(hero_id: String) -> void:
 		_demo_hero.position = Vector2(24, ground)
 		_demo_hero.modulate.a = 1.0
 		_demo_hero.flip_h = false
-		_demo_hero.speed_scale = 1.0
 		# Bound to the demo sprite, so the loop stops by itself when the card is closed.
 		var t := _demo_hero.create_tween()
 		match hero_id:
-			"pink_man":
+			"sarah":
 				t.tween_callback(_demo_hero.play.bind("run"))
 				t.tween_property(_demo_hero, "position:x", 70.0, 0.5)
 				t.tween_callback(_demo_hero.play.bind("jump"))
 				t.tween_property(_demo_hero, "position", Vector2(95, ground - 26), 0.3).set_ease(Tween.EASE_OUT)
-				t.tween_callback(_ghosts.bind(4))
+				t.tween_callback(_demo_hero.play.bind("dash"))  # the animation has its own afterimages
 				t.tween_property(_demo_hero, "position:x", 185.0, 0.16)
 				t.tween_callback(_demo_hero.play.bind("fall"))
 				t.tween_property(_demo_hero, "position", Vector2(210, ground), 0.3).set_ease(Tween.EASE_IN)
 				t.tween_callback(_demo_hero.play.bind("idle"))
-			"mask_dude":
+			"april":
 				t.tween_callback(_demo_hero.play.bind("run"))
 				t.tween_property(_demo_hero, "position:x", 80.0, 0.5)
 				t.tween_callback(_demo_hero.play.bind("jump"))
@@ -311,18 +317,29 @@ func _run_demo(hero_id: String) -> void:
 				t.tween_callback(_demo_hero.play.bind("fall"))
 				t.tween_property(_demo_hero, "position", Vector2(200, ground), 0.45).set_ease(Tween.EASE_IN)
 				t.tween_callback(_demo_hero.play.bind("idle"))
-			"virtual_guy":
+			"kervin":
 				t.tween_callback(_demo_hero.play.bind("run"))
 				t.tween_property(_demo_hero, "position:x", 100.0, 0.7)
-				t.tween_callback(func(): _demo_hero.speed_scale = 1.8)
-				t.tween_callback(_ghosts.bind(3))
+				t.tween_callback(_demo_hero.play.bind("sprint"))
 				t.tween_property(_demo_hero, "position:x", 236.0, 0.4)
 				t.tween_callback(_demo_hero.play.bind("idle"))
-			_:  # ninja_frog: climb between two walls
+			"psalm":
+				t.tween_callback(_demo_hero.play.bind("run"))
+				t.tween_property(_demo_hero, "position:x", 80.0, 0.45)
+				t.tween_callback(_demo_hero.play.bind("shrink"))
+				t.tween_interval(0.35)
+				t.tween_callback(_demo_hero.play.bind("small_run"))
+				t.tween_property(_demo_hero, "position:x", 196.0, 0.9)
+				t.tween_callback(_demo_hero.play_backwards.bind("shrink"))  # grows back
+				t.tween_interval(0.35)
+				t.tween_callback(_demo_hero.play.bind("idle"))
+			_:  # chelzy: climb between two walls
 				t.tween_callback(_demo_hero.play.bind("run"))
 				t.tween_property(_demo_hero, "position:x", 100.0, 0.4)
 				for i in 3:
 					var x := 152.0 if i % 2 == 0 else 126.0
+					# Face the way the jump goes, so the wall pose grips the wall it lands on.
+					t.tween_callback(func(): _demo_hero.flip_h = x < 140.0)
 					t.tween_callback(_demo_hero.play.bind("jump"))
 					t.tween_property(_demo_hero, "position", Vector2(x, ground - 18 - i * 16), 0.22)
 					t.tween_callback(_demo_hero.play.bind("wall_jump"))
@@ -335,23 +352,6 @@ func _run_demo(hero_id: String) -> void:
 		await t.finished
 		if not is_instance_valid(_demo_hero) or not _demo_hero.is_inside_tree():
 			return
-
-
-## Faded copies of the demo hero left behind, for a sense of speed.
-func _ghosts(count: int) -> void:
-	if not is_instance_valid(_demo_hero):
-		return
-	for i in count:
-		var g := AnimatedSprite2D.new()
-		g.sprite_frames = _demo_hero.sprite_frames
-		g.animation = _demo_hero.animation
-		g.scale = _demo_hero.scale
-		g.position = _demo_hero.position - Vector2(i * 12, 0)
-		g.modulate = Color(1, 1, 1, 0.45 - i * 0.1)
-		_demo_stage.add_child(g)
-		var fade := g.create_tween()
-		fade.tween_property(g, "modulate:a", 0.0, 0.35)
-		fade.tween_callback(g.queue_free)
 
 
 func _box(fill: Color, border: Color, width: int, padding: Vector4, bottom := Color(0, 0, 0, 0)) -> StyleBoxFlat:

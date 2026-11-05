@@ -26,8 +26,8 @@ const LEVELS := [
 		"props": [
 			{"f": P1 + "traps/spikes/spikes_frames.tres", "a": "idle", "x": 0.52, "rep": 3, "gap": 16},
 			{"f": P1 + "traps/saw/saw_frames.tres", "a": "on", "x": 0.86, "dy": 0},
-			{"f": "res://assets/shared/heroes/ninja_frog/ninja_frog_frames.tres", "a": "run",
-				"x": 0.2, "walk": [0.2, 0.42, 3.0], "dy": -2},
+			{"f": "res://assets/shared/heroes/chelzy/chelzy_frames.tres", "a": "run",
+				"x": 0.2, "walk": [0.2, 0.42, 3.0], "dy": -1},
 			{"f": P1 + "collectibles/fruits/fruits_frames.tres", "a": "apple", "x": 0.3, "dy": 46, "bob": 3},
 			{"f": P1 + "collectibles/fruits/fruits_frames.tres", "a": "melon", "x": 0.68, "dy": 56, "bob": 3},
 			{"f": P1 + "collectibles/fruits/fruits_frames.tres", "a": "cherries", "x": 0.55, "dy": 30, "bob": 3},
@@ -42,11 +42,11 @@ const LEVELS := [
 		"ground": {"tex": P2 + "tiles/island_terrain_32x32.png", "top": Rect2(32, 0, 32, 32),
 			"fill": Rect2(32, 32, 32, 32), "scale": 0.5, "rows": 2},
 		"props": [
-			{"f": P2 + "objects/chest/chest_frames.tres", "a": "close", "x": 0.5, "dy": -2, "s": 0.6},
+			{"f": P2 + "objects/chest/chest_frames.tres", "a": "close", "x": 0.5, "dy": -1, "s": 0.6},
 			{"f": P2 + "enemies/crabby/crabby_frames.tres", "a": "run", "x": 0.7,
-				"walk": [0.6, 0.76, 3.0], "dy": -2, "s": 0.8},
+				"walk": [0.6, 0.76, 3.0], "dy": -1, "s": 0.8},
 			{"f": P2 + "characters/captain_clown_nose/captain_clown_nose_frames.tres", "a": "run",
-				"x": 0.3, "walk": [0.27, 0.42, 3.0], "dy": -2, "s": 0.9},
+				"x": 0.3, "walk": [0.27, 0.42, 3.0], "dy": -1, "s": 0.9},
 			{"f": P2 + "collectibles/gold_coin/gold_coin_frames.tres", "a": "idle", "x": 0.3, "dy": 46, "bob": 3},
 			{"f": P2 + "collectibles/gold_coin/gold_coin_frames.tres", "a": "idle", "x": 0.4, "dy": 52, "bob": 3},
 		],
@@ -59,11 +59,11 @@ const LEVELS := [
 		"ground": {"tex": P3 + "tiles/castle_terrain_32x32.png", "top": Rect2(64, 224, 32, 32),
 			"fill": Rect2(64, 256, 32, 32), "scale": 0.5, "rows": 2},
 		"props": [
-			{"f": P3 + "objects/door/door_frames.tres", "a": "idle", "x": 0.88, "dy": -2, "s": 0.8},
+			{"f": P3 + "objects/door/door_frames.tres", "a": "idle", "x": 0.88, "dy": -1, "s": 0.8},
 			{"f": P3 + "enemies/pig/pig_frames.tres", "a": "run", "x": 0.6,
-				"walk": [0.5, 0.75, 3.0], "dy": -2, "face": -1},
+				"walk": [0.5, 0.75, 3.0], "dy": -1, "face": -1},
 			{"f": P3 + "characters/king_human/king_human_frames.tres", "a": "run", "x": 0.3,
-				"walk": [0.25, 0.42, 3.0], "dy": -2, "s": 0.8, "face": -1},
+				"walk": [0.25, 0.42, 3.0], "dy": -1, "s": 0.8, "face": -1},
 			{"f": P3 + "collectibles/small_diamond/small_diamond_frames.tres", "a": "idle", "x": 0.45, "dy": 46, "bob": 3},
 		],
 	},
@@ -76,12 +76,12 @@ const LEVELS := [
 		"ground": {"tex": P4 + "tiles/ship_tileset_64x64.png", "top": Rect2(256, 0, 64, 64),
 			"fill": Rect2(256, 64, 64, 64), "scale": 0.25, "rows": 2},
 		"props": [
-			{"f": P4 + "objects/barrel/barrel_frames.tres", "a": "idle", "x": 0.9, "dy": -2, "s": 0.6},
-			{"f": P4 + "objects/bomb/bomb_frames.tres", "a": "bomb_on", "x": 0.5, "dy": -2, "s": 0.4},
+			{"f": P4 + "objects/barrel/barrel_frames.tres", "a": "idle", "x": 0.9, "dy": -1, "s": 0.6},
+			{"f": P4 + "objects/bomb/bomb_frames.tres", "a": "bomb_on", "x": 0.5, "dy": -1, "s": 0.4},
 			{"f": P4 + "enemies/cucumber/cucumber_frames.tres", "a": "run", "x": 0.7,
-				"walk": [0.62, 0.74, 3.0], "dy": -2, "s": 0.8, "face": -1},
+				"walk": [0.62, 0.74, 3.0], "dy": -1, "s": 0.8, "face": -1},
 			{"f": P4 + "characters/bomb_guy/bomb_guy_frames.tres", "a": "run", "x": 0.3,
-				"walk": [0.25, 0.42, 3.0], "dy": -2, "s": 0.8},
+				"walk": [0.25, 0.42, 3.0], "dy": -1, "s": 0.8},
 		],
 	},
 ]
@@ -416,6 +416,7 @@ func _draw_prop(p: Dictionary, r: Rect2, ground_y: float, t: float) -> void:
 		return
 	var s: float = p.get("s", 1.0)
 	var size_px := tex.get_size() * s
+	var body := SpriteMetrics.body_rect(frames, anim)  # where the character really is in the frame
 	var fx: float = p["x"]
 	var flip := false
 	if p.has("walk"):
@@ -430,10 +431,14 @@ func _draw_prop(p: Dictionary, r: Rect2, ground_y: float, t: float) -> void:
 		flip = not flip
 	var base_y := ground_y - float(p.get("dy", 0))
 	base_y -= sin(t * 2.5 + fx * 9.0) * float(p.get("bob", 0))
+	# Line the body's feet (bottom edge) and middle up with the spot, whichever way it faces.
+	var body_mid_x := body.get_center().x * s
+	if flip:
+		body_mid_x = size_px.x - body_mid_x
 	var reps: int = p.get("rep", 1)
 	for k in reps:
-		var pos := Vector2(r.position.x + fx * r.size.x - size_px.x * 0.5 + k * float(p.get("gap", 0)),
-			base_y - size_px.y)
+		var pos := Vector2(r.position.x + fx * r.size.x - body_mid_x + k * float(p.get("gap", 0)),
+			base_y - body.end.y * s)
 		_draw_sprite_clipped(tex, Rect2(pos, size_px), r, flip)
 
 
@@ -446,7 +451,7 @@ func _draw_sprite_clipped(tex: Texture2D, dst: Rect2, clip: Rect2, flip: bool) -
 	var src := Rect2((inter.position - dst.position) * k, inter.size * k)
 	if flip:
 		src.position.x = (dst.end.x - inter.end.x) * k.x
-		draw_texture_rect_region(tex, Rect2(inter.end.x, inter.position.y, -inter.size.x, inter.size.y), src)
+		draw_texture_rect_region(tex, Rect2(inter.position.x, inter.position.y, -inter.size.x, inter.size.y), src)
 	else:
 		draw_texture_rect_region(tex, inter, src)
 

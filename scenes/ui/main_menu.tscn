@@ -2,9 +2,8 @@
 
 [ext_resource type="Script" uid="uid://b7bvcny76020e" path="res://scripts/ui/main_menu.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://cnkfkkuj334md" path="res://assets/level1_pixel_adventure/backgrounds/bg_blue.png" id="2_bg"]
-[ext_resource type="Texture2D" uid="uid://tnpl3ibvuwn5" path="res://assets/shared/ui/menu/menu_ground_strip.png" id="3_ground"]
-[ext_resource type="Texture2D" path="res://assets/shared/ui/menu/title_logo.png" id="8_logo"]
 [ext_resource type="Script" path="res://scripts/ui/menu_stage.gd" id="9_stage"]
+[ext_resource type="Script" path="res://scripts/ui/title_logo.gd" id="10_logo"]
 
 [node name="MainMenu" type="Control" unique_id=925588965]
 layout_mode = 3
@@ -22,20 +21,15 @@ offset_bottom = 424.0
 texture = ExtResource("2_bg")
 stretch_mode = 1
 
-[node name="Title" type="TextureRect" parent="."]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -69.5
-offset_top = 4.0
-offset_right = 69.5
-offset_bottom = 86.0
-grow_horizontal = 2
-pivot_offset = Vector2(69.5, 0)
+[node name="Stage" type="Node2D" parent="."]
+script = ExtResource("9_stage")
+
+[node name="Title" type="Node2D" parent="."]
+position = Vector2(320, 6)
 scale = Vector2(2, 2)
-texture = ExtResource("8_logo")
-stretch_mode = 2
+script = ExtResource("10_logo")
+
+[node name="Badges" type="Node2D" parent="."]
 
 [node name="Prompt" type="Label" parent="." unique_id=1854702493]
 layout_mode = 1
@@ -125,21 +119,6 @@ text = "FULLSCREEN"
 [node name="BackButton" type="Button" parent="SettingsPanel/VBox" unique_id=1086450347]
 layout_mode = 2
 text = "BACK"
-
-[node name="Ground" type="TextureRect" parent="." unique_id=898539740]
-layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_top = -48.0
-grow_horizontal = 2
-grow_vertical = 0
-texture = ExtResource("3_ground")
-stretch_mode = 1
-
-[node name="Stage" type="Node2D" parent="."]
-script = ExtResource("9_stage")
 
 [node name="Version" type="Label" parent="." unique_id=1335937070]
 layout_mode = 1

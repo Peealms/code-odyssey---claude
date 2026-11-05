@@ -1,120 +1,117 @@
 extends SceneTree
-## Draws the "CODE ODYSSEY" title logo into assets/shared/ui/menu/title_logo.png.
-## The letters are hand-made 5x7 bitmaps defined below (no font files used): chunky
-## "circuit block" letters with a bevel, a dark outline, and a glowing terminal-green
-## underline made of binary digits.
+## Draws the "CODE ODYSSEY" title letters into assets/shared/ui/menu/title_letters.png:
+## one chunky, glossy, colourful block letter per cell (11 cells, in the order C O D E O D Y S S E Y),
+## which scripts/ui/title_logo.gd places and bounces. The letter shapes are hand-made 7x9 bitmaps
+## below (no font files used).
 ## Run:  godot --headless --path . --script res://tools/make_title_logo.gd
 ## Then: godot --headless --path . --import
 
-const OUT := "res://assets/shared/ui/menu/title_logo.png"
-const CELL := 3  ## Pixels per letter-bitmap dot.
+const OUT := "res://assets/shared/ui/menu/title_letters.png"
+const CELL := 3  ## Pixels per bitmap dot.
+const GW := 7
+const GH := 9
+const PAD := 5  ## Room around a glyph for the outline and the 3D side.
+const EXTRUDE := 3
+const LETTER_W := GW * CELL + PAD * 2 + EXTRUDE  ## Keep in step with title_logo.gd
+const LETTER_H := GH * CELL + PAD * 2 + EXTRUDE
+const TEXT := "CODEODYSSEY"
 
 const GLYPHS := {
-	"C": ["01111", "10000", "10000", "10000", "10000", "10000", "01111"],
-	"O": ["01110", "10001", "10001", "10001", "10001", "10001", "01110"],
-	"D": ["11110", "10001", "10001", "10001", "10001", "10001", "11110"],
-	"E": ["11111", "10000", "10000", "11110", "10000", "10000", "11111"],
-	"Y": ["10001", "10001", "01010", "00100", "00100", "00100", "00100"],
-	"S": ["01111", "10000", "10000", "01110", "00001", "00001", "11110"],
+	"C": ["0111110", "1111111", "1100011", "1100000", "1100000", "1100000", "1100011", "1111111", "0111110"],
+	"O": ["0111110", "1111111", "1100011", "1100011", "1100011", "1100011", "1100011", "1111111", "0111110"],
+	"D": ["1111110", "1111111", "1100011", "1100011", "1100011", "1100011", "1100011", "1111111", "1111110"],
+	"E": ["1111111", "1111111", "1100000", "1111100", "1111100", "1100000", "1100000", "1111111", "1111111"],
+	"Y": ["1100011", "1100011", "1110111", "0111110", "0011100", "0011100", "0011100", "0011100", "0011100"],
+	"S": ["0111111", "1111111", "1100000", "1111110", "0111111", "0000011", "0000011", "1111111", "1111110"],
 }
 
+## [face top, face bottom, 3D side]
+const COLORS := [
+	[Color("ff7a85"), Color("e03a5a"), Color("8f1f3d")],  # red
+	[Color("ffbd5c"), Color("f07a24"), Color("9a4413")],  # orange
+	[Color("fff07a"), Color("f2bd2a"), Color("a37a12")],  # yellow
+	[Color("8cf08a"), Color("39b552"), Color("1f6e34")],  # green
+	[Color("7aeaff"), Color("30a4dc"), Color("1b6590")],  # cyan
+	[Color("93a9ff"), Color("4c63e0"), Color("2a3a95")],  # blue
+	[Color("c999ff"), Color("8a4fe0"), Color("55289b")],  # purple
+	[Color("ff94d2"), Color("e04ba0"), Color("902a69")],  # pink
+]
 const OUTLINE := Color("1b1530")
-const TOP_A := Color("ffe477")
-const TOP_B := Color("ffb347")
-const SIDE := Color("c4552b")
-const GREEN := Color("8ee89c")
-const GREEN_DIM := Color("3f8f5a")
 
-var img: Image
+var atlas: Image
 
 
 func _init() -> void:
-	var line1 := "CODE"
-	var line2 := "ODYSSEY"
-	var w1 := _line_width(line1)
-	var w2 := _line_width(line2)
-	var pad := 8
-	var width := maxi(w1, w2) + pad * 2
-	var line_h := 7 * CELL
-	var height := pad + line_h + 8 + line_h + 6 + 10 + pad
-	img = Image.create(width, height, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	var y1 := pad
-	var y2 := pad + line_h + 8
-	_draw_line(line1, (width - w1) / 2, y1)
-	_draw_line(line2, (width - w2) / 2, y2)
-	_draw_binary_bar((width - w2) / 2, y2 + line_h + 6, w2)
-
-	img.save_png(ProjectSettings.globalize_path(OUT))
-	print("Saved ", OUT, " ", img.get_size())
+	atlas = Image.create(LETTER_W * TEXT.length(), LETTER_H, false, Image.FORMAT_RGBA8)
+	atlas.fill(Color(0, 0, 0, 0))
+	for i in TEXT.length():
+		_draw_letter(TEXT[i], i)
+	atlas.save_png(ProjectSettings.globalize_path(OUT))
+	print("Saved ", OUT, " ", atlas.get_size(), " letter cell ", Vector2i(LETTER_W, LETTER_H))
 	quit()
 
 
-func _line_width(text: String) -> int:
-	return text.length() * (5 * CELL + CELL) - CELL
-
-
-func _draw_line(text: String, x0: int, y0: int) -> void:
-	# Pass 1: outline + drop side; pass 2: bevelled face.
-	var x := x0
-	for ch in text:
-		_glyph_pass(ch, x, y0, 0)
-		x += 6 * CELL
-	x = x0
-	for ch in text:
-		_glyph_pass(ch, x, y0, 1)
-		x += 6 * CELL
-
-
-func _glyph_pass(ch: String, gx: int, gy: int, pass_index: int) -> void:
+func _draw_letter(ch: String, index: int) -> void:
 	var rows: Array = GLYPHS[ch]
-	for r in 7:
-		for c in 5:
-			if rows[r][c] != "1":
+	var pal: Array = COLORS[index % COLORS.size()]
+	# Pixel mask of the glyph, placed at (PAD, PAD) in the cell.
+	var w := LETTER_W
+	var h := LETTER_H
+	var face := PackedByteArray()
+	face.resize(w * h)
+	for r in GH:
+		for c in GW:
+			if rows[r][c] == "1":
+				for yy in CELL:
+					for xx in CELL:
+						face[(PAD + r * CELL + yy) * w + PAD + c * CELL + xx] = 1
+	# 3D side: the face shifted down-right a few times.
+	var body := face.duplicate()
+	for d in range(1, EXTRUDE + 1):
+		for y in h:
+			for x in w:
+				if face[y * w + x] == 1 and x + d < w and y + d < h:
+					body[(y + d) * w + x + d] = 1
+	var ox := index * LETTER_W
+	# Outline: 2px dilation of the body.
+	for y in h:
+		for x in w:
+			if body[y * w + x] == 1:
 				continue
-			var px := gx + c * CELL
-			var py := gy + r * CELL
-			if pass_index == 0:
-				# thick outline plus a 2px extruded shadow down-right
-				_rect(px - 2, py - 2, CELL + 4, CELL + 4, OUTLINE)
-				_rect(px + 1, py + 2, CELL + 1, CELL + 2, SIDE)
-			else:
-				var t := float(r) / 6.0
-				var face := TOP_A.lerp(TOP_B, t)
-				_rect(px, py, CELL, CELL, face)
-				# highlight on top edge of a block, "pixel" rivet in the middle
-				var above_empty: bool = r == 0 or rows[r - 1][c] != "1"
-				if above_empty:
-					_rect(px, py, CELL, 1, Color(1, 1, 0.85))
-				var left_empty: bool = c == 0 or rows[r][c - 1] != "1"
-				if left_empty:
-					_rect(px, py, 1, CELL, Color(1, 0.96, 0.7))
-				var below_empty: bool = r == 6 or rows[r + 1][c] != "1"
-				if below_empty:
-					_rect(px, py + CELL - 1, CELL, 1, Color("d9812f"))
-
-
-func _draw_binary_bar(x0: int, y: int, w: int) -> void:
-	_rect(x0 - 2, y - 2, w + 4, 11, OUTLINE)
-	_rect(x0, y, w, 7, Color("14241f"))
-	# Tiny 3x5 digits "0" and "1" repeating across the bar.
-	var zero := ["111", "101", "101", "101", "111"]
-	var one := ["010", "110", "010", "010", "111"]
-	var x := x0 + 2
-	var i := 0
-	while x + 3 < x0 + w - 1:
-		var g: Array = zero if (i * 7 + i / 3) % 3 != 0 else one
-		var col := GREEN if i % 4 != 3 else GREEN_DIM
-		for r in 5:
-			for c in 3:
-				if g[r][c] == "1":
-					img.set_pixel(x + c, y + 1 + r, col)
-		x += 4
-		i += 1
-
-
-func _rect(x: int, y: int, w: int, h: int, col: Color) -> void:
-	for yy in range(maxi(y, 0), mini(y + h, img.get_height())):
-		for xx in range(maxi(x, 0), mini(x + w, img.get_width())):
-			img.set_pixel(xx, yy, col)
+			var near := false
+			for dy in range(-2, 3):
+				for dx in range(-2, 3):
+					var nx := x + dx
+					var ny := y + dy
+					if nx >= 0 and ny >= 0 and nx < w and ny < h and body[ny * w + nx] == 1:
+						near = true
+			if near:
+				atlas.set_pixel(ox + x, y, OUTLINE)
+	for y in h:
+		for x in w:
+			if body[y * w + x] == 1 and face[y * w + x] == 0:
+				atlas.set_pixel(ox + x, y, pal[2])
+	for y in h:
+		for x in w:
+			if face[y * w + x] == 1:
+				var t := float(y - PAD) / float(GH * CELL)
+				var col: Color = (pal[0] as Color).lerp(pal[1], t)
+				# Gloss: a bright rim on edges facing up/left, a dark one facing down/right.
+				var up_empty := y == 0 or face[(y - 1) * w + x] == 0
+				var left_empty := x == 0 or face[y * w + x - 1] == 0
+				var down_empty := y == h - 1 or face[(y + 1) * w + x] == 0
+				var right_empty := x == w - 1 or face[y * w + x + 1] == 0
+				if up_empty or left_empty:
+					col = col.lerp(Color.WHITE, 0.55)
+				elif down_empty or right_empty:
+					col = col.darkened(0.18)
+				atlas.set_pixel(ox + x, y, col)
+	# Little shine dot on the top-left of the glyph.
+	for r in GH:
+		for c in GW:
+			if rows[r][c] == "1":
+				var px := ox + PAD + c * CELL + 1
+				var py := PAD + r * CELL + 1
+				if atlas.get_pixel(px, py).a > 0.0 and (r == 1 or r == 2) and c < 3:
+					atlas.set_pixel(px, py, Color(1, 1, 1, 0.9))
+				break

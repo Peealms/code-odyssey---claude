@@ -3,16 +3,16 @@ extends RefCounted
 ## Checks one line of Java-style code, step by step, the way Byte explains it.
 ## It never runs real Java: it only understands the statements listed below.
 ##
-##   <Type> <name> = <value>;      declare a new variable    String hero = "PinkMan";
-##   <name> = <value>;             change one you declared   hero = "MaskDude";
+##   <Type> <name> = <value>;      declare a new variable    String hero = "Sarah";
+##   <name> = <value>;             change one you declared   hero = "April";
 ##   System.out.println(<value>);  print text / a number / a variable
 ##
 ## check() returns:
 ##   ok      true if every step passed
 ##   steps   [{ "label": String, "ok": bool }]  (the checklist Byte shows)
 ##   error   friendly explanation of the first failed step ("" when ok)
-##   action  what the game should do, e.g. { "type": "set", "name": "hero", "value": "pink_man", "declare": true }
-##   fix     (only sometimes) the corrected line, e.g. hero = "MaskDude"; for a redeclaration
+##   action  what the game should do, e.g. { "type": "set", "name": "hero", "value": "sarah", "declare": true }
+##   fix     (only sometimes) the corrected line, e.g. hero = "April"; for a redeclaration
 ##
 ## The variables it knows come from VariableLibrary (a level picks which ones).
 
@@ -20,10 +20,11 @@ const TYPES := ["String", "int", "double", "boolean", "char"]
 
 ## Hero names as typed in code -> hero ids used by the Player.
 const HERO_NAMES := {
-	"NinjaFrog": "ninja_frog",
-	"PinkMan": "pink_man",
-	"MaskDude": "mask_dude",
-	"VirtualGuy": "virtual_guy",
+	"Chelzy": "chelzy",
+	"Sarah": "sarah",
+	"April": "april",
+	"Kervin": "kervin",
+	"Psalm": "psalm",
 }
 
 const ID_REGEX := "^[A-Za-z_$][A-Za-z0-9_$]*$"
@@ -47,13 +48,13 @@ func check(source: String, values := {}, unlocked: Array = [], declared: Array =
 	_steps = []
 	var line := source.strip_edges()
 	if line == "":
-		return _fail("Code", "Type a line of code first. Try: String hero = \"PinkMan\";")
+		return _fail("Code", "Type a line of code first. Try: String hero = \"Sarah\";")
 	if line.to_lower().begins_with("system."):
 		return _check_print(line, values)
 	return _check_assignment(line, unlocked, declared)
 
 
-# ---------------- String hero = "PinkMan";   /   hero = "MaskDude"; ----------------
+# ---------------- String hero = "Sarah";   /   hero = "April"; ----------------
 
 func _check_assignment(line: String, unlocked: Array, declared: Array) -> Dictionary:
 	if not line.ends_with(";"):
@@ -63,11 +64,11 @@ func _check_assignment(line: String, unlocked: Array, declared: Array) -> Dictio
 	var body := line.trim_suffix(";").strip_edges()
 	var eq := body.find("=")
 	if eq == -1:
-		return _fail("Assignment", "I need an = to store a value, like: String hero = \"PinkMan\";")
+		return _fail("Assignment", "I need an = to store a value, like: String hero = \"Sarah\";")
 	var left := body.substr(0, eq).strip_edges()
 	var value_text := body.substr(eq + 1).strip_edges()
 	if value_text == "":
-		return _fail("Value", "Put a value after the =, like \"PinkMan\".")
+		return _fail("Value", "Put a value after the =, like \"Sarah\".")
 
 	var parts := left.split(" ", false)
 	if parts.size() > 2:

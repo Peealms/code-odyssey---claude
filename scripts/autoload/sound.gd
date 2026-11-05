@@ -5,7 +5,7 @@ extends Node
 ##   Sound.music("rooms")                  - crossfades to a music track (loops)
 ##   Sound.loop_player("fan_loop", node)   - a looping sound attached to a node (fans, saws)
 ## Music plays on the "Music" bus, everything else on "SFX"; Game saves both volumes.
-## All files are CC0 - see assets/shared/audio/CREDITS.md.
+## Sources and licences: assets/shared/audio/CREDITS.md.
 
 const SFX_DIR := "res://assets/shared/audio/sfx/"
 ## Sound name -> [volume dB, original file in the 512-sound pack].
@@ -15,6 +15,8 @@ const SFX := {
 	"wall_jump": [-8.0, "sfx_movement_jump13"],
 	"land": [-16.0, "sfx_movement_jump9_landing"],
 	"dash": [-6.0, "sfx_wpn_sword3"],
+	"shrink": [-8.0, "not from the pack: made by tools/make_shrink_sounds.gd"],
+	"grow": [-8.0, "not from the pack: made by tools/make_shrink_sounds.gd"],
 	"trampoline": [-6.0, "sfx_movement_jump20"],
 	"fruit": [-10.0, "sfx_coin_single1"],
 	"hurt": [-4.0, "sfx_damage_hit2"],

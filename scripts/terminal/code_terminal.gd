@@ -177,6 +177,14 @@ func _run_action(action: Dictionary) -> void:
 
 	var name: String = action["name"]
 	var value = action["value"]
+	if name == "hero" and value != player.hero_id and not player.can_change_hero():
+		# Valid Java, but Psalm is shrunk in a tunnel where a bigger hero wouldn't fit.
+		Sound.play("blocked")
+		_byte_line("No room! Psalm is squeezed under a low ceiling. Get out of the tunnel first, then switch.")
+		if byte:
+			byte.react(false)
+			byte.say("NO ROOM!", 1.5)
+		return
 	values[name] = _java_text(name, value)
 	match name:
 		"hero":
@@ -201,7 +209,7 @@ func _run_action(action: Dictionary) -> void:
 	variable_set.emit(name, value)
 
 
-## The value the way the player wrote it, e.g. hero -> PinkMan (not pink_man).
+## The value the way the player wrote it, e.g. hero -> Sarah (not sarah).
 func _java_text(name: String, value) -> String:
 	if name == "hero":
 		for h in CommandChecker.HERO_NAMES:
