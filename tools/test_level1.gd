@@ -173,6 +173,31 @@ func gadget_near(script_end: String, pos: Vector2) -> Node:
 	return best
 
 
+## The Rock/Spike Head whose track starts nearest `start` (they move, so where one is right
+## now could be closer to another's spot).
+func rock_from(start: Vector2) -> Node2D:
+	var best: Node2D = null
+	for n in level.get_node("Traps").get_children():
+		if n.get_script() and n.get_script().resource_path.ends_with("block_head.gd"):
+			if best == null or n._start.distance_to(start) < best._start.distance_to(start):
+				best = n
+	return best
+
+
+## The fruit at these spots, found now (a picked-up fruit frees itself after its animation).
+func fruit_at(spots: Array) -> Array:
+	var out := []
+	for f in get_nodes_in_group("fruit"):
+		if is_instance_valid(f) and spots.any(func(s: Vector2) -> bool: return f.global_position.distance_to(s) < 1.0):
+			out.append(f)
+	return out
+
+
+## How many of `fruits` (from fruit_at) have been picked up.
+func taken(fruits: Array) -> int:
+	return fruits.filter(func(f) -> bool: return not is_instance_valid(f) or f._taken).size()
+
+
 ## Waits until a Rock Head is resting at the bottom of its track, puts the player on top,
 ## and waits until it has carried them to the top end.
 func ride_rock_head(rock: Node2D, top_y: float, timeout := 15.0) -> void:
@@ -473,10 +498,24 @@ func _run() -> void:
 	await wait(0.6)
 	check("R3 exit door opens after the rescue", not door_closed(3))
 
-	# ---------------- Room 4: bottom y=832, wall x=2896-2928 with a 1-tile gap under it, fan x=2968 ----------------
-	# Left of the wall (clear of the Rock Head at x=2832-2864): x=2876.
+	# ---------------- Room 4 (Psalm's vents) ----------------
+	# Bottom y=832. The drop: Rock Head elevator x=2800-2832 up to the entrance ledge (top
+	# y=320, ledge x<2800), the bananas hang at x=2816. Checkpoint x=2872. Wall x=2896-2928
+	# with a 1-tile gap under it. Low vent y=784-832: saw centre y=800 sliding x=2984-3064,
+	# block x=3104-3136 (top y=800, 1-tile gap above it), Rock Head lift x=3312-3344 up to the
+	# high vent floor y=768. High vent y=672-768: Spike Heads at x=3120 and 3232 (they stop
+	# 20 px over the floor), gap into the fan room x=3008-3024. Fan x=2968 on the high vent
+	# floor; platform top y=400.
 	ensure_hero("psalm")
+	var drop_bananas := fruit_at([Vector2(2816, 376), Vector2(2816, 424), Vector2(2816, 472),
+		Vector2(2816, 520), Vector2(2816, 568), Vector2(2816, 616)])
+	var vent_fruit := fruit_at([Vector2(3016, 824), Vector2(3048, 824), Vector2(3080, 824), Vector2(3112, 792)])
 	await code('hero = "Kervin";')
+	await ride_rock_head(rock_from(Vector2(2816, 816)), 336.0, 20.0)
+	Input.action_press("move_left")
+	await wait(0.5)
+	release_all()
+	check("R4 the Rock Head rides back up the drop, picking up its 6 bananas", drop_bananas.size() == 6 and taken(drop_bananas) == 6 and p.global_position.y < 310 and p.global_position.x < 2800, "bananas %d/%d pos=%s" % [taken(drop_bananas), drop_bananas.size(), p.global_position])
 	tp(2876, 816)
 	p.restore_vitals()
 	await wait(0.3)
@@ -514,18 +553,79 @@ func _run() -> void:
 	check("R4 stamina holds still while squeezed", p.stamina == squeezed_stamina and p.stamina > 0.0, "%.1f -> %.1f" % [squeezed_stamina, p.stamina])
 	await code('hero = "Kervin";')
 	check("R4 no switching hero while squeezed", p.hero_id == "psalm" and "No room" in last_byte(), last_byte())
+	# Out of the gap he grows back, before the saw's reach (from x=2969).
 	Input.action_press("move_right")
-	await until_x(2950, 3.0)
+	await until_x(2938, 3.0)
+	release_all()
+	await wait(0.4)
+	check("R4 out of the gap, Psalm grows back", not p.is_small and p.global_position.x > 2930 and p.global_position.x < 2958, "x=%.0f small=%s" % [p.global_position.x, p.is_small])
+	# Full-size, the saw sends you back to the checkpoint; tiny, you walk under it.
+	Input.action_press("move_right")
+	await wait(1.2)
+	release_all()
+	await wait(0.3)
+	check("R4 full-size, the saw sends Psalm back to the checkpoint", p.global_position.x < 2896, "pos=%s" % p.global_position)
+	tp(2940, 816)
+	p.restore_vitals()
+	Input.action_press("move_down")
+	await wait(0.4)
+	Input.action_press("move_right")
+	await until_x(3094, 5.0)
+	check("R4 tiny Psalm walks under the saw", p.global_position.x >= 3094 and p.health == 100.0, "hp=%.0f x=%.0f" % [p.health, p.global_position.x])
+	# Still holding Down and right: jump into the 1-tile gap over the block, out the far side.
+	await jump(0.2)
+	await until_x(3150, 3.0)
+	await wait(0.3)
+	release_all()
+	check("R4 tiny Psalm jumps into the gap over the block", p.global_position.x > 3140 and p.global_position.y > 810, "pos=%s" % p.global_position)
+	check("R4 the fruit under the saw and in the gap is picked up", vent_fruit.size() == 4 and taken(vent_fruit) == 4, "%d / %d" % [taken(vent_fruit), vent_fruit.size()])
+	await code('hero = "Kervin";')
+	tp(3160, 816)
+	await wait(0.3)
+	Input.action_press("move_left")
+	for k in 3:
+		await jump(0.3)
+		await wait(0.3)
+	release_all()
+	check("R4 Kervin can't get over the block", p.global_position.x > 3136, "x=%.0f" % p.global_position.x)
+	await code('hero = "Psalm";')
+	await ride_rock_head(rock_from(Vector2(3328, 816)), 784.0)
+	Input.action_press("move_left")
 	await wait(0.5)
 	release_all()
-	check("R4 out of the gap, Psalm grows back", not p.is_small and p.global_position.x > 2940, "x=%.0f small=%s" % [p.global_position.x, p.is_small])
-	await code('hero = "Chelzy";')
-	tp(2968, 816)
+	check("R4 the Rock Head lift carries Psalm up to the high vent", p.global_position.y < 760 and p.global_position.x < 3312, "pos=%s" % p.global_position)
+	p.restore_vitals()
+	Input.action_press("move_down")
+	await wait(0.4)
+	Input.action_press("move_left")
+	await until_x_left(3040, 8.0)
+	release_all()
+	check("R4 tiny Psalm walks under the Spike Heads unhurt", p.health == 100.0 and p.global_position.x <= 3040, "hp=%.0f x=%.0f" % [p.health, p.global_position.x])
+	await code('hero = "Kervin";')
+	tp(3244, 752)  # under the Spike Head (x=3212-3252 hurts), a bit right so the hit knocks him out
+	p.restore_vitals()
+	await wait(3.0)
+	check("R4 a slamming Spike Head hurts a full-size hero", p.health < 100.0, "hp=%.0f" % p.health)
+	tp(3048, 752)
+	await wait(0.3)
+	Input.action_press("move_left")
+	await wait(1.0)
+	release_all()
+	check("R4 Kervin doesn't fit into the fan room", p.global_position.x > 3030, "x=%.0f" % p.global_position.x)
+	await code('hero = "Psalm";')
+	Input.action_press("move_down")
+	await wait(0.4)
+	Input.action_press("move_left")
+	await until_x_left(2995, 3.0)
+	release_all()
+	check("R4 tiny Psalm crawls into the fan room", p.global_position.x < 3000, "x=%.0f" % p.global_position.x)
+	await wait(0.6)
+	tp(2968, 752)
 	p.restore_vitals()
 	await wait(1.0)
-	check("R4 fan is off: nothing happens", p.global_position.y > 806, "y=%.0f" % p.global_position.y)
+	check("R4 fan is off: nothing happens", p.global_position.y > 742, "y=%.0f" % p.global_position.y)
 	await code("boolean fanOn = true;")
-	tp(2968, 816)
+	tp(2968, 752)
 	await wait(3.2)
 	check("R4 fan lifts the player above the platform", p.global_position.y < 376, "y=%.0f" % p.global_position.y)
 	shot("r4_fan")
@@ -534,7 +634,7 @@ func _run() -> void:
 	release_all()
 	await wait(0.5)
 	check("R4 steps off the fan onto the platform", p.global_position.y < 388 and p.global_position.x > 2995, "pos=%s" % p.global_position)
-	await ride_rock_head(gadget_near("block_head.gd", Vector2(3136, 416)), 256.0)
+	await ride_rock_head(rock_from(Vector2(3136, 416)), 256.0)
 	Input.action_press("move_right")
 	await wait(0.8)
 	release_all()

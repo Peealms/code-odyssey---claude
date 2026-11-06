@@ -13,7 +13,7 @@ Update this file when the design changes.
   (it **overwrites** level1.tscn, so don't hand-edit the scene unless you stop using the script).
   Rooms of different heights are lined up automatically by their doorway rows.
 - `tools/test_level1.gd` plays every room (needs a window, not `--headless`):
-  `godot --path . --script res://tools/test_level1.gd` - prints 94 PASS/FAIL checks.
+  `godot --path . --script res://tools/test_level1.gd` - prints 105 PASS/FAIL checks.
   It backs up and restores your save file.
 
 ## Look (matches Pixel Frog's Pixel Adventure demo)
@@ -28,7 +28,7 @@ screens tall; the final room is 2 screens wide and 2 tall.
 | 1 Wide gap | 40 x 32 | wood | orange | metal | yellow | saws |
 | 2 Bridge | 40 x 21 | teal | pink | gold | purple | spiked balls |
 | 3 High ledge | 40 x 32 | stone | grass | orange | blue | falling platforms |
-| 4 Fan shaft | 40 x 43 | wood | orange | bronze | brown | Rock Heads |
+| 4 Fan shaft | 40 x 43 | wood | orange | bronze | brown | Rock Heads (+ a saw and Spike Heads in Psalm's vents) |
 | 5 Three paths | 40 x 21 | teal | pink | metal | gray | Spike Heads |
 | 6 Final exam | 80 x 42 | stone | orange | gold | pink | all of them + fire |
 
@@ -48,11 +48,15 @@ screens tall; the final room is 2 screens wide and 2 tall.
     the flag, so the crates are the real guard.
   - Final room: the goal needs **all** the final exam's fruit; if some is missing Byte says
     where (e.g. "2 MORE FRUIT: THE LOW TUNNEL 2").
-- Fruit per room: 16, 22, 20, 23, 23, 26, then 15 / 12 / 12 / 11 / 15 / 20 in the exam sections.
+- Fruit per room: 16, 22, 20, 23, 29, 26, then 15 / 12 / 12 / 11 / 15 / 20 in the exam sections.
 - **Optional corners** (still needed for the fruit): Room 0's gallery, Room 1's high bars,
   Room 2's upper floor, Room 3's falling-platform stairs to a balcony, Room 4's Rock Head
   shuttle to a balcony, the exam's shelf over the tunnel, loft over the fans and gallery
   over the falling floor. None of them lead past a puzzle.
+- **Missed fruit in Room 4's drop:** the doors need every fruit, and the drop is one way
+  down, so a Rock Head elevator rides between the bottom and the entrance ledge with the
+  drop's bananas hanging in its path. Falling straight down or riding it picks them up, and
+  a sign at the bottom says to ride it back up.
 - **Rescue cutscene**: the game pauses, the camera zooms on the hero, Byte introduces them, then a
   card shows the ability on a loop, the key, the stamina cost and `hero = "...";`.
 - **Backgrounds**: one full-screen background that crossfades to the room's colour as you walk in.
@@ -111,7 +115,7 @@ only has the animations of their own ability).
 | 1 Wide gap | Start top-left, gap, then down three floors of saws | `String hero = "Sarah";` | Gap only the dash crosses → **Sarah** | April |
 | 2 Broken bridge | Low corridor, bridge, step up; upper floor back over the bridge | `int bridgeLength = 11;` builds 11 blocks over a pit (12 is too long and collapses) | Step after the bridge → **April**'s double jump | Kervin |
 | 3 High ledge | Falling floor at the bottom, ledge, falling stairs up to a balcony | `double jumpPower = 1.5;` (range 1.0–2.0) | Falling floor → **Kervin**'s sprint; ledge → jumpPower + double jump | Psalm |
-| 4 Fan shaft | Drop to the bottom, crawl under the wall to the fan, fan up 27 tiles, Rock Head elevator to the top | `boolean fanOn = true;` | 1-tile gap under the wall → **Psalm**'s shrink | – |
+| 4 Fan shaft | Drop to the bottom (checkpoint; a Rock Head rides back up), cross Psalm's vents to the fan room, fan up 22 tiles to the platform, Rock Head elevator to the top | `boolean fanOn = true;` | The vents, all **Psalm**: a 1-tile gap under the wall, a low vent with a saw along its ceiling (stay tiny; it sends anyone taller back to the checkpoint), a jump into a 1-tile gap over a block, a Rock Head lift, a high vent where two Spike Heads slam down to just over tiny Psalm's head, and a 1-tile gap into the fan room | – |
 | 5 Three paths | Paths over a chasm; fruit on A and C too, so `path` changes several times | `char path = 'B';` (clue tells the letter) | Gap at the end of path B → **Sarah**'s dash | – |
 | 6 Final exam | 2 x 2 screens, six sections with flags (below) | changes **every** variable | all five heroes | Level complete |
 
@@ -221,4 +225,4 @@ Stars, fruits collected, time, and mistakes made.
   higher, and Kervin could stick on that corner at the end of Room 3's falling floor.
   A real wall still stops everyone.
 - Dash: 0.3 s, 90 px. `tools/test_level1.gd` tries every hero-only obstacle with the other
-  heroes at jumpPower 2.0, tiny Psalm included (94 checks).
+  heroes at jumpPower 2.0, tiny Psalm included (105 checks).

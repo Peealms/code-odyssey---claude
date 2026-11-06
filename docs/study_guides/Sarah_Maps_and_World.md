@@ -19,13 +19,14 @@
 | 1 Wide gap | 40x32 | wood/orange | saws | `String hero` + dash (Sarah) |
 | 2 Bridge | 40x21 | teal/pink | spiked balls | `int` (11 ok, 12 collapses, 5.5 error) + double jump |
 | 3 High ledge | 40x32 | stone/grass | falling platforms | `double jumpPower` + sprint (rescues Psalm) |
-| 4 Fan shaft | 40x43 | wood/orange | Rock Heads | `boolean fanOn` + shrink (Psalm) under the wall |
+| 4 Fan shaft | 40x43 | wood/orange | Rock Heads, saw, Spike Heads | `boolean fanOn` + Psalm's vents (1-tile gaps, a saw and Spike Heads to stay tiny under) |
 | 5 Three paths | 40x21 | teal/pink | Spike Heads | `char path` (A/B/C) |
 | 6 Final exam | 80x42 | stone/orange | everything + fire | change every variable (6 sections) |
 
 Rooms have **floors**: some go bottom-to-top, some top-to-bottom. Rooms of different heights line up by doorway rows.
-Fruit per room: 16, 22, 20, 23, 23, 26, then 15/12/12/11/15/20 in the exam sections.
+Fruit per room: 16, 22, 20, 23, 29, 26, then 15/12/12/11/15/20 in the exam sections.
 Optional corners (galleries, balconies, shelves) still hold needed fruit but never lead past a puzzle.
+Room 4's drop is one way down, so a Rock Head elevator rides back up through its bananas (a fruit you fall past isn't lost).
 
 ### Final exam sections
 1 High wall `jumpPower = 2.0` | 2 Low tunnel `jumpPower = 1.0` (at 2.0 you hit deadly ceiling spikes), then Psalm shrinks under a wall |

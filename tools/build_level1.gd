@@ -150,8 +150,11 @@ const R3 := [
 	"######xxxxxxxxxxxxxxxxxxxx##############",
 ]
 
-# Room 4 - the fan shaft: drop to the bottom, crawl under the wall as tiny Psalm (the gap is
-# 1 tile high), ride the fan up, Rock Head elevator to the top.
+# Room 4 - the fan shaft, Psalm's room: drop to the bottom (a Rock Head elevator U rides back
+# up to the entrance, through the drop's bananas, which are placed in _build), crawl under the
+# wall into the vents and cross them as tiny Psalm: under the saw W, over the block through a
+# 1-tile gap, up the Rock Head lift R, under the Spike Heads T and into the fan's room. The fan
+# n stands on the vents' middle floor and lifts you to the platform; Rock Head E to the top.
 const R4 := [
 	"............BB..........................",
 	"............BB.fffff...................>",
@@ -165,35 +168,35 @@ const R4 := [
 	"BBBBBB......BB..........................",
 	"BBBBBB......BB..........................",
 	"............BB..........................",
-	".........f..BB..f.......................",
+	"............BB..f.......................",
 	"............BB..........................",
 	"............BB....BBBBBB..E.............",
-	".........f..BB..f.BBBBBB................",
+	"............BB..f.BBBBBB................",
 	"............BB..........................",
 	"............BB..........................",
-	".........f..BB..f.......................",
+	"............BB..f.......................",
 	"............BB..........................",
 	"............BB..........................",
-	".........f..BB..f.......................",
-	"............BB..........................",
-	"............BB..........................",
-	".........f..BB..f.......................",
-	"............BB..........................",
-	"............BB..........................",
-	".........f..BB..f.......................",
-	"............BB..........................",
-	"............BB..........................",
-	"..ff........BB..........................",
-	"............BB..........................",
-	"........ff..BB..........................",
 	"............BB..f.......................",
 	"............BB..........................",
 	"............BB..........................",
 	"............BB..f.......................",
 	"............BB..........................",
 	"............BB..........................",
-	"..r.....r...BB..........................",
-	".....h..........n.......................",
+	"............BB..f.......................",
+	"............BB..........................",
+	"............BB..........................",
+	"............BBB...BBBBBBBBBBBBBBBBBBBBBB",
+	"............BB.....B.....T......T.......",
+	"............BB.....B....................",
+	"............BB..f..B....................",
+	"............BB.....B....................",
+	"............BB.....B....................",
+	"............BB..n..f.....f..f...f..f....",
+	"............BBBBBBBBBBBBBBBBBBBBBBBBBB..",
+	"............BB...........f..............",
+	"......U.....BB...W.......BB...........R.",
+	"..h.......K..f.....f.f.f.BB...f.........",
 	"########################################",
 	"########################################",
 ]
@@ -527,19 +530,36 @@ func _build() -> void:
 
 	# ---------------- Room 4: The fan shaft (needs Psalm) - Rock Heads ----------------
 	_room(rooms, 4, 0, "THE FAN SHAFT",
-		"Only Psalm fits under the wall at the bottom: switch to him and hold Down to shrink. The fan is off. Switch it on with a boolean called fanOn (true or false, no quotes), ride the air up and step onto the platform. Then ride the Rock Head up.",
+		"Only Psalm fits through the vents: switch to him and hold Down to shrink. Stay tiny under the saw and the Spike Heads, and jump into the gap over the block. The fan is off. Switch it on with a boolean called fanOn (true or false, no quotes), ride the air up and step onto the platform. Then ride the Rock Head up.",
 		"boolean fanOn = ____;", "boolean fanOn = true;")
-	# The player bobs at the top of the air column; 540 keeps even the low point of the
-	# bob above the platform (27 tiles up) so stepping off always works.
-	_inst("fan", gadgets, _foot(_a(4, "n")), {"lift_height": 540.0})
+	# The fan stands on the vents' middle floor, 22 tiles under the platform. The player bobs at
+	# the top of the air column; the extra height keeps even the low point of the bob above the
+	# platform so stepping off always works (the old fan, 27 tiles down, used 540).
+	_inst("fan", gadgets, _foot(_a(4, "n")), {"lift_height": 480.0})
 	_rock(traps, _a(4, "E"), Vector2(0, -160), 1.4, 110.0)  # elevator to the top floor
 	_rock(traps, _a(4, "S"), Vector2(-48, 0), 1.2, 80.0)  # shuttle to the balcony
-	_rock(traps, _a(4, "r", 0), Vector2(0, -128), 1.0, 90.0)
-	_rock(traps, _a(4, "r", 1), Vector2(0, -96), 1.0, 90.0, 1.0)
+	# Up and down the drop, between the entrance ledge and the bottom: the way back for a
+	# banana you fell past (riding it picks them all up), and back to Room 3.
+	_rock(traps, _a(4, "U"), Vector2(0, -480), 1.5, 200.0)
+	_rock(traps, _a(4, "R"), Vector2(0, -32), 1.2, 60.0)  # lift from the low vent to the high one
+	# The saw slides along the low vent's ceiling: tiny Psalm walks under it, anyone taller is
+	# sent back to the checkpoint (plain damage could be walked through while blinking).
+	_saw(traps, _a(4, "W"), Vector2(80, 0), 50.0, true, true)
+	# Spike Heads in the high vent slam down to 20 px above the floor: over tiny Psalm's head.
+	for i in 2:
+		_spike_head(traps, _a(4, "T", i), Vector2(0, 44), i * 0.8)
+	# The drop's bananas hang between the elevator's two columns, so falling straight down from
+	# the ledge or riding the elevator always picks them up.
+	for r in [12, 15, 18, 21, 24, 27]:
+		var banana := _inst("fruit", fruits, _px(origins[4].x + 7, origins[4].y + r + 0.5), {"fruit": "bananas"})
+		banana.add_to_group("fruit", true)
 	_flag(flags, 4, _a(4, "k"), "none")
 	_fruit_door(traps, 4)
-	_sign(signs, 4, 18, 36, "THE FAN IS\nSWITCHED OFF")
-	_sign(signs, 4, 3, 36, "TINY GAP!\nPSALM CAN SHRINK")
+	# Both signs stay out of the elevator's column (x 6-7), which would cover them.
+	_sign(signs, 4, 8, 35, "TINY GAP!\nPSALM CAN\nSHRINK")
+	_sign(signs, 4, 0, 31, "MISSED A FRUIT?\nTHE ROCK HEAD\nRIDES BACK UP")
+	_sign(signs, 4, 20, 32, "THE FAN IS\nSWITCHED OFF")
+	_sign(signs, 4, 34, 33, "STAY TINY!")
 
 	# ---------------- Room 5: Three paths - Spike Heads ----------------
 	_room(rooms, 5, 0, "THREE PATHS",
@@ -593,7 +613,7 @@ func _build() -> void:
 
 	# ---------------- Health potions (heal 30; chests throw out one more each) ----------------
 	var potions := _group("Potions")
-	for spot in [[0, 25, 17], [1, 37, 16], [1, 20, 29], [2, 27, 12], [3, 37, 20], [3, 11, 6], [4, 24, 40], [4, 36, 3],
+	for spot in [[0, 25, 17], [1, 37, 16], [1, 20, 29], [2, 27, 12], [3, 37, 20], [3, 11, 6], [4, 32, 40], [4, 36, 3],
 			[5, 37, 6], [6, 11, 38], [6, 27, 38], [6, 72, 38], [6, 77, 17], [6, 22, 17], [6, 5, 3]]:
 		_inst("potion", potions, _foot(origins[spot[0]] + Vector2i(spot[1], spot[2])))
 
@@ -968,10 +988,12 @@ func _fruit_door(parent: Node, i: int, rescue_flag: Node = null) -> void:
 
 
 ## A saw. On the floor (`on_floor`) it sits half a tile above the ground under its anchor;
-## otherwise it's centred in the anchor cell.
-func _saw(parent: Node, cell: Vector2i, travel: Vector2, speed: float, on_floor := false) -> void:
+## otherwise it's centred in the anchor cell. (`on_floor` really centres it on the anchor
+## cell's top edge: an anchor a tile above the walking row puts it 32 px over the floor.)
+## `to_checkpoint`: a hit also sends the player back to the last checkpoint.
+func _saw(parent: Node, cell: Vector2i, travel: Vector2, speed: float, on_floor := false, to_checkpoint := false) -> void:
 	var pos := _px(cell.x + 0.5, cell.y) if on_floor else _px(cell.x + 0.5, cell.y + 0.5)
-	_inst("saw", parent, pos, {"travel": travel, "speed": speed})
+	_inst("saw", parent, pos, {"travel": travel, "speed": speed, "send_to_checkpoint": to_checkpoint})
 
 
 ## A spiked ball hanging from the top edge of its anchor cell.
