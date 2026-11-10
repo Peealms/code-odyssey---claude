@@ -53,6 +53,7 @@ func _on_boss_started() -> void:
 	if byte:
 		byte.visible = false
 	get_node("CodeTerminal").locked_reason = "BYTE IS HIDING!"
+	hero_wheel.locked_reason = "YOUR RULE PICKS THE HERO NOW!"
 	hud.show_message("CAPTAIN CLOWN NOSE!", 2.0)
 
 
@@ -60,6 +61,7 @@ func _on_boss_stopped() -> void:
 	if byte:
 		byte.visible = true
 	get_node("CodeTerminal").locked_reason = ""
+	hero_wheel.locked_reason = ""
 
 
 func _on_boss_defeated() -> void:

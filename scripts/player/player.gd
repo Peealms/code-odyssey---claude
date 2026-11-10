@@ -20,36 +20,42 @@ signal stamina_changed(stamina: float, max_stamina: float, exhausted: bool)
 signal died
 
 ## `hand`: where the sword is held (its pivot), in player pixels, facing right.
+## `head`: where the head is in the 40x40 idle frames (the HUD portrait and the hero wheel).
 const HERO_DATA := {
 	"chelzy": {
 		"name": "Chelzy",
 		"frames": "res://assets/shared/heroes/chelzy/chelzy_frames.tres",
 		"trait": "wall_jump",
 		"hand": Vector2(5, 1),
+		"head": Rect2(11, 5, 18, 18),
 	},
 	"sarah": {
 		"name": "Sarah",
 		"frames": "res://assets/shared/heroes/sarah/sarah_frames.tres",
 		"trait": "dash",
 		"hand": Vector2(5, 6),
+		"head": Rect2(11, 15, 18, 18),
 	},
 	"april": {
 		"name": "April",
 		"frames": "res://assets/shared/heroes/april/april_frames.tres",
 		"trait": "double_jump",
 		"hand": Vector2(5, 6),
+		"head": Rect2(11, 15, 18, 18),
 	},
 	"kervin": {
 		"name": "Kervin",
 		"frames": "res://assets/shared/heroes/kervin/kervin_frames.tres",
 		"trait": "sprint",
 		"hand": Vector2(5, 4),
+		"head": Rect2(11, 12, 18, 18),
 	},
 	"psalm": {
 		"name": "Psalm",
 		"frames": "res://assets/shared/heroes/psalm/psalm_frames.tres",
 		"trait": "shrink",
 		"hand": Vector2(5, 11),
+		"head": Rect2(11, 21, 18, 18),
 	},
 }
 
@@ -116,6 +122,8 @@ const SMALL_SIZE := Vector2(10, 12)
 var hero_id := "chelzy"
 var facing := 1
 var input_enabled := true
+## True while the hero wheel is open (hold Q): a left click there doesn't use the held item.
+var wheel_open := false
 ## Set by the code terminal (boolean hasSword = true;). Puts the sword in the hotbar.
 var has_sword := false:
 	set(value):
@@ -529,7 +537,7 @@ func _cancel_swing() -> void:
 func _update_sword() -> void:
 	var held := held_item()
 	if held.begins_with(ItemDB.MANUAL_PREFIX):
-		if input_enabled and Input.is_action_just_pressed("attack"):
+		if input_enabled and not wheel_open and Input.is_action_just_pressed("attack"):
 			var reader := get_tree().get_first_node_in_group("manual_reader")
 			if reader:
 				reader.open(ItemDB.get_item(held)["manual"])
@@ -538,7 +546,7 @@ func _update_sword() -> void:
 		return
 	sword_holder.scale.x = facing
 	sword_hitbox.position.x = sword_reach * facing
-	if input_enabled and Input.is_action_just_pressed("attack") and _sword_cooldown_timer <= 0.0 \
+	if input_enabled and not wheel_open and Input.is_action_just_pressed("attack") and _sword_cooldown_timer <= 0.0 \
 			and not is_small:
 		_swing()
 	if _swing_timer > 0.0:

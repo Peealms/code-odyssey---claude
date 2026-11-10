@@ -30,6 +30,8 @@ extends Node2D
 const COMPLETE_SCREEN := preload("res://scenes/ui/level_complete.tscn")
 const HERO_CUTSCENE := preload("res://scenes/ui/hero_cutscene.tscn")
 
+## Hold Q: switch to a hero you've already switched to in code (see HeroWheel).
+var hero_wheel: HeroWheel
 var respawn_position := Vector2.ZERO
 var _map_bottom := 0.0
 var _finished := false
@@ -43,6 +45,9 @@ func _ready() -> void:
 		if not Game.current_hero in starting_heroes:
 			player.set_hero(starting_heroes[0], false)
 	_setup_camera_limits()
+	hero_wheel = HeroWheel.new()
+	hero_wheel.player = player
+	add_child(hero_wheel)
 	respawn_position = spawn_point.global_position
 	player.global_position = respawn_position
 

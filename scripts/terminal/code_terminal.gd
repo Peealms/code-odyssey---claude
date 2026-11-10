@@ -248,6 +248,7 @@ func _run_action(action: Dictionary) -> void:
 			byte.say("NO ROOM!", 1.5)
 		return
 	_apply_value(name, value)
+	var joined_wheel: bool = name == "hero" and Game.add_wheel_hero(value)
 
 	if name == "hasSword" and value:
 		var slot: int = player.inventory.find("sword") + 1
@@ -256,6 +257,8 @@ func _run_action(action: Dictionary) -> void:
 		_byte_line("Nice! You made %s and stored %s in it." % [name, values[name]])
 	else:
 		_byte_line("Nice! %s changed to %s." % [name, values[name]])
+	if joined_wheel:
+		_byte_line("%s is on your hero wheel now! Close me, then hold Q to switch heroes without typing." % values[name])
 	if byte:
 		byte.react(true)
 		byte.say("NICE!", 1.5)
@@ -341,7 +344,31 @@ func apply_from_rule(name: String, value: Variant) -> void:
 	if name == "hero" and value == player.hero_id:
 		return
 	_apply_value(name, value)
+	if name == "hero":
+		Game.add_wheel_hero(value)  # the player typed hero = "..." inside the rule
 	variable_set.emit(name, value)
+
+
+## The hero wheel (hold Q) switches hero. If `hero` exists in the code it changes too, exactly
+## like typing hero = "April"; (so rules that check hero run), and the line shows in the log.
+## Returns false if Psalm is shrunk somewhere a bigger hero wouldn't fit.
+func switch_from_wheel(hero_id: String) -> bool:
+	if hero_id == player.hero_id:
+		return true
+	if not player.can_change_hero():
+		return false
+	if not values.has("hero"):
+		return player.set_hero(hero_id)
+	_apply_value("hero", hero_id)
+	_append("[color=#%s]> hero = \"%s\";[/color]  [color=#%s](hero wheel)[/color]" % [COLOR_CODE, values["hero"], COLOR_HINT])
+	variable_set.emit("hero", hero_id)
+	return true
+
+
+## What the player would type to switch to this hero: the type is left out once hero exists.
+func hero_line(hero_id: String) -> String:
+	var line := "hero = \"%s\";" % _java_text("hero", hero_id)
+	return line if values.has("hero") else "String " + line
 
 
 ## System.out.println(...) inside a rule.

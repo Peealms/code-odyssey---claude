@@ -13,6 +13,9 @@ const OLD_HERO_IDS := {"ninja_frog": "chelzy", "pink_man": "sarah", "mask_dude":
 
 var current_hero: String = "chelzy"
 var unlocked_heroes: Array = ["chelzy"]
+## Heroes on the hero wheel (hold Q): a hero joins the first time the player switches to them
+## in code after rescuing them. Saved for good, so it's typed once, not in every level.
+var wheel_heroes: Array = ["chelzy"]
 ## Best stars per level id, e.g. {"level1": 3}. Saved with progress.
 var best_stars: Dictionary = {}
 
@@ -83,6 +86,19 @@ func unlock_hero(hero_id: String) -> void:
 
 func is_hero_unlocked(hero_id: String) -> bool:
 	return hero_id in unlocked_heroes
+
+
+## Puts a rescued hero on the hero wheel. Returns true if they just joined it.
+func add_wheel_hero(hero_id: String) -> bool:
+	if not hero_id in HEROES or not hero_id in unlocked_heroes or hero_id in wheel_heroes:
+		return false
+	wheel_heroes.append(hero_id)
+	save_progress()
+	return true
+
+
+func is_on_wheel(hero_id: String) -> bool:
+	return hero_id in wheel_heroes
 
 
 # ---------------- Level stats & stars ----------------
@@ -177,6 +193,7 @@ func save_progress() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("progress", "unlocked_heroes", unlocked_heroes)
 	cfg.set_value("progress", "current_hero", current_hero)
+	cfg.set_value("progress", "wheel_heroes", wheel_heroes)
 	cfg.set_value("progress", "best_stars", best_stars)
 	cfg.save(SAVE_PATH)
 
@@ -186,6 +203,8 @@ func load_progress() -> void:
 	if cfg.load(SAVE_PATH) == OK:
 		unlocked_heroes = cfg.get_value("progress", "unlocked_heroes", unlocked_heroes)
 		current_hero = cfg.get_value("progress", "current_hero", current_hero)
+		# A save from before the hero wheel: the hero being played was surely typed.
+		wheel_heroes = cfg.get_value("progress", "wheel_heroes", [HEROES[0], current_hero])
 		best_stars = cfg.get_value("progress", "best_stars", best_stars)
 		_update_old_hero_ids()
 
@@ -201,6 +220,12 @@ func _update_old_hero_ids() -> void:
 	current_hero = OLD_HERO_IDS.get(current_hero, current_hero)
 	if not current_hero in unlocked_heroes:
 		current_hero = HEROES[0]
+	var on_wheel: Array = [HEROES[0]]
+	for id in wheel_heroes:
+		var new_id: String = OLD_HERO_IDS.get(id, id)
+		if new_id in HEROES and not new_id in on_wheel:
+			on_wheel.append(new_id)
+	wheel_heroes = on_wheel
 
 
 func has_save() -> bool:
@@ -210,5 +235,6 @@ func has_save() -> bool:
 func reset_progress() -> void:
 	unlocked_heroes = [HEROES[0]]
 	current_hero = HEROES[0]
+	wheel_heroes = [HEROES[0]]
 	best_stars = {}
 	save_progress()

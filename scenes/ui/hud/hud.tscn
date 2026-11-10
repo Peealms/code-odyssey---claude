@@ -1,7 +1,7 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_script"]
-[ext_resource type="SpriteFrames" path="res://assets/shared/heroes/chelzy/chelzy_frames.tres" id="2_frames"]
+[ext_resource type="Script" path="res://scripts/ui/hero_head.gd" id="2_head"]
 
 [sub_resource type="StyleBoxFlat" id="chip"]
 content_margin_left = 6.0
@@ -14,6 +14,18 @@ border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
 border_color = Color(0.952941, 0.835294, 0.607843, 0.6)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="key"]
+content_margin_left = 3.0
+content_margin_top = 1.0
+content_margin_right = 2.0
+bg_color = Color(0.129412, 0.121569, 0.188235, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.894118, 0.470588, 1)
 anti_aliasing = false
 
 [sub_resource type="StyleBoxFlat" id="bar_bg"]
@@ -50,16 +62,29 @@ offset_right = 178.0
 offset_bottom = 46.0
 theme_override_styles/panel = SubResource("chip")
 
-[node name="HeroIcon" type="AnimatedSprite2D" parent="TopLeft"]
-position = Vector2(17, 21)
-sprite_frames = ExtResource("2_frames")
-animation = &"idle"
-autoplay = "idle"
-offset = Vector2(0, -4)
+[node name="HeroHead" type="Control" parent="TopLeft"]
+layout_mode = 0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = 38.0
+offset_bottom = 38.0
+mouse_filter = 2
+script = ExtResource("2_head")
+
+[node name="WheelKey" type="Label" parent="TopLeft"]
+layout_mode = 0
+offset_left = 27.0
+offset_top = 26.0
+offset_right = 39.0
+offset_bottom = 39.0
+theme_override_colors/font_color = Color(1, 0.894118, 0.470588, 1)
+theme_override_styles/normal = SubResource("key")
+text = "Q"
+horizontal_alignment = 1
 
 [node name="HeroLabel" type="Label" parent="TopLeft"]
 layout_mode = 0
-offset_left = 34.0
+offset_left = 42.0
 offset_top = 8.0
 offset_right = 170.0
 offset_bottom = 20.0
@@ -68,7 +93,7 @@ text = "CHELZY"
 
 [node name="TraitLabel" type="Label" parent="TopLeft"]
 layout_mode = 0
-offset_left = 34.0
+offset_left = 42.0
 offset_top = 22.0
 offset_right = 170.0
 offset_bottom = 34.0

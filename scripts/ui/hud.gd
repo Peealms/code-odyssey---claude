@@ -12,7 +12,7 @@ const TRAIT_TEXT := {
 const STAMINA_COLOR := Color(1, 0.827451, 0.301961)
 const EXHAUSTED_COLOR := Color(0.5, 0.48, 0.52)
 
-@onready var hero_icon: AnimatedSprite2D = $TopLeft/HeroIcon
+@onready var hero_head: HeroHead = $TopLeft/HeroHead
 @onready var hero_label: Label = $TopLeft/HeroLabel
 @onready var trait_label: Label = $TopLeft/TraitLabel
 @onready var fruit_label: Label = $TopRight/FruitLabel
@@ -54,8 +54,7 @@ func set_stamina(stamina: float, max_stamina: float, exhausted: bool) -> void:
 
 
 func show_hero(hero_id: String, hero_data: Dictionary) -> void:
-	hero_icon.sprite_frames = load(hero_data["frames"])
-	hero_icon.play("idle")
+	hero_head.hero_id = hero_id
 	hero_label.text = hero_data["name"]
 	trait_label.text = "TRAIT: " + TRAIT_TEXT.get(hero_data["trait"], "?")
 
