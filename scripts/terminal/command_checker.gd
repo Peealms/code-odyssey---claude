@@ -6,6 +6,7 @@ extends RefCounted
 ##   <Type> <name> = <value>;      declare a new variable    String hero = "Sarah";
 ##   <name> = <value>;             change one you declared   hero = "April";
 ##   System.out.println(<value>);  print text / a number / a variable
+##   if (...) { ... } else ...     a rule for a machine (Level 2, see RuleChecker)
 ##
 ## check() returns:
 ##   ok      true if every step passed
@@ -35,20 +36,25 @@ var variables: Dictionary
 var allow_redeclare := false
 
 var _steps: Array = []
+var _rules: RuleChecker
 
 
 func _init(level_variables: Dictionary = VariableLibrary.VARIABLES) -> void:
 	variables = level_variables
+	_rules = RuleChecker.new()
 
 
 ## values:   current value of each declared variable (for println)
 ## unlocked: hero ids the player may switch to, or [] for all
 ## declared: names the player has already declared in this level
-func check(source: String, values := {}, unlocked: Array = [], declared: Array = []) -> Dictionary:
+## allow_bugs: only for the captain's broken rules - accept a ; after if (...) the way Java does
+func check(source: String, values := {}, unlocked: Array = [], declared: Array = [], allow_bugs := false) -> Dictionary:
 	_steps = []
 	var line := source.strip_edges()
 	if line == "":
 		return _fail("Code", "Type a line of code first. Try: String hero = \"Sarah\";")
+	if RuleChecker.is_rule(line):
+		return _rules.check(self, line, values, unlocked, declared, allow_bugs)
 	if line.to_lower().begins_with("system."):
 		return _check_print(line, values)
 	return _check_assignment(line, unlocked, declared)
@@ -56,7 +62,8 @@ func check(source: String, values := {}, unlocked: Array = [], declared: Array =
 
 # ---------------- String hero = "Sarah";   /   hero = "April"; ----------------
 
-func _check_assignment(line: String, unlocked: Array, declared: Array) -> Dictionary:
+## in_rule: the statement is inside a rule's { } (machines may be set there, nothing may be declared).
+func _check_assignment(line: String, unlocked: Array, declared: Array, in_rule := false) -> Dictionary:
 	if not line.ends_with(";"):
 		return _fail("Semicolon", "Every Java statement ends with a semicolon. Add ; at the end.")
 	_pass("Ends with ;")
@@ -96,7 +103,28 @@ func _check_assignment(line: String, unlocked: Array, declared: Array) -> Dictio
 		return _fail("Variable name", name_error)
 	var spec: Dictionary = variables[name]
 
-	if declaring:
+	# Level 2: readings can't be set, machines only take rules.
+	var kind := VariableLibrary.kind_of(spec)
+	if kind == "reading":
+		return _fail("Readings", "You can't change %s! You can only check it in an if, like: if (%s ...)" % [spec.get("noun", name), name])
+	if kind == "machine":
+		if not in_rule:
+			var fixed := "if (___) { %s = %s; }" % [name, value_text]
+			var result := _fail("Rules, not orders", "The %s runs by itself - Byte can't stand next to it changing it every time things change. Give it a rule that says WHEN: I put one in for you - replace ___ with a condition." % spec.get("noun", name))
+			result["fix"] = fixed
+			return result
+		if declaring:
+			return _fail("No type", "%s belongs to the %s - it already exists, so leave out the type: %s = %s;" % [name, spec.get("noun", name), name, value_text])
+		type = spec["type"]
+		_pass("Setting " + name)
+	elif in_rule and declaring:
+		if name in declared:
+			return _fail("No type", "%s already exists, so leave out the type: %s = %s;" % [name, name, value_text])
+		return _fail("No type", "Make variables before the if - a variable made inside { } disappears at the }.")
+
+	if kind == "machine":
+		pass
+	elif declaring:
 		if type != spec["type"]:
 			return _fail("Type matches", "%s is %s, so it must be a %s, not %s." % [name, spec["about"], spec["type"], type])
 		if name in declared and not allow_redeclare:
@@ -229,6 +257,7 @@ func _check_print(line: String, values: Dictionary) -> Dictionary:
 
 	var arg := inside.substr(1, inside.length() - 2).strip_edges()
 	var text := ""
+	var var_name := ""  # set when printing a variable, so a rule can print its value at run time
 	if arg == "":
 		text = ""
 	elif arg.begins_with("\"") or arg.ends_with("\""):
@@ -240,6 +269,10 @@ func _check_print(line: String, values: Dictionary) -> Dictionary:
 		text = arg
 	elif values.has(arg):
 		text = str(values[arg])
+		var_name = arg
+	elif variables.has(arg) and VariableLibrary.kind_of(variables[arg]) != "":
+		text = "?"  # a reading or machine: its value is looked up when it runs
+		var_name = arg
 	elif variables.has(arg):
 		return _fail("Value", "%s hasn't been made yet. Declare it first: %s %s = ...;" % [arg, variables[arg]["type"], arg])
 	elif _is_identifier(arg):
@@ -247,7 +280,7 @@ func _check_print(line: String, values: Dictionary) -> Dictionary:
 	else:
 		return _fail("Value", "I can print text in quotes, numbers, or variables you made.")
 	_pass("Value can print")
-	return _ok({"type": "print", "text": text})
+	return _ok({"type": "print", "text": text, "name": var_name})
 
 
 # ---------------- helpers ----------------

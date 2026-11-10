@@ -12,6 +12,8 @@ signal defeated
 @export var patrol_right := 120.0
 @export var attack_range := 52.0  ## How close the player must be before Crabby pinches.
 @export var contact_damage := 20.0  ## Health the player loses per touch or pinch.
+## Another enemy's art with the same animations (Level 2's Pink Star and Fierce Tooth).
+@export var frames: SpriteFrames
 
 ## Attack animation frames where the claws are stretched out and the ClawBox hurts.
 const CLAW_FRAMES := [1, 2]
@@ -32,6 +34,8 @@ var _dead := false
 
 
 func _ready() -> void:
+	if frames:
+		sprite.sprite_frames = frames
 	health = max_health
 	health_bar.max_value = max_health
 	health_bar.value = max_health

@@ -169,6 +169,142 @@ The new value must still fit the type: [code]jumpPower = "low";[/code] won't wor
 Change [code]jumpPower[/code] back to a smaller number - and remember, it already exists.[/color]""",
 		],
 	},
+
+	# ---------------- Level 2: conditionals ----------------
+	"if_else": {
+		"title": "MANUAL: IF AND ELSE",
+		"book": 0,
+		"pages": [
+			"""[b]Programs make decisions[/b]
+An [b]if[/b] asks a yes-or-no question - the [b]condition[/b] - and runs its code only when the answer is [b]true[/b]:
+
+[code]if (key == 7) {[/code]
+[code]    rightDoorOpen = true;[/code]
+[code]}[/code]
+
+The condition goes in ( ). The code it runs goes in { }.""",
+
+			"""[b]else: otherwise[/b]
+[b]else[/b] runs when the condition is [b]false[/b]. Exactly one of the two parts runs - never both:
+
+[code]if (key == 7) {[/code]
+[code]    rightDoorOpen = true;[/code]
+[code]} else {[/code]
+[code]    leftDoorOpen = true;[/code]
+[code]}[/code]""",
+
+			"""[b]= stores, == asks[/b]
+[code]key = 7;[/code]    store 7 in key
+[code]key == 7[/code]    is key 7? true or false
+
+[color=#c0392b]NO[/color]   [code]if (key = 7)[/code]   that stores, it doesn't ask
+[color=#2e7d32]OK[/color]   [code]if (key == 7)[/code]""",
+
+			"""[color=#2e7d32][b]Byte's hint:[/b] the captain's two doors follow the rule on the sign. You can't change the captain's rule - but you can change [b]key[/b]!
+Make an [b]int[/b] called [code]key[/code] and see which door opens. Then try another number... there are coins behind both doors.
+Stand in front of an open door and press [b]W[/b] to go in.[/color]""",
+		],
+	},
+	"comparing": {
+		"title": "MANUAL: COMPARING VALUES",
+		"book": 4,
+		"pages": [
+			"""[b]Six ways to compare[/b]
+[code]==[/code]  is equal to          [code]tide == 4[/code]
+[code]!=[/code]  is not equal to      [code]tide != 0[/code]
+[code]> [/code]  is greater than      [code]tide > 3[/code]
+[code]< [/code]  is less than         [code]tide < 2[/code]
+[code]>=[/code]  greater than or equal [code]tide >= 4[/code]
+[code]<=[/code]  less than or equal    [code]tide <= 1[/code]
+Each one gives [b]true[/b] or [b]false[/b].""",
+
+			"""[b]Read them out loud[/b]
+[code]tide >= 4[/code]  "the tide is 4 [i]or more[/i]"
+[code]tide > 4[/code]   "the tide is [i]more than[/i] 4" (5, not 4!)
+
+The = always comes [b]last[/b]: [code]>=[/code] and [code]<=[/code], never [code]=>[/code].""",
+
+			"""[b]Rules, not orders[/b]
+The island's machines run by themselves, so they don't take orders like [code]anchorUp = true;[/code]
+Give them a [b]rule[/b] instead. The rule runs again [b]every time[/b] the tide changes - like real game code, which checks its ifs over and over.""",
+
+			"""[color=#2e7d32][b]Byte's hint:[/b] the reef needs a tide of 4 or more. Write a rule for the ship's anchor:
+[code]if (tide ... ) { anchorUp = true; }[/code]
+Then get on board and wait - the rule waits for the tide for you.[/color]""",
+		],
+	},
+	"else_if": {
+		"title": "MANUAL: ELSE IF",
+		"book": 2,
+		"pages": [
+			"""[b]More than two choices[/b]
+[b]else if[/b] checks another condition when the first one was false:
+
+[code]if (wind >= 7) {[/code]
+[code]    sails = 0;[/code]
+[code]} else if (wind >= 3) {[/code]
+[code]    sails = 1;[/code]
+[code]} else {[/code]
+[code]    sails = 2;[/code]
+[code]}[/code]""",
+
+			"""[b]Java checks from the top[/b]
+It tries each condition in order and runs the [b]first[/b] one that is true - then skips the rest.
+
+So the order matters! With [code]wind >= 3[/code] first, a wind of 8 runs that part, and [code]wind >= 7[/code] is never even checked.
+[b]Put the biggest number first.[/b]""",
+
+			"""[b]Don't forget the else[/b]
+If no condition is true and there's no [b]else[/b], nothing runs at all - and the sails stay however they were.
+
+[color=#2e7d32][b]Byte's hint:[/b] read the sailor's table at the dock and turn it into one rule with if, else if and else. Then get on board![/color]""",
+		],
+	},
+	"strings_booleans": {
+		"title": "MANUAL: STRINGS, CHARS & BOOLEANS",
+		"book": 1,
+		"pages": [
+			"""[b]Strings use .equals[/b]
+Compare text with [b].equals[/b], not ==:
+
+[color=#2e7d32]OK[/color]   [code]if (word.equals("ahoy"))[/code]
+[color=#c0392b]NO[/color]   [code]if (word == "ahoy")[/code]
+
+== asks whether both are the very same String [i]object[/i], so it can say false even when every letter matches.
+equals checks every letter - capitals too.""",
+
+			"""[b]chars use ==[/b]
+A char isn't an object, so == is right for it:
+
+[code]if (move == 'C')[/code]   single quotes!
+
+[b]booleans are already true or false[/b]
+[code]if (awake == true)[/code] works, but [code]if (awake)[/code] says the same thing.""",
+
+			"""[color=#2e7d32][b]Byte's hint:[/b] the lookout shouts a word every few seconds. The gate may only be open when he shouts [b]ahoy[/b] - any other word and he fires the cannon!
+Later, in the hold, the crew wakes up now and then. Lights off when they're [b]awake[/b]...[/color]""",
+		],
+	},
+	"fixing_bugs": {
+		"title": "MANUAL: FIXING BUGS",
+		"book": 3,
+		"pages": [
+			"""[b]The captain's five bugs[/b]
+1. [code]if (tide = 0)[/code]  = stores. Compare with ==.
+2. [code]if (tide >= 4);[/code]  the ; ends the if - the { } after it always runs.
+3. [code]else if[/code]s in the wrong order - a smaller number first hides the bigger one.""",
+
+			"""4. [code]word.equals("Treasure")[/code]  equals checks capitals too.
+5. An if with no else never undoes its change.
+
+Opening the terminal in each part of the cove puts the captain's rule in for you. Find the bug, fix it, press Enter.""",
+
+			"""[color=#2e7d32][b]Byte's hint:[/b] at the end the captain fights you himself - and I'll have to hide! Leave me a rule that picks the right hero for each of his moves:
+'C' charge - who can jump twice?
+'T' thrown sword - who can shrink under it?
+'S' swing - who can dash away?[/color]""",
+		],
+	},
 }
 
 

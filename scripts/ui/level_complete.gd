@@ -40,8 +40,8 @@ func show_results(result: Dictionary, replay_path: String, next_path: String) ->
 	_stars_earned = result["stars"]
 	_title.text = result["title"]
 	var secs := int(result["seconds"])
-	_stats.text = "TIME:  %d:%02d\nFRUITS:  %d / %d\nMISTAKES:  %d\nANSWERS SHOWN:  %d\nBEST:  %d STARS" % [
-		secs / 60, secs % 60, result["fruits"], result["fruit_total"],
+	_stats.text = "TIME:  %d:%02d\n%s:  %d / %d\nMISTAKES:  %d\nANSWERS SHOWN:  %d\nBEST:  %d STARS" % [
+		secs / 60, secs % 60, result.get("item_word", "FRUITS"), result["fruits"], result["fruit_total"],
 		result["mistakes"], result["answers_shown"], result["best"]]
 	if _stars_earned == 3:
 		_note.text = "PERFECT - NO ANSWERS SHOWN!"

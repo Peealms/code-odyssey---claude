@@ -9,7 +9,7 @@ signal first_opened(manual_id: String)
 const POTION := preload("res://scenes/objects/health_potion.tscn")
 
 ## Which manual from ManualLibrary is inside. Add new ids here when you add manuals.
-@export_enum("variables_101", "data_types", "numbers", "booleans_chars", "changing_variables") var manual_id: String = "variables_101"
+@export_enum("variables_101", "data_types", "numbers", "booleans_chars", "changing_variables", "if_else", "comparing", "else_if", "strings_booleans", "fixing_bugs") var manual_id: String = "variables_101"
 ## Health potions that jump out the first time the chest is opened (touch one to heal 30 HP).
 @export_range(0, 3) var potions := 1
 

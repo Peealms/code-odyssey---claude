@@ -142,6 +142,7 @@ func _on_level_complete() -> void:
 	var result := Game.finish_level()
 	result["fruits"] = hud.fruits
 	result["fruit_total"] = _fruit_total
+	result["item_word"] = hud.item_word.trim_suffix("S") + "S"
 	result["title"] = "LEVEL %d COMPLETE!" % level_number if level_number > 0 else "%s COMPLETE!" % level_title
 	if byte:
 		byte.react(true)

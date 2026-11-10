@@ -63,6 +63,34 @@ func all_fruit_collected() -> bool:
 	return fruit_collected >= fruit_total
 
 
+## Level 2: the RuleRunners under this room.
+func rule_runners() -> Array[RuleRunner]:
+	var out: Array[RuleRunner] = []
+	for child in get_children():
+		if child is RuleRunner:
+			out.append(child)
+	return out
+
+
+## The runner a typed rule goes to (the first one that isn't locked), or null.
+func player_runner() -> RuleRunner:
+	for r in rule_runners():
+		if not r.locked:
+			return r
+	return null
+
+
+## The runner the HUD's rule panel shows: the player's, else the first locked one on the panel.
+func panel_runner() -> RuleRunner:
+	var mine := player_runner()
+	if mine and mine.on_panel:
+		return mine
+	for r in rule_runners():
+		if r.on_panel:
+			return r
+	return null
+
+
 func _count_fruit() -> void:
 	for fruit in get_tree().get_nodes_in_group("fruit"):
 		if contains(fruit.global_position):

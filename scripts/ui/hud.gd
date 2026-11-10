@@ -22,6 +22,7 @@ const EXHAUSTED_COLOR := Color(0.5, 0.48, 0.52)
 @onready var stamina_bar: ProgressBar = $StaminaBar
 
 var fruits := 0  ## Total fruit collected in the level.
+var item_word := "FRUIT"  ## What the level collects: Level 2 sets "COINS".
 var _room: Node  ## The Room whose fruit the counter shows.
 var _message_tween: Tween
 var _health_tween: Tween
@@ -62,7 +63,7 @@ func show_hero(hero_id: String, hero_data: Dictionary) -> void:
 func set_fruits(count: int) -> void:
 	fruits = count
 	if _room == null:
-		fruit_label.text = "FRUITS: %d" % count
+		fruit_label.text = "%sS: %d" % [item_word.trim_suffix("S"), count]
 
 
 func add_fruit() -> void:
@@ -82,10 +83,10 @@ func track_room(room: Node) -> void:
 
 func _on_room_fruit(collected: int, total: int) -> void:
 	if total == 0:
-		fruit_label.text = "FRUITS: %d" % fruits
+		fruit_label.text = "%sS: %d" % [item_word.trim_suffix("S"), fruits]
 		fruit_label.remove_theme_color_override("font_color")
 		return
-	fruit_label.text = "FRUIT %d/%d" % [collected, total]
+	fruit_label.text = "%s %d/%d" % [item_word, collected, total]
 	if collected >= total:
 		fruit_label.add_theme_color_override("font_color", Color("7cf07c"))
 	else:

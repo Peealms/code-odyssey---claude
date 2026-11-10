@@ -35,7 +35,7 @@ const LEVELS := [
 	},
 	{
 		"id": "level2", "title": "CONDITIONALS", "topic": "IF / ELSE",
-		"scene": "",
+		"scene": "res://scenes/levels/level2/level2.tscn",
 		"accent": Color("ffb347"),
 		"sky": {"tex": P2 + "backgrounds/additional_sky.png"},
 		"clouds": P2 + "backgrounds/big_clouds.png",
