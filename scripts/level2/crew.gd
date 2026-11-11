@@ -81,6 +81,7 @@ func _player_here() -> bool:
 
 func _spot() -> void:
 	_spotted = true
+	if Game.immune: return  # IMMUNITY: not spotted
 	for s in _sprites:
 		s.play("attack")
 	Sound.play("blocked")

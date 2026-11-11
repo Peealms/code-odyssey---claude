@@ -1,18 +1,18 @@
 extends SceneTree
-## Builds scenes/levels/level1/level1.tscn from the room maps below (see docs/level1_design.md).
+## Builds the tutorial, scenes/levels/level1/level1.tscn, from the room map below
+## (see docs/level1_design.md). The level id stays "level1".
 ## Run:  godot --headless --path . --script res://tools/build_level1.gd
-## WARNING: this overwrites level1.tscn. Change the maps here and re-run, rather than
-## editing the scene by hand (or stop using this script once the level is final).
+## WARNING: this overwrites level1.tscn. Change the map here and re-run, rather than
+## editing the scene by hand.
 ##
-## Style follows Pixel Frog's Pixel Adventure demo: every room is a closed box with a frame,
-## its own ground, building blocks, background and trap, joined to the next room by a doorway.
-## Rooms have floors: you may start at the bottom and finish at the top, or the other way round.
-## Fruit matters: rescue flags (rooms 0-3), exit doors (rooms 3-5) and the goal need all of it.
+## Style follows Pixel Frog's Pixel Adventure demo: the room is a closed box with a frame,
+## its own ground, building blocks and background. Its fruit matters: Sarah's rescue flag and
+## the trophy both need all of it. The level script, scripts/levels/tutorial.gd, adds Byte's
+## lessons on top.
 ##
-## Each room is a text map, one character per 16 px tile (legend below). Rooms are placed
-## left to right with a 2-tile wall between them, and moved up or down so the `>` doorway of
-## one room lines up with the `<` doorway of the next. The final room is made of six sections
-## (each its own Room, with its own hint) arranged in a 2 x 2 screen box.
+## The room is a text map, one character per 16 px tile (legend below). The builder can still
+## join several rooms left to right (a `>` doorway row of one room lines up with the `<` row of
+## the next), but the tutorial has only one.
 
 const OUT := "res://scenes/levels/level1/level1.tscn"
 const T := 16
@@ -22,372 +22,41 @@ const T := 16
 ##   =  floating bar (jump up through it)
 ##   f  fruit                       ^  spikes                     x  pit spikes (back to checkpoint)
 ##   v  ceiling spikes              V  deadly ceiling spikes      w  wall spikes (point away from the wall)
-##   L  falling platform, fast (2 tiles; only a sprint makes it)  l  falling platform, slow
-##   a b c  platform of path A / B / C (2 tiles each)
-##   F  fire block   K  checkpoint flag   h  manual chest   < >  doorway rows (first / last column)
-## Any other character is an anchor: the room's code in _build() puts a gadget there.
+##   K  checkpoint flag   h  manual chest   < >  doorway rows (first / last column)
+## Any other character is an anchor: the room's code in _build() puts something there
+## (s start, g Byte's gate, k Sarah's rescue flag, G the trophy).
 
-# Room 0 - wake up: println gate, spike corridor, wall-jump shaft, gallery with steps back.
+# The tutorial room: println gate, spike corridor, wall-jump shaft, gallery with steps back,
+# Sarah's flag and the trophy on the plateau at the top right.
 const R0 := [
-	"........................................",
-	"........................................",
-	"........................................",
-	"........................................",
-	"............................BB.........>",
-	".........................===BB.........>",
-	"............................BB.f...k...>",
-	"......................===...BB...#######",
-	".....ff....ff...ff..........BB...#######",
-	"...................===......BB.f.#######",
-	".ff..^^....^^...^^..........BB...#######",
-	"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB...#######",
-	"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB.f.#######",
-	"............................BB...#######",
-	"............................BB...#######",
-	"...............ff....ff........f.#######",
-	".................................#######",
-	"..s..h....g....^^....^^..........#######",
-	"########################################",
-	"########################################",
-	"########################################",
+	"............................................",
+	"............................................",
+	"............................................",
+	"............................................",
+	"............................BB..............",
+	".........................===BB..............",
+	"............................BB.f...k.....G..",
+	"......................===...BB...###########",
+	".....ff....ff...ff..........BB...###########",
+	"...................===......BB.f.###########",
+	".ff..^^....^^...^^..........BB...###########",
+	"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB...###########",
+	"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB.f.###########",
+	"............................BB...###########",
+	"............................BB...###########",
+	"...............ff....ff........f.###########",
+	".................................###########",
+	"..s..h....g....^^....^^..........###########",
+	"############################################",
+	"############################################",
+	"############################################",
 ]
 
-# Room 1 - the wide gap: dash over the gap in a crawlspace, then down three floors of saws.
-# The crawlspace is 2 tiles high, so nobody can jump over the gap - only Sarah's dash crosses.
-const R1 := [
-	"........BBBBBBBBBBBBBBBBB...............",
-	"........BBBBBBBBBBBBBBBBB...............",
-	"........BBBBBBBBBBBBBBBBB...............",
-	"<.......BBBBBBBBBBBBBBBBB...............",
-	"<.......................................",
-	"<............fffff.........1............",
-	"BBBBBBBBBBBBBxxxxxBBBBBBBBBBBBBBBBBB....",
-	"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB....",
-	"........................................",
-	"........................................",
-	"............................2...........",
-	"........................................",
-	"........................................",
-	"........................................",
-	"........................................",
-	".....ffff......................ffff.....",
-	"............3...........................",
-	"....BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
-	"....BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
-	"........................................",
-	".........................4..............",
-	"........................................",
-	"........................................",
-	"..............................ffff......",
-	"..............................====......",
-	"........................................",
-	"........ffff............................",
-	"..........................===..........>",
-	".......................................>",
-	"......5..........................k.....>",
-	"########################################",
-	"########################################",
-]
-
-# Room 2 - the broken bridge: low corridor, bridge, double jump up the step, upper floor back.
-const R2 := [
-	"........6.....7................8........",
-	"........................................",
-	"........................................",
-	"........................................",
-	"........................................",
-	"........................................",
-	"........................................",
-	"........................................",
-	"......ffff...ffff.......................",
-	"......====...====.......................",
-	".......................................>",
-	".fff...................................>",
-	"BBBBBBBBBBBBBBBBBBBBB............k.....>",
-	"BBBBBBBBBBBBBBBBBBBBBw...###############",
-	"BBBBBBBBBBBBBBBBBBBBBw..w###############",
-	"<..BBBBBBBBBBBBBBBBBB...w###############",
-	"<........fffffffff.......###############",
-	"<..h....q................###############",
-	"########...........#####################",
-	"########xxxxxxxxxxx#####################",
-	"########################################",
-]
-
-# Room 3 - the high ledge: sprint the falling floor, jump the ledge, falling stairs to a balcony.
-const R3 := [
-	"........................................",
-	"........................................",
-	"........................................",
-	"........................................",
-	"........................................",
-	"........................................",
-	"...ffffff...............................",
-	"BBBBBBBBBBBBB...........................",
-	"BBBBBBBBBBBBB...........................",
-	"...............ll.......................",
-	"........................................",
-	"........................................",
-	"...................ll...................",
-	"........................................",
-	"........................................",
-	".......................ll...............",
-	"........................................",
-	"........................................",
-	"...........................ll..........>",
-	".......................................>",
-	"....ff......ffff......ff.........k.....>",
-	"BBBBBBBBBBBBBBBBBBBBBBBBBB.....#########",
-	"BBBBBBBBBBBBBBBBBBBBBBBBBBw...w#########",
-	"BBBBBBBBBBBBBBBBBBBBBBBBBBw...w#########",
-	"BBBBBBBBBBBBBBBBBBBBBBBBBBw...w#########",
-	"<.....BBBBBBBBBBBBBBBBBBBBw...w#########",
-	"<......f.f.f.f.f.f.f.f.f.......#########",
-	"<..............................#########",
-	"######LLLLLLLLLLLLLLLLLLLL##############",
-	"######....................##############",
-	"######....................##############",
-	"######xxxxxxxxxxxxxxxxxxxx##############",
-]
-
-# Room 4 - the fan shaft, Psalm's room: drop to the bottom (a Rock Head elevator U rides back
-# up to the entrance, through the drop's bananas, which are placed in _build), crawl under the
-# wall into the vents and cross them as tiny Psalm: under the saw W, over the block through a
-# 1-tile gap, up the Rock Head lift R, under the Spike Heads T and into the fan's room. The fan
-# n stands on the vents' middle floor and lifts you to the platform; Rock Head E to the top.
-const R4 := [
-	"............BB..........................",
-	"............BB.fffff...................>",
-	"............BBBBBBBB...S...............>",
-	"............BBBBBBBB.............k.....>",
-	"............BB...............BBBBBBBBBBB",
-	"............BB...............BBBBBBBBBBB",
-	"<...........BB..........................",
-	"<...........BB..........................",
-	"<...........BB..........................",
-	"BBBBBB......BB..........................",
-	"BBBBBB......BB..........................",
-	"............BB..........................",
-	"............BB..f.......................",
-	"............BB..........................",
-	"............BB....BBBBBB..E.............",
-	"............BB..f.BBBBBB................",
-	"............BB..........................",
-	"............BB..........................",
-	"............BB..f.......................",
-	"............BB..........................",
-	"............BB..........................",
-	"............BB..f.......................",
-	"............BB..........................",
-	"............BB..........................",
-	"............BB..f.......................",
-	"............BB..........................",
-	"............BB..........................",
-	"............BB..f.......................",
-	"............BB..........................",
-	"............BB..........................",
-	"............BBB...BBBBBBBBBBBBBBBBBBBBBB",
-	"............BB.....B.....T......T.......",
-	"............BB.....B....................",
-	"............BB..f..B....................",
-	"............BB.....B....................",
-	"............BB.....B....................",
-	"............BB..n..f.....f..f...f..f....",
-	"............BBBBBBBBBBBBBBBBBBBBBBBBBB..",
-	"............BB...........f..............",
-	"......U.....BB...W.......BB...........R.",
-	"..h.......K..f.....f.f.f.BB...f.........",
-	"########################################",
-	"########################################",
-]
-
-# Room 5 - three paths over a spike chasm; fruit on paths A and C too.
-# Path B ends in a crawlspace over a spike trench: only Sarah's dash crosses it.
-const R5 := [
-	"....................BBBBBBBBBBB.........",
-	".......T....T....T..BBBBBBBBBBB.........",
-	"....................BBBBBBBBBBB.........",
-	"....................BBBBBBBBBBB.........",
-	"<.........ffffff....BBBBBBBBBBB........>",
-	"<...aaaaaaaaaaaa..........fffff........>",
-	"<K......ffffffffff................k....>",
-	"####bbbbbbbbbbbbbbbbbbbbbb.....#########",
-	"####......................xxxxx#########",
-	"####..........ffffff......##############",
-	"####cccccccccccccccc.....w##############",
-	"####.....................w##############",
-	"####.....................w##############",
-	"####.....................w##############",
-	"####.....................w##############",
-	"####.....................w##############",
-	"####.....................w##############",
-	"####.....................w##############",
-	"####.....................w##############",
-	"####.....................w##############",
-	"####xxxxxxxxxxxxxxxxxxxxxx##############",
-]
-
-# Final exam, bottom half (left to right): high wall, low tunnel, short bridge.
-const S1 := [
-	"..........................",
-	"..........................",
-	"..........................",
-	"..........................",
-	"..........................",
-	"..........................",
-	"..........................",
-	"..........................",
-	"..........................",
-	"...................fffff..",
-	"..........................",
-	"..................########",
-	"...ffff...........########",
-	".................w########",
-	".................w########",
-	"<................w########",
-	"<....ffffff.......########",
-	"<K..h...1.........########",
-	"##########################",
-	"##########################",
-	"##########################",
-]
-# Exam 2's tunnel has a wall halfway with a 1-tile gap under it (and a fruit in it): Psalm only.
-const S2 := [
-	"..........................BB",
-	"..........................BB",
-	"..........................BB",
-	"..........................BB",
-	"..........................BB",
-	"..........................BB",
-	"..........................BB",
-	"......ff.....ff.....ff....BB",
-	"..........F......F........BB",
-	"....BBBBBBBBBBBBBBBBBBBBBBBB",
-	"....BBBBBBBBBBBBBBBBBBBBBBBB",
-	"....BBBBBBBBBBBBBBBBBBBBBBBB",
-	".....VVVVVVVVVVVVBBVVVVVVV..",
-	".................BB.........",
-	".................BB.........",
-	".......f....ff...BB....ff...",
-	".................BB.........",
-	"..K....F....^^...f.....^^...",
-	"############################",
-	"############################",
-	"############################",
-]
-const S3 := [
-	"...............7..........",
-	"..........................",
-	"..........................",
-	"......................f...",
-	"..........................",
-	"..........................",
-	"..........................",
-	"......................f...",
-	"..........................",
-	"..........................",
-	"..........................",
-	"......................f...",
-	"BBBBBBBBBBBBBBB...........",
-	"BBBBBBBBBBBBBBB...........",
-	"BBBBBBBBBBBBBBB...........",
-	"BBBBBBBBBBBBBBB...........",
-	"...ffffffffffff.......R...",
-	"...q...........K..........",
-	"###............###########",
-	"###xxxxxxxxxxxx###########",
-	"##########################",
-]
-# Final exam, top half (right to left): fan trap, last path, final gate.
-const S4 := [
-	"BB........................",
-	"BB........................",
-	"BB........................",
-	"BB........................",
-	"BB........................",
-	"BB........................",
-	"BB........................",
-	"BB........................",
-	"BB........................",
-	"BB........................",
-	"BB........................",
-	"BB........................",
-	"BB...fff.9...fff..........",
-	"BBBBBBBBBBBBBBBBBBBB......",
-	"BBBBBBBBBBBBBBBBBBBB......",
-	"..VVVVVVVVVVVVVVVVVV.===..",
-	"....f.f.f.f.f.............",
-	".....n.n.n.n.n..........K.",
-	"BBBBBBBBBBBBBBBBBBBBB...BB",
-	"BBBBBBBBBBBBBBBBBBBBB...BB",
-	"BBBBBBBBBBBBBBBBBBBBB...BB",
-]
-const S5 := [
-	"BBBBBBBBBB..................",
-	"BBBBBBBBBB..................",
-	"BBBBBBBBBB..................",
-	"BBBBBBBBBB..................",
-	"BBBBBBBBBB..................",
-	"BBBBBBBBBB..................",
-	"BBBBBBBBBB..................",
-	"BBBBBBBBBB..................",
-	"BBBBBBBBBB..................",
-	"BBBBBBBBBB.T.....T.....T....",
-	"BBBBBBBBBB..................",
-	"BBBBBBBBBB..................",
-	"BBBBBBBBBB..................",
-	"BBBBBBBBBB............fffff.",
-	"BBBBBBBBBB..................",
-	"BBBBBBBBBB........aaaaaaaaaa",
-	"fffff.......................",
-	"........f.f.f.f.f.f.f.f.f.f.",
-	".....Bcccccccccccccccccccccc",
-	"xxxxxBxxxxxxxxxxxxxxxxxxxxxx",
-	"BBBBBBBBBBBBBBBBBBBBBBBBBBBB",
-]
-const S6 := [
-	".........................B",
-	".........................B",
-	"......ff....ff....ff.....B",
-	".........F....F......G...B",
-	"...BBBBBBBBBBBBBBBBBBBBBBB",
-	"...BBBBBBBBBBBBBBBBBBBBBBB",
-	".f.BB.....................",
-	"...BB.....................",
-	"...BB.....................",
-	"...BB...f.f.f.f.f.f.f.....",
-	".f.BB..1..................",
-	"...BBBBBBBBBBBBBBBBBB.....",
-	"...BBBBBBBBBBBBBBBBBB===..",
-	"...BBBBBBBBBBBBBBBBBB.....",
-	".f.BBBBBBBBBBBBBBBBB......",
-	"...BBBBBBBBBBBBBBBBB.===..",
-	"..........f.f.f.f.........",
-	".K..................g...K.",
-	"########LLLLLLLLLLLL######",
-	"########xxxxxxxxxxxx######",
-	"##########################",
-]
-
-## One entry per room. `sections` places maps inside the room's box (most rooms have one).
+## One entry per room. `sections` places maps inside the room's box (a room can be made of
+## several sections, each its own Room node).
 const ROOMS := [
 	{"sections": [[Vector2i(0, 0), R0]], "frame": "stone", "ground": "grass", "blocks": "bronze", "bg": "green", "bar": "wood",
 		"fruit": ["apple", "bananas", "kiwi"], "manual": "variables_101"},
-	{"sections": [[Vector2i(0, 0), R1]], "frame": "wood", "ground": "orange", "blocks": "metal", "bg": "yellow", "bar": "yellow",
-		"fruit": ["orange", "strawberry", "melon"]},
-	{"sections": [[Vector2i(0, 0), R2]], "frame": "teal", "ground": "pink", "blocks": "gold", "bg": "purple", "bar": "grey",
-		"fruit": ["melon", "pineapple", "cherries"], "manual": "numbers"},
-	{"sections": [[Vector2i(0, 0), R3]], "frame": "stone", "ground": "grass", "blocks": "orange", "bg": "blue", "bar": "wood",
-		"fruit": ["strawberry", "apple", "orange"]},
-	{"sections": [[Vector2i(0, 0), R4]], "frame": "wood", "ground": "orange", "blocks": "bronze", "bg": "brown", "bar": "yellow",
-		"fruit": ["bananas", "cherries", "melon"], "manual": "booleans_chars"},
-	{"sections": [[Vector2i(0, 0), R5]], "frame": "teal", "ground": "pink", "blocks": "metal", "bg": "gray", "bar": "grey",
-		"fruit": ["kiwi", "cherries", "pineapple"]},
-	# Final exam, in the order you play it.
-	{"sections": [[Vector2i(0, 21), S1], [Vector2i(26, 21), S2], [Vector2i(54, 21), S3],
-			[Vector2i(54, 0), S4], [Vector2i(26, 0), S5], [Vector2i(0, 0), S6]],
-		"frame": "stone", "ground": "orange", "blocks": "gold", "bg": "pink", "bar": "wood",
-		"fruit": ["melon", "orange", "pineapple", "apple"], "manual": "changing_variables"},
 ]
 
 const SCENES := {
@@ -405,17 +74,7 @@ const SCENES := {
 	"checkpoint": "res://scenes/objects/checkpoint.tscn",
 	"room": "res://scenes/levels/room.tscn",
 	"gate": "res://scenes/gadgets/byte_gate.tscn",
-	"bridge": "res://scenes/gadgets/code_bridge.tscn",
-	"fan": "res://scenes/gadgets/code_fan.tscn",
-	"path": "res://scenes/gadgets/path_platform.tscn",
-	"falling": "res://scenes/gadgets/falling_platform.tscn",
 	"spikes": "res://scenes/gadgets/spikes.tscn",
-	"saw": "res://scenes/gadgets/saw.tscn",
-	"rock_head": "res://scenes/gadgets/rock_head.tscn",
-	"spike_head": "res://scenes/gadgets/spike_head.tscn",
-	"ball": "res://scenes/gadgets/spiked_ball.tscn",
-	"fire": "res://scenes/gadgets/fire_trap.tscn",
-	"fruit_door": "res://scenes/gadgets/fruit_door.tscn",
 	"potion": "res://scenes/objects/health_potion.tscn",
 }
 
@@ -452,10 +111,10 @@ func _process(_d: float) -> bool:
 func _build() -> void:
 	level = Node2D.new()
 	level.name = "Level1"
-	level.set_script(load("res://scripts/levels/level.gd"))
+	level.set_script(load("res://scripts/levels/tutorial.gd"))
 	level.set("level_id", "level1")
-	level.set("level_title", "LEVEL 1 - VARIABLES")
-	level.set("level_number", 1)
+	level.set("level_title", "TUTORIAL")
+	level.set("level_number", 0)  # the level-complete screen says "TUTORIAL COMPLETE!"
 	level.set("camera_top_margin", 0.0)
 	var heroes: Array[String] = ["chelzy"]
 	level.set("starting_heroes", heroes)
@@ -482,7 +141,7 @@ func _build() -> void:
 	var rooms := _group("Rooms")
 	var flags := _group("Checkpoints")
 
-	# ---------------- Room 0: Wake up (Chelzy only) - spikes ----------------
+	# ---------------- The room: wake up (Chelzy only) - spikes ----------------
 	_room(rooms, 0, 0, "WAKE UP",
 		"Byte's gate opens when you print something. Use System.out.println with your message in double quotes.",
 		"System.out.println(\"_____\");", "System.out.println(\"Hello Byte\");")
@@ -492,144 +151,24 @@ func _build() -> void:
 	_sign(signs, 0, 21, 13, "ONLY A WALL JUMP\nCLIMBS THIS SHAFT")
 	_sign(signs, 0, 1, 1, "FRUIT GALLERY")
 
-	# ---------------- Room 1: The wide gap (needs Sarah) - saws ----------------
-	_room(rooms, 1, 0, "THE WIDE GAP",
-		"The crawlspace is too low to jump over the gap - only Sarah's dash crosses it: walk to the edge and press Shift. Store Sarah's name in a String called hero.",
-		"String hero = \"_____\";", "String hero = \"Sarah\";")
-	_saw(traps, _a(1, "1"), Vector2(96, 0), 50.0, true)
-	_saw(traps, _a(1, "2"), Vector2(0, 80), 45.0)
-	_saw(traps, _a(1, "3"), Vector2(112, 0), 60.0, true)
-	_saw(traps, _a(1, "4"), Vector2(0, 112), 55.0)
-	_saw(traps, _a(1, "5"), Vector2(96, 0), 50.0, true)
-	_flag(flags, 1, _a(1, "k"), "april")
-	_sign(signs, 1, 1, 0, "TOO LOW TO JUMP!\nSARAH CAN DASH")
-
-	# ---------------- Room 2: The broken bridge (needs April) - spiked balls ----------------
-	_room(rooms, 2, 0, "THE BROKEN BRIDGE",
-		"Count the gap: it is 11 blocks wide. Store that whole number in an int called bridgeLength. Then the step is too high for one jump - switch to April, and since hero already exists, leave out the type.",
-		"int bridgeLength = __;", "int bridgeLength = 11;")
-	var q := _a(2, "q")
-	_inst("bridge", gadgets, _px(q.x, q.y + 1), {"max_blocks": 12, "gap_blocks": 11})  # 11 exactly: more jams and collapses
-	_ball(traps, _a(2, "6"), 160.0, 40.0, 2.4, 0.0)
-	_ball(traps, _a(2, "7"), 160.0, 45.0, 2.8, 0.5)
-	_ball(traps, _a(2, "8"), 185.0, 35.0, 2.2, 0.0)  # over the step, just reaches your head
-	_flag(flags, 2, _a(2, "k"), "kervin")
-	_sign(signs, 2, 1, 15, "GAP = 11 BLOCKS")
-	_sign(signs, 2, 26, 9, "TOO HIGH FOR\nONE JUMP")
-
-	# ---------------- Room 3: The high ledge (needs Kervin) - falling platforms ----------------
-	_room(rooms, 3, 0, "THE HIGH LEDGE",
-		"Kervin can sprint over the falling floor - hold Shift while running. The ledge is too high even for a double jump: make your first jump higher with a double called jumpPower (1.0 to 2.0 - try the highest), then double jump as April.",
-		"double jumpPower = ___;", "double jumpPower = 2.0;")
-	# The crates also wait for Psalm's rescue: without him you'd be stuck at the bottom of
-	# Room 4 (no way back up the shaft) in front of the gap only he fits through.
-	var psalm_flag := _flag(flags, 3, _a(3, "k"), "psalm")
-	_fruit_door(traps, 3, psalm_flag)
-	_sign(signs, 3, 1, 25, "RUN FAST!")
-	_sign(signs, 3, 33, 14, "TOO HIGH!\nJUMP HIGHER")
-
-	# ---------------- Room 4: The fan shaft (needs Psalm) - Rock Heads ----------------
-	_room(rooms, 4, 0, "THE FAN SHAFT",
-		"Only Psalm fits through the vents: switch to him and hold Down to shrink. Stay tiny under the saw and the Spike Heads, and jump into the gap over the block. The fan is off. Switch it on with a boolean called fanOn (true or false, no quotes), ride the air up and step onto the platform. Then ride the Rock Head up.",
-		"boolean fanOn = ____;", "boolean fanOn = true;")
-	# The fan stands on the vents' middle floor, 22 tiles under the platform. The player bobs at
-	# the top of the air column; the extra height keeps even the low point of the bob above the
-	# platform so stepping off always works (the old fan, 27 tiles down, used 540).
-	_inst("fan", gadgets, _foot(_a(4, "n")), {"lift_height": 480.0})
-	_rock(traps, _a(4, "E"), Vector2(0, -160), 1.4, 110.0)  # elevator to the top floor
-	_rock(traps, _a(4, "S"), Vector2(-48, 0), 1.2, 80.0)  # shuttle to the balcony
-	# Up and down the drop, between the entrance ledge and the bottom: the way back for a
-	# banana you fell past (riding it picks them all up), and back to Room 3.
-	_rock(traps, _a(4, "U"), Vector2(0, -480), 1.5, 200.0)
-	_rock(traps, _a(4, "R"), Vector2(0, -32), 1.2, 60.0)  # lift from the low vent to the high one
-	# The saw slides along the low vent's ceiling: tiny Psalm walks under it, anyone taller is
-	# sent back to the checkpoint (plain damage could be walked through while blinking).
-	_saw(traps, _a(4, "W"), Vector2(80, 0), 50.0, true, true)
-	# Spike Heads in the high vent slam down to 20 px above the floor: over tiny Psalm's head.
-	for i in 2:
-		_spike_head(traps, _a(4, "T", i), Vector2(0, 44), i * 0.8)
-	# The drop's bananas hang between the elevator's two columns, so falling straight down from
-	# the ledge or riding the elevator always picks them up.
-	for r in [12, 15, 18, 21, 24, 27]:
-		var banana := _inst("fruit", fruits, _px(origins[4].x + 7, origins[4].y + r + 0.5), {"fruit": "bananas"})
-		banana.add_to_group("fruit", true)
-	_flag(flags, 4, _a(4, "k"), "none")
-	_fruit_door(traps, 4)
-	# Both signs stay out of the elevator's column (x 6-7), which would cover them.
-	_sign(signs, 4, 8, 35, "TINY GAP!\nPSALM CAN\nSHRINK")
-	_sign(signs, 4, 0, 31, "MISSED A FRUIT?\nTHE ROCK HEAD\nRIDES BACK UP")
-	_sign(signs, 4, 20, 32, "THE FAN IS\nSWITCHED OFF")
-	_sign(signs, 4, 34, 33, "STAY TINY!")
-
-	# ---------------- Room 5: Three paths - Spike Heads ----------------
-	_room(rooms, 5, 0, "THREE PATHS",
-		"The sign's riddle: the 2nd letter of the alphabet. Choose it with a char called path - single quotes! Fruit is on paths A and C too: go back to the ledge, change path, collect, come back. The gap at the end needs Sarah's dash.",
-		"char path = '_';", "char path = 'B';")
-	for i in 3:
-		_spike_head(traps, _a(5, "T", i), Vector2(0, 192), i * 0.7)
-	_flag(flags, 5, _a(5, "k"), "none")
-	_fruit_door(traps, 5)
-	_sign(signs, 5, 31, 0, "SAFE PATH = THE 2ND\nLETTER OF THE ABC")
-	_sign(signs, 5, 5, 13, "GO BACK TO THE LEDGE\nBEFORE YOU SWITCH PATH")
-
-	# ---------------- Room 6: The final exam - every trap, every variable ----------------
-	_room(rooms, 6, 0, "EXAM 1: THE HIGH WALL",
-		"Only April's double jump climbs this wall (with jumpPower 2.0 from Room 3). hero already exists, so switch without the type.",
-		"hero = \"_____\";", "hero = \"April\";")
-	_room(rooms, 6, 1, "EXAM 2: THE LOW TUNNEL",
-		"With a high jumpPower every jump hits the spikes. Change jumpPower back to 1.0. Halfway along, only Psalm fits under the wall: switch to him and hold Down.",
-		"jumpPower = ___;", "jumpPower = 1.0;")
-	_room(rooms, 6, 2, "EXAM 3: THE LONG BRIDGE",
-		"This gap is 12 blocks wide. bridgeLength already exists - give it the new number.",
-		"bridgeLength = __;", "bridgeLength = 12;")
-	_room(rooms, 6, 3, "EXAM 4: THE FAN TRAP",
-		"These fans are ON and blow you into the spikes. Change fanOn to false.",
-		"fanOn = _____;", "fanOn = false;")
-	_room(rooms, 6, 4, "EXAM 5: THE LAST PATH",
-		"The safe path is the 3rd letter. Change path (single quotes!), then dash or double jump over the gap at the end.",
-		"path = '_';", "path = 'C';")
-	_room(rooms, 6, 5, "EXAM 6: THE FINAL GATE",
-		"Print exactly: I can code! Then sprint over the falling floor as Kervin and wall-jump up the shaft as Chelzy.",
-		"System.out.println(\"__________\");", "System.out.println(\"I can code!\");")
-	_saw(traps, _a(6, "1", 1), Vector2(64, 0), 60.0, true)  # high wall (anchors count from the top)
-	q = _a(6, "q")
-	_inst("bridge", gadgets, _px(q.x, q.y + 1), {"max_blocks": 12, "gap_blocks": 12})
-	_ball(traps, _a(6, "7"), 250.0, 20.0, 2.6, 0.0)  # in front of the elevator
-	_rock(traps, _a(6, "R"), Vector2(0, -304), 1.5, 140.0)  # elevator up to the fan trap
-	for cell in anchors[6]["n"]:
-		_inst("fan", gadgets, _foot(cell), {"start_on": true, "lift_height": 64.0, "width": 32.0})
-	_saw(traps, _a(6, "9"), Vector2(64, 0), 45.0, true)  # loft above the fans
-	for i in 3:
-		_spike_head(traps, _a(6, "T", i), Vector2(0, 112), i * 0.6)
-	_inst("gate", gadgets, _foot(_a(6, "g")), {"height": 3, "required_text": "I can code!"})
-	_saw(traps, _a(6, "1", 0), Vector2(128, 0), 55.0, true)  # final gate gallery
-	_sign(signs, 6, 6, 31, "WHO CAN DOUBLE\nJUMP THIS HIGH?")
-	_sign(signs, 6, 31, 34, "MIND YOUR HEAD!")
-	_sign(signs, 6, 38, 34, "WHO FITS\nUNDER HERE?")
-	_sign(signs, 6, 48, 34, "GAP = 12 BLOCKS")
-	_sign(signs, 6, 74, 10, "FANS ARE ON!")
-	_sign(signs, 6, 36, 4, "SAFE PATH = THE\n3RD LETTER")
-	_sign(signs, 6, 21, 13, "PRINT\n\"I can code!\"")
-
-	# ---------------- Health potions (heal 30; chests throw out one more each) ----------------
+	# ---------------- Health potion (heals 30; the chest throws out one more) ----------------
 	var potions := _group("Potions")
-	for spot in [[0, 25, 17], [1, 37, 16], [1, 20, 29], [2, 27, 12], [3, 37, 20], [3, 11, 6], [4, 32, 40], [4, 36, 3],
-			[5, 37, 6], [6, 11, 38], [6, 27, 38], [6, 72, 38], [6, 77, 17], [6, 22, 17], [6, 5, 3]]:
+	for spot in [[0, 25, 17]]:
 		_inst("potion", potions, _foot(origins[spot[0]] + Vector2i(spot[1], spot[2])))
 
-	# ---------------- Map characters: fruit, spikes, platforms, fire, flags, chests ----------------
+	# ---------------- Map characters: fruit, spikes, flags, chests ----------------
 	for i in ROOMS.size():
-		_place_map_things(i, fruits, gadgets, traps, chests, flags)
+		_place_map_things(i, fruits, traps, chests, flags)
 
-	# ---------------- Start, goal, player, Byte, UI ----------------
+	# ---------------- Start, trophy, player, Byte, UI ----------------
 	var start := _foot(_a(0, "s")) + Vector2(0, -16)
 	var spawn := Marker2D.new()
 	spawn.name = "SpawnPoint"
 	spawn.position = start
 	_add(spawn)
-	var exam_rooms: Array[Node] = []
-	exam_rooms.assign(room_nodes[6])
-	_inst("goal", level, _foot(_a(6, "G")), {"rooms": exam_rooms}, "EndGoal")
+	var goal_rooms: Array[Node] = []
+	goal_rooms.assign(room_nodes[0])
+	_inst("goal", level, _foot(_a(0, "G")), {"rooms": goal_rooms}, "EndGoal")
 
 	var byte := _inst("byte", level, start + Vector2(-20, -22), {}, "Byte")
 	var player := _inst("player", level, start, {}, "Player")
@@ -638,7 +177,8 @@ func _build() -> void:
 	var terminal := _inst("terminal", level, Vector2.ZERO, {}, "CodeTerminal")
 	terminal.set("player", player)
 	terminal.set("byte", byte)
-	var allowed: Array[String] = ["hero", "bridgeLength", "jumpPower", "fanOn", "path"]
+	# println needs no variable; hero is allowed so the player can try switching to Sarah.
+	var allowed: Array[String] = ["hero"]
 	terminal.set("allowed_variables", allowed)
 	terminal.set("require_unlocked_heroes", true)
 	_inst("reader", level, Vector2.ZERO, {}, "ManualReader")
@@ -703,7 +243,7 @@ func _place_rooms() -> void:
 					solid[abs_cell] = {"kind": "ground", "mat": ROOMS[i].ground}
 				"B":
 					solid[abs_cell] = {"kind": "block"}
-				".", "f", "^", "x", "v", "V", "w", "L", "l", "a", "b", "c", "F", "K", "h", "<", ">", "=":
+				".", "f", "^", "x", "v", "V", "w", "K", "h", "<", ">", "=":
 					pass
 				_:
 					if not anchors[i].has(ch):
@@ -848,11 +388,10 @@ func _ground_tile(cell: Vector2i, mat: String) -> Vector2i:
 	return GROUNDS[mat] + Vector2i(col, row)
 
 
-## Fruit, spikes, falling and path platforms, fire, flags and chests drawn in room i's map.
-func _place_map_things(i: int, fruits: Node, gadgets: Node, traps: Node, chests: Node, flags: Node) -> void:
+## Fruit, spikes, flags and chests drawn in room i's map.
+func _place_map_things(i: int, fruits: Node, traps: Node, chests: Node, flags: Node) -> void:
 	var o := origins[i]
 	var kinds: Array = ROOMS[i].fruit
-	var lettered := {}
 	for y in sizes[i].y:
 		var x := 0
 		while x < sizes[i].x:
@@ -871,19 +410,6 @@ func _place_map_things(i: int, fruits: Node, gadgets: Node, traps: Node, chests:
 				"v", "V":
 					var s := _inst("spikes", traps, _px(c.x + run, c.y), {"count": run, "send_to_checkpoint": ch == "V"})
 					s.rotation = PI
-				"L", "l":
-					for k in range(0, run, 2):
-						_inst("falling", gadgets, Vector2((c.x + k + 1) * T, c.y * T + 3), {
-							# 0.14 s: walking (130 px/s) falls through, Kervin's sprint (247 px/s) makes it.
-							"fall_delay": 0.14 if ch == "L" else 0.45, "return_time": 2.0})
-				"a", "b", "c":
-					for k in range(0, run, 2):
-						_inst("path", gadgets, Vector2((c.x + k + 1) * T, c.y * T + 3), {
-							"letter": ch.to_upper(), "show_letter": not lettered.has(ch)})
-						lettered[ch] = true
-				"F":
-					for k in run:
-						_inst("fire", traps, _foot(c + Vector2i(k, 0)), {"phase": fmod((c.x + k) * 0.37, 1.5)})  # neighbours out of step
 				"K":
 					_inst("checkpoint", flags, _foot(c), {})
 				"h":
@@ -976,39 +502,6 @@ func _flag(parent: Node, i: int, cell: Vector2i, hero: String) -> Node:
 	if hero != "none":
 		props["room"] = room_nodes[i][0]
 	return _inst("checkpoint", parent, _foot(cell), props)
-
-
-## Crates in the room's exit doorway that break once all its fruit is collected (and, with
-## `rescue_flag`, once that flag's hero is rescued).
-func _fruit_door(parent: Node, i: int, rescue_flag: Node = null) -> void:
-	var rows := _door_rows(i, sizes[i].x - 1, ">")
-	var wall_x := origins[i].x + sizes[i].x
-	_inst("fruit_door", parent, _px(wall_x + 1, origins[i].y + rows[-1] + 1), {
-		"room": room_nodes[i][0], "rescue_flag": rescue_flag, "size": Vector2(32, rows.size() * T)})
-
-
-## A saw. On the floor (`on_floor`) it sits half a tile above the ground under its anchor;
-## otherwise it's centred in the anchor cell. (`on_floor` really centres it on the anchor
-## cell's top edge: an anchor a tile above the walking row puts it 32 px over the floor.)
-## `to_checkpoint`: a hit also sends the player back to the last checkpoint.
-func _saw(parent: Node, cell: Vector2i, travel: Vector2, speed: float, on_floor := false, to_checkpoint := false) -> void:
-	var pos := _px(cell.x + 0.5, cell.y) if on_floor else _px(cell.x + 0.5, cell.y + 0.5)
-	_inst("saw", parent, pos, {"travel": travel, "speed": speed, "send_to_checkpoint": to_checkpoint})
-
-
-## A spiked ball hanging from the top edge of its anchor cell.
-func _ball(parent: Node, cell: Vector2i, length: float, swing: float, period: float, phase: float) -> void:
-	_inst("ball", parent, _px(cell.x + 0.5, cell.y), {"length": length, "swing_degrees": swing, "period": period, "phase": phase})
-
-
-## A Rock Head filling the 2x2 tiles from its anchor (top-left) - a block you can ride.
-func _rock(parent: Node, cell: Vector2i, travel: Vector2, wait: float, speed: float, delay := 0.0) -> void:
-	_inst("rock_head", parent, _px(cell.x + 1, cell.y + 1), {"travel": travel, "wait_time": wait, "slam_speed": speed, "start_delay": delay})
-
-
-## A Spike Head filling the 2x2 tiles from its anchor (top-left) - hurts on touch.
-func _spike_head(parent: Node, cell: Vector2i, travel: Vector2, delay: float) -> void:
-	_inst("spike_head", parent, _px(cell.x + 1, cell.y + 1), {"travel": travel, "wait_time": 0.8, "slam_speed": 160.0, "start_delay": delay})
 
 
 ## A sign at tile (c, r) of room i's map.

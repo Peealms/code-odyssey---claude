@@ -17,6 +17,7 @@ func _ready() -> void:
 func _physics_process(_delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
+	if Game.immune: return  # IMMUNITY: no hurting, no sending back to the checkpoint
 	for body in get_overlapping_bodies():
 		if body.has_method("take_hit"):
 			body.take_hit(_hit_from(body), damage)

@@ -1,6 +1,6 @@
-[gd_resource type="SpriteFrames" load_steps=3 format=3]
+[gd_resource type="SpriteFrames" format=3 uid="uid://7x3st6i40m88"]
 
-[ext_resource type="Texture2D" path="res://assets/level1_pixel_adventure/traps/spiked_ball/spiked_ball.png" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://br05amsnpq77o" path="res://assets/level1_pixel_adventure/traps/spiked_ball/spiked_ball.png" id="1_tex"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_1"]
 atlas = ExtResource("1_tex")
@@ -12,7 +12,7 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_1")
 }],
-"loop": true,
+"loop": 1,
 "name": &"spiked_ball",
 "speed": 20.0
 }]

@@ -12,6 +12,10 @@ extends CanvasLayer
 ## 5 -> the answer with blanks.
 
 signal variable_set(name: String, value: Variant)
+signal closed
+## A wrong line counted in `room` (`tries` = that room's wrong tries so far). The tutorial
+## listens to it to explain hints and "Show answer".
+signal wrong_try(room: Room, tries: int)
 
 const STEP_DELAY := 0.18  ## Seconds between Byte's checklist lines.
 const HINT_AT := 3  ## Wrong tries in a room before the hint and "Show answer".
@@ -174,6 +178,7 @@ func close() -> void:
 	input.release_focus()
 	if player:
 		player.input_enabled = _player_input_before
+	closed.emit()
 
 
 # ---------------- Running a line ----------------
@@ -188,6 +193,7 @@ func _on_submitted(text: String) -> void:
 	_append("[color=#%s]> %s[/color]" % [COLOR_CODE, _escape(text)])
 
 	var unlocked: Array = Game.unlocked_heroes if require_unlocked_heroes else []
+	if Game.immune: unlocked = []  # IMMUNITY: any hero, rescued or not
 	var result := _checker.check(text, _values_with_readings(), unlocked, values.keys())
 	if result["ok"] and result["action"]["type"] == "rule":
 		var misfit := _rule_misfit(result["action"]["rule"])
@@ -434,6 +440,7 @@ func _count_wrong_try(room: Room = null) -> void:
 		_byte_line("Fill in the blanks:")
 		_append("[color=#%s]      %s[/color]" % [COLOR_ANSWER, _escape(room.blanks)])
 	_reset_answer_button()
+	wrong_try.emit(room, tries)
 
 
 func _reset_answer_button() -> void:

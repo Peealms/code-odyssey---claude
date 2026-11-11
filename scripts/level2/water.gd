@@ -72,6 +72,7 @@ func _physics_process(delta: float) -> void:
 	var p := player.global_position
 	if p.x >= global_position.x and p.x <= global_position.x + width and p.y > surface_y() + 6.0 \
 			and p.y < global_position.y + depth + 32.0:
+		if Game.immune: return  # IMMUNITY: no drowning
 		_splash_cooldown = 1.0
 		Sound.play("fall")
 		var hud := get_tree().get_first_node_in_group("hud")

@@ -1,7 +1,7 @@
-[gd_resource type="SpriteFrames" load_steps=8 format=3]
+[gd_resource type="SpriteFrames" format=3 uid="uid://b4y4sjy78epbv"]
 
-[ext_resource type="Texture2D" path="res://assets/level1_pixel_adventure/traps/falling_platforms/off.png" id="1_tex"]
-[ext_resource type="Texture2D" path="res://assets/level1_pixel_adventure/traps/falling_platforms/on.png" id="2_tex"]
+[ext_resource type="Texture2D" uid="uid://bsa4qqhwn6w2x" path="res://assets/level1_pixel_adventure/traps/falling_platforms/off.png" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://dxjoyjlywxqcy" path="res://assets/level1_pixel_adventure/traps/falling_platforms/on.png" id="2_tex"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_1"]
 atlas = ExtResource("1_tex")
@@ -29,7 +29,7 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_1")
 }],
-"loop": true,
+"loop": 1,
 "name": &"off",
 "speed": 20.0
 }, {
@@ -46,7 +46,7 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_5")
 }],
-"loop": true,
+"loop": 1,
 "name": &"on",
 "speed": 20.0
 }]

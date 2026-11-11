@@ -17,7 +17,7 @@ const P4 := "res://assets/level4_pirate_bomb/"
 ##   s: scale, walk: [x0, x1, seconds] to patrol, face: -1 if the art faces left, rep/gap: repeats}.
 const LEVELS := [
 	{
-		"id": "level1", "title": "VARIABLES", "topic": "STORING DATA",
+		"id": "level1", "title": "TUTORIAL", "topic": "HOW TO PLAY",
 		"scene": "res://scenes/levels/level1/level1.tscn",
 		"accent": Color("5fb8ff"),
 		"sky": {"tex": P1 + "backgrounds/bg_blue.png", "scroll": 10.0},
@@ -135,6 +135,7 @@ func _preview_paths(l: Dictionary) -> Array:
 func _is_unlocked(i: int) -> bool:
 	if LEVELS[i]["scene"] == "":
 		return false
+	if Game.immune: return true  # IMMUNITY: every level open
 	return i == 0 or Game.best_stars.get(LEVELS[i - 1]["id"], 0) > 0
 
 

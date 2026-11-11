@@ -25,6 +25,7 @@ var answers_shown := 0  ## "Show answer" uses - each one costs a star.
 var mistakes := 0  ## Wrong lines typed in the terminal.
 var _level_start_ms := 0
 
+var immune := false  # IMMUNITY: true while the secret testing mode is on (scripts/dev/immunity.gd)
 var master_volume: float = 0.8
 var music_volume: float = 0.7
 var sfx_volume: float = 0.8
@@ -40,6 +41,8 @@ func _ready() -> void:
 	_build_fade_layer()
 	load_settings()
 	load_progress()
+	if OS.has_feature("editor") and ResourceLoader.exists("res://scripts/dev/immunity.gd"):  # IMMUNITY: editor runs only
+		add_child(load("res://scripts/dev/immunity.gd").new())  # IMMUNITY
 
 
 # ---------------- Scene changes ----------------
@@ -90,6 +93,7 @@ func is_hero_unlocked(hero_id: String) -> bool:
 
 ## Puts a rescued hero on the hero wheel. Returns true if they just joined it.
 func add_wheel_hero(hero_id: String) -> bool:
+	if immune: return false  # IMMUNITY: code run in immunity mode doesn't change the save
 	if not hero_id in HEROES or not hero_id in unlocked_heroes or hero_id in wheel_heroes:
 		return false
 	wheel_heroes.append(hero_id)
@@ -119,15 +123,17 @@ func stars_earned() -> int:
 func finish_level() -> Dictionary:
 	var stars := stars_earned()
 	var best: int = maxi(stars, best_stars.get(level_id, 0))
-	best_stars[level_id] = best
-	save_progress()
-	return {
+	var results := {
 		"stars": stars,
 		"best": best,
 		"answers_shown": answers_shown,
 		"mistakes": mistakes,
 		"seconds": (Time.get_ticks_msec() - _level_start_ms) / 1000.0,
 	}
+	if immune: return results  # IMMUNITY: a level finished in immunity mode isn't saved
+	best_stars[level_id] = best
+	save_progress()
+	return results
 
 
 # ---------------- Settings ----------------

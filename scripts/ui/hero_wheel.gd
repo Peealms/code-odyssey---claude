@@ -219,6 +219,7 @@ func _set_selected(index: int) -> void:
 
 
 func _state(hero_id: String) -> State:
+	if Game.immune: return State.READY  # IMMUNITY: every hero, rescued or not
 	if hero_id == player.hero_id:
 		return State.READY
 	if not Game.is_hero_unlocked(hero_id):

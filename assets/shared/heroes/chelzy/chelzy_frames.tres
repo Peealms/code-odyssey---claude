@@ -1,11 +1,43 @@
-[gd_resource type="SpriteFrames" format=3]
+[gd_resource type="SpriteFrames" format=3 uid="uid://bkns3fsi4tqhw"]
 
-[ext_resource type="Texture2D" path="res://assets/shared/heroes/chelzy/idle.png" id="1_tex"]
-[ext_resource type="Texture2D" path="res://assets/shared/heroes/chelzy/run.png" id="2_tex"]
-[ext_resource type="Texture2D" path="res://assets/shared/heroes/chelzy/jump.png" id="3_tex"]
-[ext_resource type="Texture2D" path="res://assets/shared/heroes/chelzy/fall.png" id="4_tex"]
-[ext_resource type="Texture2D" path="res://assets/shared/heroes/chelzy/hit.png" id="5_tex"]
-[ext_resource type="Texture2D" path="res://assets/shared/heroes/chelzy/wall_jump.png" id="6_tex"]
+[ext_resource type="Texture2D" uid="uid://66tfvl3n8xj5" path="res://assets/shared/heroes/chelzy/idle.png" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://bqyw355b0wxdr" path="res://assets/shared/heroes/chelzy/run.png" id="2_tex"]
+[ext_resource type="Texture2D" uid="uid://by2w5th5kw5vi" path="res://assets/shared/heroes/chelzy/jump.png" id="3_tex"]
+[ext_resource type="Texture2D" uid="uid://lxiidq1y0g3l" path="res://assets/shared/heroes/chelzy/fall.png" id="4_tex"]
+[ext_resource type="Texture2D" uid="uid://cenp2m8s7i734" path="res://assets/shared/heroes/chelzy/hit.png" id="5_tex"]
+[ext_resource type="Texture2D" uid="uid://cxpwlxmu24aln" path="res://assets/shared/heroes/chelzy/wall_jump.png" id="6_tex"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_25"]
+atlas = ExtResource("4_tex")
+region = Rect2(0, 0, 40, 40)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_26"]
+atlas = ExtResource("5_tex")
+region = Rect2(0, 0, 40, 40)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_27"]
+atlas = ExtResource("5_tex")
+region = Rect2(40, 0, 40, 40)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_28"]
+atlas = ExtResource("5_tex")
+region = Rect2(80, 0, 40, 40)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_29"]
+atlas = ExtResource("5_tex")
+region = Rect2(120, 0, 40, 40)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_30"]
+atlas = ExtResource("5_tex")
+region = Rect2(160, 0, 40, 40)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_31"]
+atlas = ExtResource("5_tex")
+region = Rect2(200, 0, 40, 40)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_32"]
+atlas = ExtResource("5_tex")
+region = Rect2(240, 0, 40, 40)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_1"]
 atlas = ExtResource("1_tex")
@@ -50,6 +82,10 @@ region = Rect2(360, 0, 40, 40)
 [sub_resource type="AtlasTexture" id="AtlasTexture_11"]
 atlas = ExtResource("1_tex")
 region = Rect2(400, 0, 40, 40)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_24"]
+atlas = ExtResource("3_tex")
+region = Rect2(0, 0, 40, 40)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_12"]
 atlas = ExtResource("2_tex")
@@ -99,42 +135,6 @@ region = Rect2(400, 0, 40, 40)
 atlas = ExtResource("2_tex")
 region = Rect2(440, 0, 40, 40)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_24"]
-atlas = ExtResource("3_tex")
-region = Rect2(0, 0, 40, 40)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_25"]
-atlas = ExtResource("4_tex")
-region = Rect2(0, 0, 40, 40)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_26"]
-atlas = ExtResource("5_tex")
-region = Rect2(0, 0, 40, 40)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_27"]
-atlas = ExtResource("5_tex")
-region = Rect2(40, 0, 40, 40)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_28"]
-atlas = ExtResource("5_tex")
-region = Rect2(80, 0, 40, 40)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_29"]
-atlas = ExtResource("5_tex")
-region = Rect2(120, 0, 40, 40)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_30"]
-atlas = ExtResource("5_tex")
-region = Rect2(160, 0, 40, 40)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_31"]
-atlas = ExtResource("5_tex")
-region = Rect2(200, 0, 40, 40)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_32"]
-atlas = ExtResource("5_tex")
-region = Rect2(240, 0, 40, 40)
-
 [sub_resource type="AtlasTexture" id="AtlasTexture_33"]
 atlas = ExtResource("6_tex")
 region = Rect2(0, 0, 40, 40)
@@ -157,6 +157,40 @@ region = Rect2(160, 0, 40, 40)
 
 [resource]
 animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_25")
+}],
+"loop": 0,
+"name": &"fall",
+"speed": 20.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_26")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_27")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_28")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_29")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_30")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_31")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_32")
+}],
+"loop": 0,
+"name": &"hit",
+"speed": 20.0
+}, {
 "frames": [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_1")
@@ -191,8 +225,16 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_11")
 }],
-"loop": true,
+"loop": 1,
 "name": &"idle",
+"speed": 20.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_24")
+}],
+"loop": 0,
+"name": &"jump",
 "speed": 20.0
 }, {
 "frames": [{
@@ -232,50 +274,8 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_23")
 }],
-"loop": true,
+"loop": 1,
 "name": &"run",
-"speed": 20.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_24")
-}],
-"loop": false,
-"name": &"jump",
-"speed": 20.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_25")
-}],
-"loop": false,
-"name": &"fall",
-"speed": 20.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_26")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_27")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_28")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_29")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_30")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_31")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_32")
-}],
-"loop": false,
-"name": &"hit",
 "speed": 20.0
 }, {
 "frames": [{
@@ -294,7 +294,7 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_37")
 }],
-"loop": true,
+"loop": 1,
 "name": &"wall_jump",
 "speed": 20.0
 }]

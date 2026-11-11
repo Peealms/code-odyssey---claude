@@ -1,7 +1,7 @@
-[gd_resource type="SpriteFrames" load_steps=12 format=3]
+[gd_resource type="SpriteFrames" format=3 uid="uid://dw2mdrlr3ckdk"]
 
-[ext_resource type="Texture2D" path="res://assets/level1_pixel_adventure/traps/saw/off.png" id="1_tex"]
-[ext_resource type="Texture2D" path="res://assets/level1_pixel_adventure/traps/saw/on.png" id="2_tex"]
+[ext_resource type="Texture2D" uid="uid://j0den5kke3mp" path="res://assets/level1_pixel_adventure/traps/saw/off.png" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://dqlbsp4rwojkj" path="res://assets/level1_pixel_adventure/traps/saw/on.png" id="2_tex"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_1"]
 atlas = ExtResource("1_tex")
@@ -45,7 +45,7 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_1")
 }],
-"loop": true,
+"loop": 1,
 "name": &"off",
 "speed": 20.0
 }, {
@@ -74,7 +74,7 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_9")
 }],
-"loop": true,
+"loop": 1,
 "name": &"on",
 "speed": 20.0
 }]
