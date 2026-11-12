@@ -97,7 +97,8 @@ func _on_fruit_changed(collected: int, total: int) -> void:
 		_counter.add_theme_color_override("font_color", Color("7cf07c"))
 		npc.modulate = Color.WHITE
 	else:
-		_counter.text = "FRUIT %d/%d" % [collected, total]
+		var hud := get_tree().get_first_node_in_group("hud")
+		_counter.text = "%s %d/%d" % [hud.item_word if hud else "FRUIT", collected, total]
 
 
 ## Called by the Level after the rescue cutscene: the waiting hero joins the player.

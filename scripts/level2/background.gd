@@ -1,6 +1,6 @@
 extends CanvasLayer
-## Level 2's sky: Treasure Hunters' sand-coloured sky, the sea on the horizon, and clouds that
-## drift slowly. It stays put behind the level (the ship rooms cover it with their back wall).
+## Level 1's sky: Treasure Hunters' sand-coloured sky, the sea on the horizon, and clouds that
+## drift slowly. It stays put behind the level.
 
 const SKY := preload("res://assets/level2_treasure_hunters/backgrounds/additional_sky.png")
 const HORIZON := preload("res://assets/level2_treasure_hunters/backgrounds/bg_image.png")

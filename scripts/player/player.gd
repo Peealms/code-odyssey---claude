@@ -621,6 +621,7 @@ func _has_animation(anim: StringName) -> bool:
 
 ## Call this when an enemy or trap hurts the player.
 func take_hit(from_position: Vector2, damage := 20.0) -> void:
+	if Game.immune: return  # IMMUNITY: nothing hurts
 	if _is_hit or _invulnerable_timer > 0.0 or health <= 0.0:
 		return
 	health = maxf(health - damage, 0.0)

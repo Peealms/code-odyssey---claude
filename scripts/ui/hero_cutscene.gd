@@ -1,16 +1,13 @@
-extends CanvasLayer
+extends ByteTalk
 ## The hero-rescue cutscene (started by the Level when a rescue flag is touched with all fruit):
 ##   1. the game pauses and the camera zooms in on the waiting hero
 ##   2. the hero flashes in, and Byte introduces them in a dialogue box
 ##   3. an ability card shows the hero performing their move on a loop, the key to press,
 ##      the stamina cost and how to switch to them in code
 ## Enter / Space / F (or the button) moves on; when it's over `finished` fires.
-
-signal finished
-signal _advance
+## Pausing, the camera and Byte's dialogue box come from ByteTalk (byte_talk.gd).
 
 const PLAYER := preload("res://scripts/player/player.gd")
-const BYTE_FRAMES := preload("res://assets/shared/byte/byte_frames.tres")
 const SWAP_FX := preload("res://assets/shared/heroes/swap_fx/swap_fx_frames.tres")
 
 ## What each hero's card says, and which demo to play.
@@ -32,49 +29,23 @@ const ABILITIES := {
 		"cost": "Staying small drains stamina, but not while you're squeezed in a tunnel."},
 }
 
-const INK := Color("33323d")
-const WOOD := Color("ae7764")
-const WOOD_DARK := Color("833f4c")
-const PAPER := Color("eebd8a")
-const PAPER_EDGE := Color("b77357")
 const STAGE := Color("2b2a3a")
 
-var _dialog: PanelContainer
-var _dialog_text: Label
 var _card: Control
 var _demo_hero: AnimatedSprite2D
 var _demo_stage: Control
-var _accept_ready := false
-
-
-func _ready() -> void:
-	process_mode = Node.PROCESS_MODE_ALWAYS
-	layer = 70
 
 
 func play(hero_id: String, checkpoint: Node, player: Node2D) -> void:
 	var data: Dictionary = ABILITIES[hero_id]
 	var hero_name: String = PLAYER.HERO_DATA[hero_id]["name"]
-	get_tree().paused = true
+	begin(player)
 	Sound.play("rescue")
-	# Hide the HUD, hotbar and other screen layers so the scene is clean.
-	var hidden: Array[CanvasLayer] = []
-	for n in get_parent().get_children():
-		if n is CanvasLayer and n != self and n.visible and n.layer >= 0:
-			n.visible = false
-			hidden.append(n)
 
 	# 1. Camera zooms in on the waiting hero.
-	var cam: Camera2D = player.get_node("Camera2D")
-	var old_mode := cam.process_mode
-	cam.process_mode = Node.PROCESS_MODE_ALWAYS
 	var npc: AnimatedSprite2D = checkpoint.npc
 	npc.process_mode = Node.PROCESS_MODE_ALWAYS
-	var focus := npc.global_position - (player.global_position + cam.position)
-	var zoom_in := create_tween().set_parallel()
-	zoom_in.tween_property(cam, "offset", focus, 0.7).set_trans(Tween.TRANS_SINE)
-	zoom_in.tween_property(cam, "zoom", Vector2(1.7, 1.7), 0.7).set_trans(Tween.TRANS_SINE)
-	await zoom_in.finished
+	await point_camera(npc.global_position, 1.7)
 
 	# 2. The hero flashes in.
 	var fx := AnimatedSprite2D.new()
@@ -92,10 +63,9 @@ func play(hero_id: String, checkpoint: Node, player: Node2D) -> void:
 	fx.queue_free()
 	npc.play("idle")
 
-	_build_dialog()
-	await _say("%s JOINED THE TEAM!" % hero_name.to_upper())
-	await _say("Let me show you what %s can do..." % hero_name)
-	_dialog.queue_free()
+	await say("%s JOINED THE TEAM!" % hero_name.to_upper())
+	await say("Let me show you what %s can do..." % hero_name)
+	hide_dialog()
 
 	# 3. Ability card with a looping demo.
 	_build_card(hero_id, hero_name, data)
@@ -107,87 +77,11 @@ func play(hero_id: String, checkpoint: Node, player: Node2D) -> void:
 	_demo_hero = null
 
 	# Back to the game.
-	var zoom_out := create_tween().set_parallel()
-	zoom_out.tween_property(cam, "offset", Vector2.ZERO, 0.5).set_trans(Tween.TRANS_SINE)
-	zoom_out.tween_property(cam, "zoom", Vector2.ONE, 0.5).set_trans(Tween.TRANS_SINE)
-	await zoom_out.finished
-	cam.process_mode = old_mode
 	npc.process_mode = Node.PROCESS_MODE_INHERIT
-	for n in hidden:
-		if is_instance_valid(n):
-			n.visible = true
-	get_tree().paused = false
-	finished.emit()
-	queue_free()
+	await end()
 
 
-func _input(event: InputEvent) -> void:
-	if not _accept_ready:
-		return
-	if event.is_action_pressed("ui_accept") or event.is_action_pressed("jump") or event.is_action_pressed("interact"):
-		get_viewport().set_input_as_handled()
-		_accept_ready = false
-		_advance.emit()
-
-
-## Shows a line in Byte's dialogue box, typed out letter by letter, then waits for a key
-## (or moves on by itself after a few seconds).
-func _say(text: String) -> void:
-	_dialog_text.text = text
-	_dialog_text.visible_characters = 0
-	for i in text.length():
-		_dialog_text.visible_characters = i + 1
-		if i % 3 == 0 and text[i] != " ":
-			Sound.play("byte_talk", 0.2)
-		await get_tree().create_timer(0.02).timeout
-	_accept_ready = true
-	var auto := get_tree().create_timer(3.0)
-	auto.timeout.connect(func():
-		if _accept_ready:
-			_accept_ready = false
-			_advance.emit())
-	await _advance
-
-
-# ---------------- Building the boxes ----------------
-
-func _build_dialog() -> void:
-	_dialog = PanelContainer.new()
-	_dialog.add_theme_stylebox_override("panel", _box(PAPER, INK, 2, Vector4(8, 6, 10, 6), PAPER_EDGE))
-	_dialog.anchor_left = 0.5
-	_dialog.anchor_right = 0.5
-	_dialog.anchor_top = 1.0
-	_dialog.anchor_bottom = 1.0
-	_dialog.offset_left = -200
-	_dialog.offset_right = 200
-	_dialog.offset_top = -72
-	_dialog.offset_bottom = -12
-	add_child(_dialog)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	_dialog.add_child(row)
-	var face_box := Control.new()
-	face_box.custom_minimum_size = Vector2(40, 40)
-	row.add_child(face_box)
-	var face := AnimatedSprite2D.new()
-	face.sprite_frames = BYTE_FRAMES
-	face.play("talk")
-	face.scale = Vector2(1.5, 1.5)
-	face.position = Vector2(20, 22)
-	face_box.add_child(face)
-	var col := VBoxContainer.new()
-	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(col)
-	var who := Label.new()
-	who.text = "BYTE"
-	who.add_theme_color_override("font_color", WOOD_DARK)
-	col.add_child(who)
-	_dialog_text = Label.new()
-	_dialog_text.add_theme_color_override("font_color", INK)
-	_dialog_text.autowrap_mode = TextServer.AUTOWRAP_WORD
-	_dialog_text.custom_minimum_size = Vector2(320, 0)
-	col.add_child(_dialog_text)
-
+# ---------------- The ability card ----------------
 
 func _build_card(hero_id: String, hero_name: String, data: Dictionary) -> void:
 	# Full-screen holder: a dark backdrop with the card centred on top.
@@ -352,21 +246,3 @@ func _run_demo(hero_id: String) -> void:
 		await t.finished
 		if not is_instance_valid(_demo_hero) or not _demo_hero.is_inside_tree():
 			return
-
-
-func _box(fill: Color, border: Color, width: int, padding: Vector4, bottom := Color(0, 0, 0, 0)) -> StyleBoxFlat:
-	var s := StyleBoxFlat.new()
-	s.bg_color = fill
-	s.border_color = border
-	s.set_border_width_all(width)
-	s.set_corner_radius_all(3)
-	s.corner_detail = 2
-	s.anti_aliasing = false
-	s.content_margin_left = padding.x
-	s.content_margin_top = padding.y
-	s.content_margin_right = padding.z
-	s.content_margin_bottom = padding.w
-	if bottom.a > 0.0:
-		s.shadow_color = bottom
-		s.shadow_offset = Vector2(0, 2)
-	return s

@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/gadgets/path_platform.gd" id="1_script"]
-[ext_resource type="SpriteFrames" path="res://assets/level1_pixel_adventure/traps/platforms/platforms_frames.tres" id="2_frames"]
+[ext_resource type="SpriteFrames" path="res://assets/level2_treasure_hunters/gadgets/plank_frames.tres" id="2_frames"]
 
 [sub_resource type="RectangleShape2D" id="top"]
 size = Vector2(32, 6)
@@ -15,7 +15,7 @@ collision_layer = 1
 collision_mask = 0
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Body"]
-position = Vector2(0, 1)
+position = Vector2(0, 2.5)
 sprite_frames = ExtResource("2_frames")
 animation = &"brown_off"
 

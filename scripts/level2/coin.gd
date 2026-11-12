@@ -1,6 +1,6 @@
 extends Area2D
-## A gold coin: Level 2's fruit. It's in the "fruit" group, so Rooms count it the same way
-## (the HUD's COINS 3/12, and the pirate doors' coins / coinsLeft readings).
+## A gold coin: Level 1's fruit. It's in the "fruit" group, so Rooms count it the same way
+## (the HUD's COINS 3/12, rescue flags and the treasure).
 
 signal collected
 

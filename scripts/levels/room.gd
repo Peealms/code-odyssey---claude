@@ -10,7 +10,7 @@ extends Area2D
 ##   3 wrong -> Byte gives `hint`, and "Show answer" appears (costs a star)
 ##   5 wrong -> Byte shows `blanks` (the answer with gaps)
 ##
-## Fruit inside the room is counted automatically. Rescue flags, fruit doors and the end goal
+## Fruit inside the room is counted automatically. Rescue flags and the end goal
 ## can require all of it (see all_fruit_collected()).
 
 signal fruit_changed(collected: int, total: int)
@@ -61,34 +61,6 @@ func short_title() -> String:
 
 func all_fruit_collected() -> bool:
 	return fruit_collected >= fruit_total
-
-
-## Level 2: the RuleRunners under this room.
-func rule_runners() -> Array[RuleRunner]:
-	var out: Array[RuleRunner] = []
-	for child in get_children():
-		if child is RuleRunner:
-			out.append(child)
-	return out
-
-
-## The runner a typed rule goes to (the first one that isn't locked), or null.
-func player_runner() -> RuleRunner:
-	for r in rule_runners():
-		if not r.locked:
-			return r
-	return null
-
-
-## The runner the HUD's rule panel shows: the player's, else the first locked one on the panel.
-func panel_runner() -> RuleRunner:
-	var mine := player_runner()
-	if mine and mine.on_panel:
-		return mine
-	for r in rule_runners():
-		if r.on_panel:
-			return r
-	return null
 
 
 func _count_fruit() -> void:

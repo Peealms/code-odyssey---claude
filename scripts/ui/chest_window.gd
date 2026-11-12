@@ -13,7 +13,7 @@ const SLOT_SIZE := 24
 const TIP_TIME := 3.0
 const DEFAULT_TIP := "F / Esc - Close"
 
-# Palette sampled from assets/shared/ui/wood_paper/wood_paper_ui_sheet.png
+# Palette sampled from Pixel Frog's wood & paper UI sheet.
 const OUTLINE := Color("33323d")
 const WOOD := Color("ae7764")
 const WOOD_DARK := Color("833f4c")

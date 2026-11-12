@@ -1,11 +1,14 @@
 extends SceneTree
-## Plays every room of Level 1: checks the wrong way fails and the intended way works.
+## Plays the tutorial (scenes/levels/level1/level1.tscn): Byte's talks, the gate, the manual,
+## the wall-jump shaft, Sarah's rescue and the trophy. Checks the wrong way fails and the
+## intended way works.
 ## Run (needs a window, not --headless):  godot --path . --script res://tools/test_level1.gd
 ## Prints PASS/FAIL per check. Screenshots go to the user data folder (test_screenshots/).
-## Each room starts from a fixed spot so one failure doesn't break the next room.
-## Positions are in pixels; they follow the maps in tools/build_level1.gd (tile = 16 px,
+## Positions are in pixels; they follow the map in tools/build_level1.gd (tile = 16 px,
 ## a player standing on a floor whose top is at y has position.y = y - 16).
 ## Backs up and restores the real save file.
+## (The checks for the old Level 1 Rooms 1-6 are in git history, commit 80011e1; they move to
+## the final level's test.)
 
 const OUT := "user://test_screenshots/"
 const SAVE := "user://save.cfg"
@@ -21,6 +24,7 @@ var wall_cooldown := 0.0
 var exit_y := 132.0
 var exit_dir := 1
 var results: Array[String] = []
+var talks_seen: Array[String] = []  ## Script file of every Byte talk await_talk() closed.
 
 
 func _initialize() -> void:
@@ -57,34 +61,9 @@ func jump(hold := 0.3) -> void:
 	Input.action_release("jump")
 
 
-func dash() -> void:
-	Input.action_press("dash")
-	await wait(0.05)
-	Input.action_release("dash")
-
-
-## Jump, then double jump at the top and steer toward `dir` (April). Each jump is held
-## until its peak (the first one longer when jumpPower is high; the double jump never uses
-## jumpPower), so letting go doesn't cut it short.
-func double_jump_to(dir: String) -> void:
-	await jump(0.28 * sqrt(p.jump_power))
-	await wait(0.04)
-	Input.action_press("jump")
-	await wait(0.08)
-	Input.action_press(dir)
-	await wait(0.22)
-	Input.action_release("jump")
-
-
 func until_x(x: float, timeout := 4.0) -> void:
 	var start := Time.get_ticks_msec()
 	while p.global_position.x < x and Time.get_ticks_msec() - start < timeout * 1000:
-		await process_frame
-
-
-func until_x_left(x: float, timeout := 4.0) -> void:
-	var start := Time.get_ticks_msec()
-	while p.global_position.x > x and Time.get_ticks_msec() - start < timeout * 1000:
 		await process_frame
 
 
@@ -103,11 +82,6 @@ func last_byte() -> String:
 		if lines[i].begins_with("BYTE:"):
 			return lines[i]
 	return ""
-
-
-func ensure_hero(id: String) -> void:
-	if not id in game.unlocked_heroes:
-		game.unlocked_heroes.append(id)
 
 
 func room(i: int) -> Node:
@@ -134,126 +108,46 @@ func touch_flag(x: float, y: float) -> void:
 	await wait(0.4)
 
 
-## Presses accept until the rescue cutscene is gone. Returns true if one was shown.
-func dismiss_cutscene() -> bool:
-	var cut := level.get_node_or_null("HeroCutscene")
-	if cut == null:
-		return false
+func press_accept() -> void:
+	var ev := InputEventAction.new()
+	ev.action = "ui_accept"
+	ev.pressed = true
+	Input.parse_input_event(ev)
+	await process_frame
+	var up := InputEventAction.new()
+	up.action = "ui_accept"
+	Input.parse_input_event(up)
+
+
+## Waits up to `appear` seconds for a Byte talk (a tutorial talk or the rescue cutscene), then
+## presses Enter until every talk is over - one can follow straight after another. Returns true
+## if one was shown.
+## With `shot_name`, takes a screenshot of the first line once it's typed out.
+func await_talk(appear := 3.0, shot_name := "") -> bool:
 	var start := Time.get_ticks_msec()
-	while is_instance_valid(cut) and Time.get_ticks_msec() - start < 20000:
-		await wait(0.8)
-		var ev := InputEventAction.new()
-		ev.action = "ui_accept"
-		ev.pressed = true
-		Input.parse_input_event(ev)
+	while get_first_node_in_group("byte_talk") == null and Time.get_ticks_msec() - start < appear * 1000:
 		await process_frame
-		var up := InputEventAction.new()
-		up.action = "ui_accept"
-		Input.parse_input_event(up)
+	if get_first_node_in_group("byte_talk") == null:
+		return false
+	if shot_name != "":
+		await wait(2.5)
+		shot(shot_name)
+	var quiet := 0.0
+	start = Time.get_ticks_msec()
+	while Time.get_ticks_msec() - start < 60000 and quiet < 0.8:
+		var talk := get_first_node_in_group("byte_talk")
+		if talk == null:
+			quiet += 0.1
+			await wait(0.1)
+			continue
+		quiet = 0.0
+		var script_file: String = talk.get_script().resource_path.get_file()
+		if talks_seen.is_empty() or talks_seen[-1] != script_file + str(talk.get_instance_id()):
+			talks_seen.append(script_file + str(talk.get_instance_id()))
+		await wait(0.5)
+		await press_accept()
 	await wait(0.3)
 	return true
-
-
-## True if room i's exit door crates still block the way.
-func door_closed(i: int) -> bool:
-	for n in level.get_node("Traps").get_children():
-		if n.get_script() and n.get_script().resource_path.ends_with("fruit_door.gd") and n.room == room(i):
-			return not n.is_open
-	return false
-
-
-## The gadget (bridge, fan, ...) whose script ends with `script_end`, nearest to `pos`.
-func gadget_near(script_end: String, pos: Vector2) -> Node:
-	var best: Node = null
-	for parent in ["Gadgets", "Traps"]:
-		for n in level.get_node(parent).get_children():
-			if n.get_script() and n.get_script().resource_path.ends_with(script_end):
-				if best == null or n.global_position.distance_to(pos) < best.global_position.distance_to(pos):
-					best = n
-	return best
-
-
-## The Rock/Spike Head whose track starts nearest `start` (they move, so where one is right
-## now could be closer to another's spot).
-func rock_from(start: Vector2) -> Node2D:
-	var best: Node2D = null
-	for n in level.get_node("Traps").get_children():
-		if n.get_script() and n.get_script().resource_path.ends_with("block_head.gd"):
-			if best == null or n._start.distance_to(start) < best._start.distance_to(start):
-				best = n
-	return best
-
-
-## The fruit at these spots, found now (a picked-up fruit frees itself after its animation).
-func fruit_at(spots: Array) -> Array:
-	var out := []
-	for f in get_nodes_in_group("fruit"):
-		if is_instance_valid(f) and spots.any(func(s: Vector2) -> bool: return f.global_position.distance_to(s) < 1.0):
-			out.append(f)
-	return out
-
-
-## How many of `fruits` (from fruit_at) have been picked up.
-func taken(fruits: Array) -> int:
-	return fruits.filter(func(f) -> bool: return not is_instance_valid(f) or f._taken).size()
-
-
-## Waits until a Rock Head is resting at the bottom of its track, puts the player on top,
-## and waits until it has carried them to the top end.
-func ride_rock_head(rock: Node2D, top_y: float, timeout := 15.0) -> void:
-	var bottom_y: float = rock._start.y
-	var start := Time.get_ticks_msec()
-	while absf(rock.position.y - bottom_y) > 1.0 and Time.get_ticks_msec() - start < timeout * 1000:
-		await process_frame
-	tp(rock.global_position.x, rock.global_position.y - 32)
-	while rock.global_position.y > top_y + 1.0 and Time.get_ticks_msec() - start < timeout * 1000:
-		await process_frame
-	await wait(0.2)
-
-
-## Tries to get past a hero-only obstacle the wrong way: `hero` at jumpPower 2.0 runs from
-## `start` toward `dir`, and at `edge_x` (0 = straight away) jumps as high/far as it can
-## (April double jumps, Kervin sprint-jumps, Sarah dashes). "psalm_small" is Psalm holding
-## Down the whole time (tiny: more headroom in a crawlspace). With `hop_time` it
-## keeps hopping every time it lands, for that long. Returns where the player ended up.
-## (Sets the hero and jumpPower directly, not through the terminal.)
-func cheat(hero: String, start: Vector2, dir: String, edge_x: float, hop_time := 0.0) -> Vector2:
-	p.set_hero("psalm" if hero == "psalm_small" else hero)
-	p.jump_power = 2.0
-	tp(start.x, start.y)
-	p.restore_vitals()
-	if hero == "psalm_small":
-		Input.action_press("move_down")
-	await wait(0.5)
-	if hero == "kervin":
-		Input.action_press("dash")
-	Input.action_press(dir)
-	if edge_x > 0.0:
-		if dir == "move_right":
-			await until_x(edge_x)
-		else:
-			await until_x_left(edge_x)
-	if hop_time > 0.0:
-		var t0 := Time.get_ticks_msec()
-		while Time.get_ticks_msec() - t0 < hop_time * 1000:
-			if p.is_on_floor():
-				await jump(0.1)
-				if hero == "sarah":
-					await dash()
-				elif hero == "april":
-					await jump(0.1)
-			await process_frame
-	elif hero == "sarah":
-		await dash()
-	else:
-		await jump(0.28 * sqrt(2.0))
-		if hero == "april":
-			await wait(0.04)
-			await jump(0.28)
-	await wait(1.5)
-	release_all()
-	await wait(0.6)
-	return p.global_position
 
 
 func shot(name: String) -> void:
@@ -293,19 +187,39 @@ func _run() -> void:
 	await wait(0.5)
 	check("starts with Chelzy only", game.unlocked_heroes == ["chelzy"] and p.hero_id == "chelzy", str(game.unlocked_heroes))
 
-	# ---------------- Room 0: floor y=304, gate x=184, shaft x=496-544, plateau top y=128 ----------------
+	# ---------------- Byte's welcome ----------------
+	var shown := await await_talk(3.0, "talk_intro")
+	check("Intro: Byte talks when the tutorial starts", shown, str(talks_seen))
+	check("Intro: the game carries on after the talk", not paused and p.input_enabled)
+
+	# ---------------- The gate: floor y=304, gate x=184 ----------------
 	tp(120, 288)
 	Input.action_press("move_right")
 	await wait(1.0)
 	release_all()
-	check("R0 gate blocks the way", p.global_position.x < 180, "x=%.0f" % p.global_position.x)
+	check("Gate blocks the way", p.global_position.x < 180, "x=%.0f" % p.global_position.x)
+
+	# Wrong lines: Byte explains them, then the hint and "Show answer".
+	await code('System.out.printn("Hi");')
+	check("1 wrong line: Byte explains wrong lines", "Wrong lines are fine" in last_byte(), last_byte())
+	await code('System.out.printn("Hi");')
+	await code('System.out.printn("Hi");')
+	check("3 wrong lines: the hint, then Byte explains Show answer",
+		"SHOW ANSWER" in last_byte() and "Hint:" in term.log_label.get_parsed_text() and room(0).wrong_tries == 3,
+		"tries=%d %s" % [room(0).wrong_tries, last_byte()])
+	term.open()
+	check("Show answer button is there after 3 wrong lines", term.answer_button.visible)
+	term.close()
+
 	await code('System.out.println("Hello Byte");')
-	await wait(0.6)
+	shown = await await_talk(3.0, "talk_gate")
+	check("Gate opens: Byte talks about the wall jump", shown)
 	Input.action_press("move_right")
 	await wait(0.6)
 	release_all()
-	check("R0 gate opens with println", p.global_position.x > 200, "x=%.0f" % p.global_position.x)
-	# Health potion on the corridor floor (x=424): ignored at full HP, heals 30 when hurt.
+	check("Gate opens with println", p.global_position.x > 200, "x=%.0f" % p.global_position.x)
+
+	# ---------------- Health potion on the corridor floor (x=424) ----------------
 	var potion := level.get_node("Potions").get_child(0)
 	tp(424, 288)
 	p.restore_vitals()
@@ -314,18 +228,43 @@ func _run() -> void:
 	p.health = 50.0
 	await wait(0.4)
 	check("Potion heals 30 HP when hurt", p.health == 80.0 and (not is_instance_valid(potion) or potion._used), "hp=%.0f" % p.health)
-	var chest := level.get_node("Chests").get_child(0)
-	var before := level.get_node("Chests").get_child_count()
-	chest._throw_potions()
-	await wait(0.8)
-	var thrown: Node2D = level.get_node("Chests").get_child(before) if level.get_node("Chests").get_child_count() > before else null
-	check("Opening a chest throws out a potion", thrown != null and absf(thrown.global_position.y - chest.global_position.y) < 1.0, "pos=%s" % (thrown.global_position if thrown else Vector2.ZERO))
+	p.restore_vitals()
+
+	# ---------------- The manual: chest (x=104) -> hotbar -> book ----------------
+	var chests := level.get_node("Chests")
+	var chest := chests.get_child(0)
+	var before := chests.get_child_count()
+	var window := level.get_node("ChestWindow")
+	tp(104, 288)
+	await wait(0.3)
+	chest._open()
+	await wait(1.2)
+	check("Chest opens its window with Byte's tip", window.visible and "hotbar" in window.tip.text, window.tip.text)
+	shot("chest_window")
+	await wait(0.6)  # the potion is still flying out
+	var thrown: Node2D = chests.get_child(before) if chests.get_child_count() > before else null
+	check("Opening the chest throws out a potion", thrown != null and absf(thrown.global_position.y - chest.global_position.y) < 1.0, "pos=%s" % (thrown.global_position if thrown else Vector2.ZERO))
+	window._on_slot_clicked("chest", 0)
+	await wait(0.2)
+	check("Clicking the book moves it to the hotbar", p.inventory.has(ItemDB.manual_item("variables_101")), str(p.inventory))
+	window.close()
+	shown = await await_talk(3.0, "talk_manual")
+	check("Book in the hotbar: Byte explains how to read it", shown)
+	var reader := level.get_node("ManualReader")
+	reader.open("variables_101")
+	await wait(0.5)
+	check("The book opens and pauses the game", reader.visible and paused)
+	reader.close()
+	shown = await await_talk(3.0, "talk_after_reading")
+	check("After the first read: Byte explains manuals", shown)
+
+	# ---------------- The wall-jump shaft: x=496-544, plateau top y=128 ----------------
 	p.restore_vitals()
 	tp(520, 288)
 	await wait(0.3)
 	await jump()
 	await wait(0.6)
-	check("R0 a normal jump can't reach the plateau", p.global_position.y > 200, "y=%.0f" % p.global_position.y)
+	check("A normal jump can't reach the plateau", p.global_position.y > 200, "y=%.0f" % p.global_position.y)
 	tp(520, 288)
 	await wait(0.3)
 	p.restore_vitals()
@@ -336,545 +275,36 @@ func _run() -> void:
 	await wait(6.0)
 	wall_bot = false
 	release_all()
-	check("R0 Chelzy wall-jumps up the shaft", p.global_position.y < 116 and p.global_position.x > 548, "pos=%s" % p.global_position)
+	check("Chelzy wall-jumps up the shaft", p.global_position.y < 116 and p.global_position.x > 548, "pos=%s" % p.global_position)
+
+	# ---------------- Sarah's flag (x=584) and the trophy (x=680), plateau y=112 ----------------
 	await touch_flag(584, 112)
-	check("R0 flag won't rescue Sarah until all fruit", not "sarah" in game.unlocked_heroes and not paused, "fruit %d/%d" % [room(0).fruit_collected, room(0).fruit_total])
+	check("Flag won't rescue Sarah until all fruit", not "sarah" in game.unlocked_heroes and not paused, "fruit %d/%d" % [room(0).fruit_collected, room(0).fruit_total])
+	tp(640, 112)
+	Input.action_press("move_right")
+	await wait(1.0)
+	release_all()
+	check("Trophy won't finish while fruit is missing", level.get_node_or_null("LevelComplete") == null and not paused)
 	await collect_room(0)
+	talks_seen.clear()
 	await touch_flag(584, 112)
-	var shown := paused and level.get_node_or_null("HeroCutscene") != null
+	shown = paused and level.get_node_or_null("HeroCutscene") != null
 	await wait(4.5)
-	shot("r0_cutscene")
-	shown = await dismiss_cutscene() and shown
-	check("R0 all fruit + flag: cutscene, then Sarah joins", shown and "sarah" in game.unlocked_heroes and not paused, str(game.unlocked_heroes))
+	shot("rescue_cutscene")
+	shown = await await_talk(1.0) and shown
+	check("All fruit + flag: cutscene, then Sarah joins", shown and "sarah" in game.unlocked_heroes and not paused, str(game.unlocked_heroes))
+	check("After the rescue Byte points at the trophy",
+		talks_seen.size() >= 2 and talks_seen[-1].begins_with("byte_talk.gd"), str(talks_seen))
 
-	# ---------------- Room 1: top floor y=128, crawlspace gap x=896-976 ----------------
-	ensure_hero("sarah")
-	tp(720, 112)
-	p.restore_vitals()
-	await wait(0.3)
-	Input.action_press("move_right")
-	await until_x(886)
-	await jump()
-	await wait(2.0)
-	release_all()
-	check("R1 Chelzy can't cross the gap", not (p.global_position.x > 980 and p.global_position.y < 130), "pos=%s" % p.global_position)
-	await code('String hero = "Sarah";')
-	check("R1 String hero = \"Sarah\" switches hero", p.hero_id == "sarah", last_byte())
-	tp(720, 112)
-	p.restore_vitals()
-	await wait(0.3)
-	Input.action_press("move_right")
-	await until_x(886)
-	await dash()
-	await wait(1.0)
-	release_all()
-	check("R1 Sarah dashes over the gap", p.global_position.x > 980 and p.global_position.y < 130, "pos=%s" % p.global_position)
-	var won := await cheat("april", Vector2(720, 112), "move_right", 886)
-	check("R1 cheat: April at jumpPower 2.0 can't cross", not (won.x > 980 and won.y < 130), "pos=%s" % won)
-	won = await cheat("kervin", Vector2(720, 112), "move_right", 886)
-	check("R1 cheat: Kervin at jumpPower 2.0 can't cross", not (won.x > 980 and won.y < 130), "pos=%s" % won)
-	p.set_hero("sarah")
-	p.jump_power = 1.0
-	await collect_room(1)
-	await touch_flag(1224, 496)
-	var shown1 := await dismiss_cutscene()
-	check("R1 all fruit + flag rescues April", shown1 and "april" in game.unlocked_heroes, str(game.unlocked_heroes))
-
-	# ---------------- Room 2: floor y=512, pit x=1488-1664, step top y=432 at x>=1760 ----------------
-	ensure_hero("april")
-	tp(1400, 496)
-	p.restore_vitals()
-	await wait(0.3)
-	Input.action_press("move_right")
-	await until_x(1476)
-	Input.action_press("jump")
-	await wait(0.1)
-	await dash()
-	await wait(1.5)
-	release_all()
-	check("R2 Sarah can't dash over the pit (low ceiling)", p.global_position.x < 1660, "x=%.0f" % p.global_position.x)
-	tp(1400, 496)  # the bridge only listens to code typed in its own room
-	await code("int bridgeLength = 11;")
-	await wait(1.5)
-	tp(1400, 496)
-	await wait(0.3)
-	Input.action_press("move_right")
-	await until_x(1680)
-	release_all()
-	await wait(0.3)
-	check("R2 walks across the 11-block bridge", p.global_position.x > 1670 and p.global_position.y < 510, "pos=%s" % p.global_position)
-	shot("r2_bridge")
-	await code('hero = "Chelzy";')
-	tp(1728, 496)
-	p.restore_vitals()
-	await wait(0.3)
-	Input.action_press("move_right")
-	for k in 12:
-		await jump(0.25)
-		await wait(0.3)
-	release_all()
-	await wait(0.5)
-	check("R2 Chelzy can't wall-climb the step", not (p.global_position.x > 1765 and p.global_position.y < 420), "pos=%s stamina=%.0f" % [p.global_position, p.stamina])
-	await code('hero = "Sarah";')
-	tp(1728, 496)
-	await wait(0.3)
-	Input.action_press("move_right")
-	await jump()
-	await wait(0.6)
-	release_all()
-	check("R2 Sarah's jump can't reach the step", p.global_position.y > 440, "pos=%s" % p.global_position)
-	await code('String hero = "April";')
-	check("R2 redeclaring hero is refused", p.hero_id == "sarah" and "already exists" in last_byte(), last_byte())
-	check("R2 Byte puts the fixed line in the input", term.input.text == 'hero = "April";', term.input.text)
-	await code('hero = "April";')
-	check("R2 hero = \"April\" switches hero", p.hero_id == "april", last_byte())
-	tp(1728, 496)
-	p.restore_vitals()
-	await wait(0.3)
-	await double_jump_to("move_right")
-	await wait(0.5)
-	release_all()
-	check("R2 April double-jumps onto the step", p.global_position.y < 420, "pos=%s" % p.global_position)
-	await collect_room(2)
-	await touch_flag(1896, 416)
-	var shown2 := await dismiss_cutscene()
-	check("R2 all fruit + flag rescues Kervin", shown2 and "kervin" in game.unlocked_heroes, str(game.unlocked_heroes))
-
-	# ---------------- Room 3: floor y=432, falling floor x=2128-2448 (crawlspace), ledge top y=320 at x>=2528 ----------------
-	ensure_hero("kervin")
-	check("R3 exit door is shut while fruit is missing", door_closed(3), "fruit %d/%d" % [room(3).fruit_collected, room(3).fruit_total])
-	await collect_room(3)
-	await wait(0.5)
-	check("R3 exit door stays shut until Psalm is rescued", door_closed(3), "fruit %d/%d" % [room(3).fruit_collected, room(3).fruit_total])
-	await code('hero = "Chelzy";')
-	tp(2060, 416)
-	p.restore_vitals()
-	await wait(0.3)
-	Input.action_press("move_right")
-	await wait(3.6)
-	release_all()
-	check("R3 walking over the falling floor fails", p.global_position.x < 2440, "x=%.0f" % p.global_position.x)
-	won = await cheat("april", Vector2(2060, 416), "move_right", 2120, 4.0)
-	check("R3 cheat: April at 2.0 can't hop the falling floor", not (won.x > 2450 and won.y < 430), "pos=%s" % won)
-	won = await cheat("sarah", Vector2(2060, 416), "move_right", 2120, 4.0)
-	check("R3 cheat: Sarah can't dash the falling floor", not (won.x > 2450 and won.y < 430), "pos=%s" % won)
-	won = await cheat("psalm_small", Vector2(2060, 416), "move_right", 2120, 6.0)
-	check("R3 cheat: tiny Psalm can't hop the falling floor", not (won.x > 2450 and won.y < 430), "pos=%s" % won)
-	p.jump_power = 1.0
-	await code('hero = "Kervin";')
-	tp(2060, 416)
-	p.restore_vitals()
-	await wait(2.5)  # let the platforms come back
-	Input.action_press("dash")
-	Input.action_press("move_right")
-	await wait(1.8)
-	release_all()
-	check("R3 Kervin sprints across", p.global_position.x > 2450 and p.global_position.y < 430, "pos=%s" % p.global_position)
-	await code('hero = "April";')
-	tp(2488, 416)
-	p.restore_vitals()
-	await wait(0.4)
-	await double_jump_to("move_right")
-	await wait(0.5)
-	release_all()
-	await wait(1.0)
-	check("R3 double jump alone can't reach the ledge", not (p.global_position.x > 2530 and p.global_position.y < 316), "pos=%s" % p.global_position)
-	for h in ["kervin", "sarah", "psalm"]:
-		won = await cheat(h, Vector2(2488, 416), "move_right", 0.0)
-		check("R3 cheat: %s at jumpPower 2.0 can't reach the ledge" % h, not (won.x > 2530 and won.y < 316), "pos=%s" % won)
-	p.set_hero("april")
-	p.jump_power = 1.0
-	await code("double jumpPower = 2.0;")
-	tp(2488, 416)
-	p.restore_vitals()
-	await wait(0.4)
-	await double_jump_to("move_right")
-	await wait(0.6)
-	release_all()
-	check("R3 jumpPower 2.0 + double jump reaches the ledge", p.global_position.y < 316 and p.global_position.x > 2530, "pos=%s" % p.global_position)
-	await touch_flag(2568, 304)
-	var shown3 := await dismiss_cutscene()
-	check("R3 all fruit + flag rescues Psalm", shown3 and "psalm" in game.unlocked_heroes, str(game.unlocked_heroes))
-	await wait(0.6)
-	check("R3 exit door opens after the rescue", not door_closed(3))
-
-	# ---------------- Room 4 (Psalm's vents) ----------------
-	# Bottom y=832. The drop: Rock Head elevator x=2800-2832 up to the entrance ledge (top
-	# y=320, ledge x<2800), the bananas hang at x=2816. Checkpoint x=2872. Wall x=2896-2928
-	# with a 1-tile gap under it. Low vent y=784-832: saw centre y=800 sliding x=2984-3064,
-	# block x=3104-3136 (top y=800, 1-tile gap above it), Rock Head lift x=3312-3344 up to the
-	# high vent floor y=768. High vent y=672-768: Spike Heads at x=3120 and 3232 (they stop
-	# 20 px over the floor), gap into the fan room x=3008-3024. Fan x=2968 on the high vent
-	# floor; platform top y=400.
-	ensure_hero("psalm")
-	var drop_bananas := fruit_at([Vector2(2816, 376), Vector2(2816, 424), Vector2(2816, 472),
-		Vector2(2816, 520), Vector2(2816, 568), Vector2(2816, 616)])
-	var vent_fruit := fruit_at([Vector2(3016, 824), Vector2(3048, 824), Vector2(3080, 824), Vector2(3112, 792)])
-	await code('hero = "Kervin";')
-	await ride_rock_head(rock_from(Vector2(2816, 816)), 336.0, 20.0)
-	Input.action_press("move_left")
-	await wait(0.5)
-	release_all()
-	check("R4 the Rock Head rides back up the drop, picking up its 6 bananas", drop_bananas.size() == 6 and taken(drop_bananas) == 6 and p.global_position.y < 310 and p.global_position.x < 2800, "bananas %d/%d pos=%s" % [taken(drop_bananas), drop_bananas.size(), p.global_position])
-	tp(2876, 816)
-	p.restore_vitals()
-	await wait(0.3)
-	Input.action_press("move_right")
-	await wait(1.0)
-	release_all()
-	check("R4 Kervin doesn't fit under the wall", p.global_position.x < 2890, "x=%.0f" % p.global_position.x)
-	await code('hero = "Psalm";')
-	check("R4 hero = \"Psalm\" switches hero", p.hero_id == "psalm", last_byte())
-	tp(2876, 816)
-	await wait(0.3)
-	Input.action_press("move_right")
-	await wait(1.0)
-	release_all()
-	check("R4 Psalm doesn't fit at full size", p.global_position.x < 2890 and not p.is_small, "x=%.0f" % p.global_position.x)
-	tp(2876, 816)
-	p.restore_vitals()
-	await wait(0.3)
-	Input.action_press("move_down")
-	await wait(0.4)
-	var small_ok: bool = p.is_small
-	Input.action_press("move_right")
-	await until_x(2946, 3.0)
-	check("R4 holding Down, tiny Psalm crawls under the wall", small_ok and p.global_position.x >= 2946, "small=%s x=%.0f" % [small_ok, p.global_position.x])
-	shot("r4_tiny_psalm")
-	# Back into the gap, then let go of Down: no room to grow.
-	Input.action_release("move_right")
-	Input.action_press("move_left")
-	await until_x_left(2913, 3.0)
-	release_all()
-	await wait(0.6)
-	var squeezed_stamina: float = p.stamina
-	await wait(1.0)
-	check("R4 in the gap Psalm stays small after letting go", p.is_small, "x=%.0f" % p.global_position.x)
-	check("R4 stamina holds still while squeezed", p.stamina == squeezed_stamina and p.stamina > 0.0, "%.1f -> %.1f" % [squeezed_stamina, p.stamina])
-	await code('hero = "Kervin";')
-	check("R4 no switching hero while squeezed", p.hero_id == "psalm" and "No room" in last_byte(), last_byte())
-	# Out of the gap he grows back, before the saw's reach (from x=2969).
-	Input.action_press("move_right")
-	await until_x(2938, 3.0)
-	release_all()
-	await wait(0.4)
-	check("R4 out of the gap, Psalm grows back", not p.is_small and p.global_position.x > 2930 and p.global_position.x < 2958, "x=%.0f small=%s" % [p.global_position.x, p.is_small])
-	# Full-size, the saw sends you back to the checkpoint; tiny, you walk under it.
-	Input.action_press("move_right")
-	await wait(1.2)
-	release_all()
-	await wait(0.3)
-	check("R4 full-size, the saw sends Psalm back to the checkpoint", p.global_position.x < 2896, "pos=%s" % p.global_position)
-	tp(2940, 816)
-	p.restore_vitals()
-	Input.action_press("move_down")
-	await wait(0.4)
-	Input.action_press("move_right")
-	await until_x(3094, 5.0)
-	check("R4 tiny Psalm walks under the saw", p.global_position.x >= 3094 and p.health == 100.0, "hp=%.0f x=%.0f" % [p.health, p.global_position.x])
-	# Still holding Down and right: jump into the 1-tile gap over the block, out the far side.
-	await jump(0.2)
-	await until_x(3150, 3.0)
-	await wait(0.3)
-	release_all()
-	check("R4 tiny Psalm jumps into the gap over the block", p.global_position.x > 3140 and p.global_position.y > 810, "pos=%s" % p.global_position)
-	check("R4 the fruit under the saw and in the gap is picked up", vent_fruit.size() == 4 and taken(vent_fruit) == 4, "%d / %d" % [taken(vent_fruit), vent_fruit.size()])
-	await code('hero = "Kervin";')
-	tp(3160, 816)
-	await wait(0.3)
-	Input.action_press("move_left")
-	for k in 3:
-		await jump(0.3)
-		await wait(0.3)
-	release_all()
-	check("R4 Kervin can't get over the block", p.global_position.x > 3136, "x=%.0f" % p.global_position.x)
-	await code('hero = "Psalm";')
-	await ride_rock_head(rock_from(Vector2(3328, 816)), 784.0)
-	Input.action_press("move_left")
-	await wait(0.5)
-	release_all()
-	check("R4 the Rock Head lift carries Psalm up to the high vent", p.global_position.y < 760 and p.global_position.x < 3312, "pos=%s" % p.global_position)
-	p.restore_vitals()
-	Input.action_press("move_down")
-	await wait(0.4)
-	Input.action_press("move_left")
-	await until_x_left(3040, 8.0)
-	release_all()
-	check("R4 tiny Psalm walks under the Spike Heads unhurt", p.health == 100.0 and p.global_position.x <= 3040, "hp=%.0f x=%.0f" % [p.health, p.global_position.x])
-	await code('hero = "Kervin";')
-	tp(3244, 752)  # under the Spike Head (x=3212-3252 hurts), a bit right so the hit knocks him out
-	p.restore_vitals()
-	await wait(3.0)
-	check("R4 a slamming Spike Head hurts a full-size hero", p.health < 100.0, "hp=%.0f" % p.health)
-	tp(3048, 752)
-	await wait(0.3)
-	Input.action_press("move_left")
-	await wait(1.0)
-	release_all()
-	check("R4 Kervin doesn't fit into the fan room", p.global_position.x > 3030, "x=%.0f" % p.global_position.x)
-	await code('hero = "Psalm";')
-	Input.action_press("move_down")
-	await wait(0.4)
-	Input.action_press("move_left")
-	await until_x_left(2995, 3.0)
-	release_all()
-	check("R4 tiny Psalm crawls into the fan room", p.global_position.x < 3000, "x=%.0f" % p.global_position.x)
-	await wait(0.6)
-	tp(2968, 752)
-	p.restore_vitals()
-	await wait(1.0)
-	check("R4 fan is off: nothing happens", p.global_position.y > 742, "y=%.0f" % p.global_position.y)
-	await code("boolean fanOn = true;")
-	tp(2968, 752)
-	await wait(3.2)
-	check("R4 fan lifts the player above the platform", p.global_position.y < 376, "y=%.0f" % p.global_position.y)
-	shot("r4_fan")
-	Input.action_press("move_right")
-	await wait(0.6)
-	release_all()
-	await wait(0.5)
-	check("R4 steps off the fan onto the platform", p.global_position.y < 388 and p.global_position.x > 2995, "pos=%s" % p.global_position)
-	await ride_rock_head(rock_from(Vector2(3136, 416)), 256.0)
-	Input.action_press("move_right")
-	await wait(0.8)
-	release_all()
-	check("R4 Rock Head elevator reaches the top floor", p.global_position.y < 228 and p.global_position.x > 3170, "pos=%s" % p.global_position)
-
-	# ---------------- Room 5: ledge top y=240, path B to x=3792, crawlspace gap, exit at x>=3872 ----------------
-	tp(3420, 224)
-	await wait(0.4)
-	Input.action_press("move_right")
-	await wait(1.0)
-	release_all()
-	await wait(1.0)
-	check("R5 no path chosen: you can't get across", not (p.global_position.x > 3870 and p.global_position.y < 240), "pos=%s" % p.global_position)
-	await code("char path = 'A';")
-	var a_on: bool = not gadget_near("path_platform.gd", Vector2(3456, 211)).shape.disabled
-	check("R5 path = 'A' makes path A solid", a_on)
-	await code("path = 'B';")
-	for h in ["april", "kervin", "psalm_small"]:
-		won = await cheat(h, Vector2(3700, 224), "move_right", 3782)
-		check("R5 cheat: %s at jumpPower 2.0 can't cross the dash gap" % h, not (won.x > 3875 and won.y < 240), "pos=%s" % won)
-	p.jump_power = 2.0
-	await code('hero = "Sarah";')
-	tp(3420, 224)
-	p.restore_vitals()
-	await wait(0.4)
-	Input.action_press("move_right")
-	await until_x(3782, 6.0)
-	await dash()
-	await wait(1.0)
-	release_all()
-	shot("r5_paths")
-	check("R5 path B + dash reaches the exit", p.global_position.x > 3875 and p.global_position.y < 240, "pos=%s" % p.global_position)
-
-	# ---------------- Exam 1 (high wall): floor y=240, wall x>=4336, wall top y=128 ----------------
-	for h in ["sarah", "kervin", "psalm"]:
-		won = await cheat(h, Vector2(4305, 224), "move_right", 0.0)
-		check("Exam 1 cheat: %s at jumpPower 2.0 can't climb the wall" % h, not (won.x > 4340 and won.y < 120), "pos=%s" % won)
-	p.set_hero("sarah")
-	p.jump_power = 2.0
-	await code('hero = "April";')
-	await code("jumpPower = 1.0;")
-	tp(4305, 224)
-	p.restore_vitals()
-	await wait(0.4)
-	await double_jump_to("move_right")
-	await wait(0.6)
-	release_all()
-	await wait(0.8)
-	check("Exam 1: double jump at 1.0 can't climb the wall", not (p.global_position.x > 4340 and p.global_position.y < 120), "pos=%s" % p.global_position)
-	await code("double jumpPower = 2.0;")
-	check("Exam 1: writing double again is refused", p.jump_power == 1.0 and "already exists" in last_byte(), last_byte())
-	await code("jumpPower = 2.0;")
-	tp(4305, 224)
-	p.restore_vitals()
-	await wait(0.4)
-	await double_jump_to("move_right")
-	await wait(0.8)
-	release_all()
-	check("Exam 1: April at jumpPower 2.0 climbs the wall", p.global_position.x > 4340 and p.global_position.y < 120, "pos=%s" % p.global_position)
-
-	# ---------------- Exam 2 (low tunnel): floor y=240, tunnel x=4528-4912, wall x=4736-4768 with a 1-tile gap ----------------
-	await code('hero = "Chelzy";')
-	tp(4620, 224)
-	p.restore_vitals()
-	await wait(0.4)
-	await jump()
-	await wait(0.8)
-	check("Exam 2: at 2.0 a jump hits the ceiling spikes", p.health < 100 or p.global_position.x < 4540, "hp=%.0f pos=%s" % [p.health, p.global_position])
-	await code("jumpPower = 1.0;")
-	tp(4620, 224)
-	p.restore_vitals()
-	await wait(1.2)
-	await jump()
-	await wait(0.8)
-	check("Exam 2: at 1.0 the jump is safe", p.health == 100 and p.global_position.x > 4540, "hp=%.0f" % p.health)
-	tp(4700, 224)
-	await wait(0.3)
-	Input.action_press("move_right")
-	await wait(1.0)
-	release_all()
-	check("Exam 2: Chelzy doesn't fit under the wall", p.global_position.x < 4730, "x=%.0f" % p.global_position.x)
-	await code('hero = "Psalm";')
-	tp(4500, 224)
-	p.restore_vitals()
-	await wait(0.4)
-	Input.action_press("move_right")
-	for x in [4554, 4634]:  # just before the fire block and the first spikes
-		await until_x(x)
-		await jump()
-	await until_x(4700)
-	Input.action_press("move_down")  # shrink for the gap under the wall
-	await until_x(4790, 5.0)
-	Input.action_release("move_down")
-	await until_x(4810)  # just before the last spikes
-	await jump()
-	await wait(0.6)
-	release_all()
-	var gap_fruit_taken := true
-	for f in get_nodes_in_group("fruit"):
-		if is_instance_valid(f) and f.global_position.distance_to(Vector2(4744, 232)) < 2.0:
-			gap_fruit_taken = f._taken
-	check("Exam 2: runs the tunnel, tiny under the wall", p.global_position.x > 4880 and gap_fruit_taken, "hp=%.0f x=%.0f fruit in the gap taken=%s" % [p.health, p.global_position.x, gap_fruit_taken])
-
-	# ---------------- Exam 3 (long bridge, crawlspace): floor y=240, pit x=4960-5152 ----------------
-	for h in ["kervin", "april", "sarah", "psalm_small"]:
-		won = await cheat(h, Vector2(4920, 224), "move_right", 4954)
-		check("Exam 3 cheat: %s at jumpPower 2.0 can't cross without the bridge" % h, not (won.x > 5160 and won.y < 236), "pos=%s" % won)
-	p.set_hero("chelzy")
-	p.jump_power = 1.0
-	var old_bridge := gadget_near("code_bridge.gd", Vector2(1488, 512))
-	tp(4920, 224)
-	await code("bridgeLength = 12;")
-	await wait(1.4)
-	check("Exam 3: Room 2's bridge keeps its 11 blocks", old_bridge._blocks.size() == 11, "blocks=%d" % old_bridge._blocks.size())
-	tp(4920, 224)
-	p.restore_vitals()
-	await wait(0.3)
-	Input.action_press("move_right")
-	await until_x(5170)
-	release_all()
-	await wait(0.3)
-	check("Exam 3: walks across the 12-block bridge", p.global_position.x > 5160 and p.global_position.y < 236, "pos=%s" % p.global_position)
-	await ride_rock_head(gadget_near("block_head.gd", Vector2(5280, 224)), -80.0, 20.0)
-	check("Exam 3: Rock Head elevator rises to the fan trap", p.global_position.y < -94, "pos=%s" % p.global_position)
-
-	# ---------------- Exam 4 (fan trap): corridor floor y=-96, fans x=4992-5152 ----------------
-	tp(5220, -112)
-	p.restore_vitals()
-	await wait(0.4)
-	Input.action_press("move_left")
-	await wait(2.5)
-	release_all()
-	await wait(0.5)
-	# The spikes send you back to a checkpoint, so "through" means past the fans and still up here.
-	check("Exam 4: fans on: you can't get through", not (p.global_position.x < 4980 and p.global_position.y < -90), "pos=%s hp=%.0f" % [p.global_position, p.health])
-	tp(5220, -112)
-	p.restore_vitals()
-	await code("fanOn = false;")
-	var old_fan := gadget_near("code_fan.gd", Vector2(2968, 832))
-	check("Exam 4: Room 4's fan stays on", old_fan.is_on)
-	await wait(0.4)
-	Input.action_press("move_left")
-	await wait(2.1)  # stop before the chasm (no path chosen yet)
-	release_all()
-	check("Exam 4: fans off: walk through", p.global_position.x < 4975 and p.global_position.y < -94, "pos=%s" % p.global_position)
-
-	# ---------------- Exam 5 (last path): path C y=-96 x=4560-4912, block x=4544-4560, crawlspace gap to x=4464 ----------------
-	await code("path = 'C';")  # typed in the fan corridor: same exam, so path C still appears
-	check("Exam 5: path = 'C' from the fan corridor reaches the paths", not gadget_near("path_platform.gd", Vector2(4900, -93)).shape.disabled)
-	for h in ["april", "kervin", "psalm_small"]:
-		won = await cheat(h, Vector2(4600, -112), "move_left", 4554)
-		check("Exam 5 cheat: %s at jumpPower 2.0 can't cross the dash gap" % h, not (won.x < 4462 and won.y < -94), "pos=%s" % won)
-	p.jump_power = 1.0
-	await code('hero = "Sarah";')
-	tp(4890, -112)
-	p.restore_vitals()
-	await wait(0.4)
-	# Three Spike Heads slam down onto path C: stop before each, go when it has just gone up.
-	for head_x in [4848, 4752, 4656]:
-		Input.action_press("move_left")
-		await until_x_left(head_x + 36, 5.0)
-		release_all()
-		var head: Node2D = gadget_near("block_head.gd", Vector2(head_x, -224))
-		while absf(head.position.y - head._start.y) < 1.0:
-			await process_frame
-		while absf(head.position.y - head._start.y) > 1.0:
-			await process_frame
-	Input.action_press("move_left")
-	await until_x_left(4554, 5.0)
-	await dash()
-	await wait(1.0)
-	release_all()
-	check("Exam 5: path C + dash reaches the last ledge", p.global_position.x < 4462 and p.global_position.y < -94, "pos=%s" % p.global_position)
-
-	# ---------------- Exam 6 (final gate): gate x=4376, falling floor x=4176-4368 (crawlspace), shaft x=4048-4096 ----------------
-	tp(4440, -112)
-	await wait(0.3)
-	Input.action_press("move_left")
-	await wait(1.0)
-	release_all()
-	check("Exam 6: the gate blocks the way", p.global_position.x > 4380, "x=%.0f" % p.global_position.x)
-	await code('System.out.println("Hello");')
-	await wait(0.5)
-	check("Exam 6: the gate needs the exact text", gadget_near("byte_gate.gd", Vector2(4376, -96)).is_open == false)
-	await code('System.out.println("I can code!");')
-	await wait(0.6)
-	check("Exam 6: \"I can code!\" opens the gate", gadget_near("byte_gate.gd", Vector2(4376, -96)).is_open)
-	tp(4420, -112)
-	p.restore_vitals()
-	await wait(0.4)
-	Input.action_press("move_left")
-	await wait(3.0)
-	release_all()
-	check("Exam 6: walking over the falling floor fails", p.global_position.x > 4180, "x=%.0f" % p.global_position.x)
-	won = await cheat("april", Vector2(4420, -112), "move_left", 4374, 4.0)
-	check("Exam 6 cheat: April at 2.0 can't hop the falling floor", not (won.x < 4170 and won.y < -94 and won.y > -130), "pos=%s" % won)
-	won = await cheat("psalm_small", Vector2(4420, -112), "move_left", 4374, 6.0)
-	check("Exam 6 cheat: tiny Psalm can't hop the falling floor", not (won.x < 4170 and won.y < -94 and won.y > -130), "pos=%s" % won)
-	p.jump_power = 1.0
-	await code('hero = "Kervin";')
-	tp(4420, -112)
-	p.restore_vitals()
-	await wait(2.5)
-	Input.action_press("dash")
-	Input.action_press("move_left")
-	await wait(1.3)
-	release_all()
-	check("Exam 6: Kervin sprints across", p.global_position.x < 4170 and p.global_position.y < -94, "pos=%s" % p.global_position)
-	for h in ["april", "psalm"]:
-		won = await cheat(h, Vector2(4072, -112), "move_left", 0.0)
-		check("Exam 6 cheat: %s at 2.0 can't jump up the shaft" % h, won.y > -300, "pos=%s" % won)
-	p.jump_power = 1.0
-	await code('hero = "Chelzy";')
-	tp(4072, -112)
-	p.restore_vitals()
-	await wait(0.3)
-	wall_dir = -1
-	exit_y = -340.0
-	exit_dir = 1
-	wall_bot = true
-	await wait(7.0)
-	wall_bot = false
-	release_all()
-	check("Exam 6: Chelzy wall-jumps up to the goal floor", p.global_position.y < -324 and p.global_position.x > 4100, "pos=%s" % p.global_position)
-	# The goal needs every fruit of the final exam.
-	tp(4340, -336)
-	p.restore_vitals()
-	Input.action_press("move_right")
-	await wait(1.0)
-	release_all()
-	check("Goal won't finish while exam fruit is missing", level.get_node_or_null("LevelComplete") == null and not paused, "")
-	for i in range(6, 12):
-		await collect_room(i)
-	tp(4340, -336)
+	tp(640, 112)
 	Input.action_press("move_right")
 	await wait(1.5)
 	release_all()
 	await wait(2.5)
 	var screen := level.get_node_or_null("LevelComplete")
 	check("Level complete screen", screen != null and paused, "stars=%d mistakes=%d" % [game.stars_earned(), game.mistakes])
+	check("It says TUTORIAL COMPLETE!", screen != null and screen._title.text == "TUTORIAL COMPLETE!", screen._title.text if screen else "")
+	check("3 stars (no answer shown)", game.stars_earned() == 3, str(game.stars_earned()))
 	shot("complete")
 
 	print("\n%d / %d checks passed" % [results.filter(func(r): return r.begins_with("PASS")).size(), results.size()])

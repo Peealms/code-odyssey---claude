@@ -2,14 +2,16 @@ extends CodeGadget
 ## Byte's gate: a column of blocks that breaks apart when the player prints something with
 ## System.out.println(...). Set `required_text` to need an exact message, or leave it empty
 ## so any printed text opens it. The node's position is the bottom-middle (put it on the ground).
-
-const BLOCK := 22  ## Size of one block sprite.
-const FRAMES := preload("res://assets/level1_pixel_adventure/traps/blocks/blocks_frames.tres")
-const PART_1 := preload("res://assets/level1_pixel_adventure/traps/blocks/part_1.png")
-const PART_2 := preload("res://assets/level1_pixel_adventure/traps/blocks/part_2.png")
+## The art is Pixel Adventure's blocks; byte_gate_island.tscn swaps in Treasure Hunters' boxes.
 
 @export_range(1, 8) var height := 3  ## Blocks stacked on top of each other.
 @export var required_text := ""  ## Exact text to print, or empty for anything.
+## One block's animations: "idle", and "hitside" when the gate breaks.
+@export var frames: SpriteFrames = preload("res://assets/level1_pixel_adventure/traps/blocks/blocks_frames.tres")
+@export var block_size := Vector2(22, 22)  ## Size of one block sprite.
+## The pieces each block breaks into.
+@export var parts: Array[Texture2D] = [preload("res://assets/level1_pixel_adventure/traps/blocks/part_1.png"),
+	preload("res://assets/level1_pixel_adventure/traps/blocks/part_2.png")]
 
 var is_open := false
 
@@ -21,14 +23,14 @@ func _ready() -> void:
 	variable_name = "println"
 	super()
 	var rect := RectangleShape2D.new()
-	rect.size = Vector2(BLOCK - 2, height * BLOCK)
+	rect.size = Vector2(block_size.x - 2, height * block_size.y)
 	shape.shape = rect
-	shape.position = Vector2(0, -height * BLOCK / 2.0)
+	shape.position = Vector2(0, -height * block_size.y / 2.0)
 	for i in height:
 		var s := AnimatedSprite2D.new()
-		s.sprite_frames = FRAMES
+		s.sprite_frames = frames
 		s.play("idle")
-		s.position = Vector2(0, -BLOCK / 2.0 - i * BLOCK)
+		s.position = Vector2(0, -block_size.y / 2.0 - i * block_size.y)
 		body.add_child(s)
 
 
@@ -55,14 +57,14 @@ func _open() -> void:
 		byte.say("GATE OPEN!", 2.0)
 
 
-## Swap a block for its two halves, flying apart and fading.
+## Swap a block for its pieces, flying apart and fading.
 func _shatter(block: AnimatedSprite2D) -> void:
-	for i in 2:
+	for i in parts.size():
 		var part := Sprite2D.new()
-		part.texture = PART_1 if i == 0 else PART_2
+		part.texture = parts[i]
 		part.position = block.position
 		body.add_child(part)
-		var dir := -1.0 if i == 0 else 1.0
+		var dir := -1.0 if i % 2 == 0 else 1.0
 		var tween := part.create_tween().set_parallel()
 		tween.tween_property(part, "position:x", part.position.x + dir * randf_range(14, 26), 0.6)
 		tween.tween_property(part, "position:y", part.position.y + 40.0, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)

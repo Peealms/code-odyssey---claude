@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/gadgets/falling_platform.gd" id="1_script"]
-[ext_resource type="SpriteFrames" path="res://assets/level1_pixel_adventure/traps/falling_platforms/falling_platforms_frames.tres" id="2_frames"]
+[ext_resource type="SpriteFrames" path="res://assets/level2_treasure_hunters/gadgets/plank_frames.tres" id="2_frames"]
 
 [sub_resource type="RectangleShape2D" id="top"]
 size = Vector2(32, 6)
@@ -16,7 +16,7 @@ sync_to_physics = false
 script = ExtResource("1_script")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
-position = Vector2(0, 2)
+position = Vector2(0, 2.5)
 sprite_frames = ExtResource("2_frames")
 animation = &"on"
 

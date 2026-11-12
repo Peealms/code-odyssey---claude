@@ -5,11 +5,8 @@ extends Node
 const SETTINGS_PATH := "user://settings.cfg"
 const SAVE_PATH := "user://save.cfg"
 
-## Hero ids (the five of us), in the order they are rescued. Psalm isn't placed in a level yet.
+## Hero ids (the five of us), in the order they are rescued.
 const HEROES := ["chelzy", "sarah", "april", "kervin", "psalm"]
-## Saves from before the team replaced the Pixel Adventure heroes: each old hero becomes the
-## teammate with the same ability.
-const OLD_HERO_IDS := {"ninja_frog": "chelzy", "pink_man": "sarah", "mask_dude": "april", "virtual_guy": "kervin"}
 
 var current_hero: String = "chelzy"
 var unlocked_heroes: Array = ["chelzy"]
@@ -25,6 +22,7 @@ var answers_shown := 0  ## "Show answer" uses - each one costs a star.
 var mistakes := 0  ## Wrong lines typed in the terminal.
 var _level_start_ms := 0
 
+var immune := false  # IMMUNITY: true while the secret testing mode is on (scripts/dev/immunity.gd)
 var master_volume: float = 0.8
 var music_volume: float = 0.7
 var sfx_volume: float = 0.8
@@ -40,6 +38,8 @@ func _ready() -> void:
 	_build_fade_layer()
 	load_settings()
 	load_progress()
+	if OS.has_feature("editor") and ResourceLoader.exists("res://scripts/dev/immunity.gd"):  # IMMUNITY: editor runs only
+		add_child(load("res://scripts/dev/immunity.gd").new())  # IMMUNITY
 
 
 # ---------------- Scene changes ----------------
@@ -90,6 +90,7 @@ func is_hero_unlocked(hero_id: String) -> bool:
 
 ## Puts a rescued hero on the hero wheel. Returns true if they just joined it.
 func add_wheel_hero(hero_id: String) -> bool:
+	if immune: return false  # IMMUNITY: code run in immunity mode doesn't change the save
 	if not hero_id in HEROES or not hero_id in unlocked_heroes or hero_id in wheel_heroes:
 		return false
 	wheel_heroes.append(hero_id)
@@ -119,15 +120,17 @@ func stars_earned() -> int:
 func finish_level() -> Dictionary:
 	var stars := stars_earned()
 	var best: int = maxi(stars, best_stars.get(level_id, 0))
-	best_stars[level_id] = best
-	save_progress()
-	return {
+	var results := {
 		"stars": stars,
 		"best": best,
 		"answers_shown": answers_shown,
 		"mistakes": mistakes,
 		"seconds": (Time.get_ticks_msec() - _level_start_ms) / 1000.0,
 	}
+	if immune: return results  # IMMUNITY: a level finished in immunity mode isn't saved
+	best_stars[level_id] = best
+	save_progress()
+	return results
 
 
 # ---------------- Settings ----------------
@@ -206,25 +209,22 @@ func load_progress() -> void:
 		# A save from before the hero wheel: the hero being played was surely typed.
 		wheel_heroes = cfg.get_value("progress", "wheel_heroes", [HEROES[0], current_hero])
 		best_stars = cfg.get_value("progress", "best_stars", best_stars)
-		_update_old_hero_ids()
+		_drop_unknown_heroes()
 
 
-## Turns hero ids from an older save into the team's ids and drops any it doesn't know.
-func _update_old_hero_ids() -> void:
+## Drops any hero id the game doesn't know (e.g. from an older save).
+func _drop_unknown_heroes() -> void:
 	var heroes: Array = [HEROES[0]]
 	for id in unlocked_heroes:
-		var new_id: String = OLD_HERO_IDS.get(id, id)
-		if new_id in HEROES and not new_id in heroes:
-			heroes.append(new_id)
+		if id in HEROES and not id in heroes:
+			heroes.append(id)
 	unlocked_heroes = heroes
-	current_hero = OLD_HERO_IDS.get(current_hero, current_hero)
 	if not current_hero in unlocked_heroes:
 		current_hero = HEROES[0]
 	var on_wheel: Array = [HEROES[0]]
 	for id in wheel_heroes:
-		var new_id: String = OLD_HERO_IDS.get(id, id)
-		if new_id in HEROES and not new_id in on_wheel:
-			on_wheel.append(new_id)
+		if id in HEROES and not id in on_wheel:
+			on_wheel.append(id)
 	wheel_heroes = on_wheel
 
 

@@ -1,5 +1,5 @@
 extends CharacterBody2D
-## Crabby, borrowed from Level 2. Patrols back and forth, pinches when the player is close,
+## Crabby, a Treasure Hunters crab. Patrols back and forth, pinches when the player is close,
 ## and hurts the player on touch. The sword (take_damage) wears down its health.
 ## A small health bar floats above it for a moment after each hit.
 
@@ -12,7 +12,7 @@ signal defeated
 @export var patrol_right := 120.0
 @export var attack_range := 52.0  ## How close the player must be before Crabby pinches.
 @export var contact_damage := 20.0  ## Health the player loses per touch or pinch.
-## Another enemy's art with the same animations (Level 2's Pink Star and Fierce Tooth).
+## Another enemy's art with the same animations (Level 1's Pink Star).
 @export var frames: SpriteFrames
 
 ## Attack animation frames where the claws are stretched out and the ClawBox hurts.

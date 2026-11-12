@@ -1,0 +1,42 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/level2_treasure_hunters/tiles/ship_platforms_32x32.png" id="1_tex"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_plank"]
+atlas = ExtResource("1_tex")
+region = Rect2(128, 65, 32, 11)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_plank")
+}],
+"loop": true,
+"name": &"on",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_plank")
+}],
+"loop": true,
+"name": &"off",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_plank")
+}],
+"loop": true,
+"name": &"brown_on",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_plank")
+}],
+"loop": true,
+"name": &"brown_off",
+"speed": 5.0
+}]

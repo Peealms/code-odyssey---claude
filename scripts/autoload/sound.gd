@@ -1,9 +1,8 @@
 extends Node
 ## Music and sound effects. Registered as the "Sound" autoload.
 ##   Sound.play("jump")                    - a sound effect anywhere (UI, the player)
-##   Sound.play_at("rock_slam", position)  - a trap sound, only heard near the camera
+##   Sound.play_at("fire", position)       - a trap sound, only heard near the camera
 ##   Sound.music("rooms")                  - crossfades to a music track (loops)
-##   Sound.loop_player("fan_loop", node)   - a looping sound attached to a node (fans, saws)
 ## Music plays on the "Music" bus, everything else on "SFX"; Game saves both volumes.
 ## Sources and licences: assets/shared/audio/CREDITS.md.
 
@@ -17,7 +16,6 @@ const SFX := {
 	"dash": [-6.0, "sfx_wpn_sword3"],
 	"shrink": [-8.0, "not from the pack: made by tools/make_shrink_sounds.gd"],
 	"grow": [-8.0, "not from the pack: made by tools/make_shrink_sounds.gd"],
-	"trampoline": [-6.0, "sfx_movement_jump20"],
 	"fruit": [-10.0, "sfx_coin_single1"],
 	"hurt": [-4.0, "sfx_damage_hit2"],
 	"fall": [-6.0, "sfx_sounds_falling3"],
@@ -36,15 +34,10 @@ const SFX := {
 	"page_turn": [-8.0, "sfx_menu_move3"],
 	"chest_open": [-6.0, "sfx_movement_dooropen1"],
 	"gate_break": [-4.0, "sfx_exp_shortest_soft1"],
-	"crates_break": [-4.0, "sfx_exp_shortest_soft4"],
 	"bridge_block": [-12.0, "sfx_sounds_Blip4"],
 	"bridge_collapse": [-4.0, "sfx_exp_shortest_hard3"],
-	"rock_slam": [-6.0, "sfx_sounds_impact3"],
-	"spike_slam": [-6.0, "sfx_sounds_impact7"],
 	"platform_crumble": [-8.0, "sfx_sounds_impact11"],
 	"fire": [-10.0, "sfx_exp_shortest_soft7"],
-	"fan_loop": [-14.0, "sfx_sound_mechanicalnoise1"],
-	"saw_loop": [-20.0, "sfx_sound_mechanicalnoise2"],
 	"sword": [-6.0, "sfx_wpn_sword1"],
 	"blocked": [-8.0, "sfx_sounds_negative2"],
 }
@@ -90,7 +83,7 @@ func play(name: String, pitch_spread := 0.0) -> void:
 
 
 ## A sound from something in the level: quieter the farther it is from the camera, silent
-## off-screen, so twenty saws don't all play at once.
+## off-screen, so far-away traps don't all play at once.
 func play_at(name: String, world_pos: Vector2, pitch_spread := 0.05) -> void:
 	var volume := _distance_volume(world_pos)
 	if volume <= 0.0:
@@ -104,22 +97,6 @@ func play_at(name: String, world_pos: Vector2, pitch_spread := 0.05) -> void:
 	p.volume_db = SFX[name][0] + linear_to_db(volume)
 	p.pitch_scale = 1.0 + randf_range(-pitch_spread, pitch_spread)
 	p.play()
-
-
-## A looping sound attached to `owner_node` (a fan or saw). It plays only while the node is
-## near the camera. Call .stop() / .play() on the returned player to switch it.
-func loop_player(name: String, owner_node: Node2D) -> AudioStreamPlayer2D:
-	var p := AudioStreamPlayer2D.new()
-	var stream: AudioStreamWAV = _stream(name).duplicate()
-	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
-	stream.loop_end = int(stream.get_length() * stream.mix_rate)
-	p.stream = stream
-	p.bus = "SFX"
-	p.volume_db = SFX[name][0]
-	p.max_distance = HEARING
-	p.attenuation = 1.5
-	owner_node.add_child(p)
-	return p
 
 
 ## Crossfades to a music track. Calling it with the track already playing does nothing.

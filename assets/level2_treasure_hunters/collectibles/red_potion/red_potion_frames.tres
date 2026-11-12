@@ -1,6 +1,6 @@
-[gd_resource type="SpriteFrames" load_steps=9 format=3]
+[gd_resource type="SpriteFrames" format=3 uid="uid://di0n1o02vruos"]
 
-[ext_resource type="Texture2D" path="res://assets/level2_treasure_hunters/collectibles/red_potion/idle.png" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://c5t7ingul5g5e" path="res://assets/level2_treasure_hunters/collectibles/red_potion/idle.png" id="1_tex"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_1"]
 atlas = ExtResource("1_tex")
@@ -54,7 +54,7 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_7")
 }],
-"loop": true,
+"loop": 1,
 "name": &"idle",
 "speed": 10.0
 }]

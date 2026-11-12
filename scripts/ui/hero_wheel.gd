@@ -9,10 +9,9 @@ extends CanvasLayer
 ##   not rescued yet          a flat silhouette with a padlock and "???"
 ##   rescued, never typed     a grey face with the line to type in Byte's terminal
 ## Switching here is the same as typing the line: if `hero` exists in the code it changes
-## too (CodeTerminal.switch_from_wheel), so rules that check hero still run.
+## too (CodeTerminal.switch_from_wheel).
 ##
-## Level adds one to every level. Level 2 locks it while the captain fights, because the
-## player's rule picks the hero then.
+## Level adds one to every level.
 
 enum State { READY, NEEDS_CODE, LOCKED }
 
@@ -43,8 +42,6 @@ const TRAIT_TEXT := {
 const HERO_DATA: Dictionary = preload("res://scripts/player/player.gd").HERO_DATA
 
 @export var player: CharacterBody2D
-## While not empty the wheel won't open and the HUD says this instead (Level 2's boss fight).
-var locked_reason := ""
 var is_open := false
 
 var _selected := 0
@@ -124,10 +121,6 @@ func _try_open() -> void:
 		return
 	var terminal := _terminal()
 	if terminal and terminal.is_open:
-		return
-	if locked_reason != "":
-		Sound.play("blocked")
-		_hud_message(locked_reason)
 		return
 	is_open = true
 	player.wheel_open = true
@@ -219,6 +212,7 @@ func _set_selected(index: int) -> void:
 
 
 func _state(hero_id: String) -> State:
+	if Game.immune: return State.READY  # IMMUNITY: every hero, rescued or not
 	if hero_id == player.hero_id:
 		return State.READY
 	if not Game.is_hero_unlocked(hero_id):
