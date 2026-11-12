@@ -4,8 +4,6 @@ extends Control
 const LEVEL_SELECT := "res://scenes/ui/level_select.tscn"
 const BADGE := preload("res://scripts/ui/title_badge.gd")
 const FIRST_LEVEL := "res://scenes/levels/level1/level1.tscn"
-## The test room (all heroes, Crabby, sword) is still at res://scenes/levels/test/test_room.tscn -
-## open it in the editor and press F6 to play it.
 
 @onready var background: TextureRect = $Background
 @onready var title: Node2D = $Title

@@ -1,6 +1,6 @@
 class_name CodeGadget
 extends Node2D
-## Base for level pieces that react to the player's code (bridges, fans, path platforms, gates).
+## Base for level pieces that react to the player's code (the bridge, the ship, path planks, gates).
 ## Set `variable_name` to the variable it listens to (e.g. "bridgeLength"); when the player
 ## sets that variable in Byte's terminal, `_on_value(value)` runs.
 ## The special name "println" reacts to System.out.println(...) with the printed text.

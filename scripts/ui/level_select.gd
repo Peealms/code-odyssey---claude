@@ -7,17 +7,15 @@ const MENU := "res://scenes/ui/main_menu.tscn"
 
 const P1 := "res://assets/level1_pixel_adventure/"
 const P2 := "res://assets/level2_treasure_hunters/"
-const P3 := "res://assets/level3_kings_and_pigs/"
-const P4 := "res://assets/level4_pirate_bomb/"
 
-## Each level's preview is built from that level's own art:
+## label: the name in the card's title bar. Each level's preview is built from its own art:
 ##   sky: a Color or {tex, region, scale, tint, scroll}      clouds: optional scrolling strip
 ##   ground: {tex, top, fill, scale, rows}                   props: sprites standing on the ground
 ## A prop is {f: SpriteFrames path, a: animation, x: 0..1 across the preview, dy: lift in px,
 ##   s: scale, walk: [x0, x1, seconds] to patrol, face: -1 if the art faces left, rep/gap: repeats}.
 const LEVELS := [
 	{
-		"id": "level1", "title": "TUTORIAL", "topic": "HOW TO PLAY",
+		"id": "level1", "label": "TUTORIAL", "title": "HOW TO PLAY", "topic": "BYTE'S TERMINAL",
 		"scene": "res://scenes/levels/level1/level1.tscn",
 		"accent": Color("5fb8ff"),
 		"sky": {"tex": P1 + "backgrounds/bg_blue.png", "scroll": 10.0},
@@ -25,7 +23,7 @@ const LEVELS := [
 			"fill": Rect2(112, 16, 16, 16), "scale": 1.0, "rows": 2},
 		"props": [
 			{"f": P1 + "traps/spikes/spikes_frames.tres", "a": "idle", "x": 0.52, "rep": 3, "gap": 16},
-			{"f": P1 + "traps/saw/saw_frames.tres", "a": "on", "x": 0.86, "dy": 0},
+			{"f": P1 + "traps/blocks/blocks_frames.tres", "a": "idle", "x": 0.86, "dy": -1},
 			{"f": "res://assets/shared/heroes/chelzy/chelzy_frames.tres", "a": "run",
 				"x": 0.2, "walk": [0.2, 0.42, 3.0], "dy": -1},
 			{"f": P1 + "collectibles/fruits/fruits_frames.tres", "a": "apple", "x": 0.3, "dy": 46, "bob": 3},
@@ -34,7 +32,7 @@ const LEVELS := [
 		],
 	},
 	{
-		"id": "level2", "title": "CONDITIONALS", "topic": "IF / ELSE",
+		"id": "level2", "label": "LEVEL 1", "title": "VARIABLES", "topic": "STORING DATA",
 		"scene": "res://scenes/levels/level2/level2.tscn",
 		"accent": Color("ffb347"),
 		"sky": {"tex": P2 + "backgrounds/additional_sky.png"},
@@ -45,43 +43,10 @@ const LEVELS := [
 			{"f": P2 + "objects/chest/chest_frames.tres", "a": "close", "x": 0.5, "dy": -1, "s": 0.6},
 			{"f": P2 + "enemies/crabby/crabby_frames.tres", "a": "run", "x": 0.7,
 				"walk": [0.6, 0.76, 3.0], "dy": -1, "s": 0.8},
-			{"f": P2 + "characters/captain_clown_nose/captain_clown_nose_frames.tres", "a": "run",
-				"x": 0.3, "walk": [0.27, 0.42, 3.0], "dy": -1, "s": 0.9},
+			{"f": "res://assets/shared/heroes/sarah/sarah_frames.tres", "a": "run",
+				"x": 0.3, "walk": [0.27, 0.42, 3.0], "dy": -1},
 			{"f": P2 + "collectibles/gold_coin/gold_coin_frames.tres", "a": "idle", "x": 0.3, "dy": 46, "bob": 3},
 			{"f": P2 + "collectibles/gold_coin/gold_coin_frames.tres", "a": "idle", "x": 0.4, "dy": 52, "bob": 3},
-		],
-	},
-	{
-		"id": "level3", "title": "LOGIC", "topic": "AND / OR / SWITCH",
-		"scene": "",
-		"accent": Color("c58bff"),
-		"sky": {"color": Color("2d2a40")},
-		"ground": {"tex": P3 + "tiles/castle_terrain_32x32.png", "top": Rect2(64, 224, 32, 32),
-			"fill": Rect2(64, 256, 32, 32), "scale": 0.5, "rows": 2},
-		"props": [
-			{"f": P3 + "objects/door/door_frames.tres", "a": "idle", "x": 0.88, "dy": -1, "s": 0.8},
-			{"f": P3 + "enemies/pig/pig_frames.tres", "a": "run", "x": 0.6,
-				"walk": [0.5, 0.75, 3.0], "dy": -1, "face": -1},
-			{"f": P3 + "characters/king_human/king_human_frames.tres", "a": "run", "x": 0.3,
-				"walk": [0.25, 0.42, 3.0], "dy": -1, "s": 0.8, "face": -1},
-			{"f": P3 + "collectibles/small_diamond/small_diamond_frames.tres", "a": "idle", "x": 0.45, "dy": 46, "bob": 3},
-		],
-	},
-	{
-		"id": "level4", "title": "LOOPS", "topic": "REPEAT & ARRAYS",
-		"scene": "",
-		"accent": Color("6fe08a"),
-		"sky": {"tex": P4 + "tiles/ship_tileset_64x64.png", "region": Rect2(128, 192, 64, 64),
-			"scale": 0.5, "tint": Color(0.55, 0.5, 0.6)},
-		"ground": {"tex": P4 + "tiles/ship_tileset_64x64.png", "top": Rect2(256, 0, 64, 64),
-			"fill": Rect2(256, 64, 64, 64), "scale": 0.25, "rows": 2},
-		"props": [
-			{"f": P4 + "objects/barrel/barrel_frames.tres", "a": "idle", "x": 0.9, "dy": -1, "s": 0.6},
-			{"f": P4 + "objects/bomb/bomb_frames.tres", "a": "bomb_on", "x": 0.5, "dy": -1, "s": 0.4},
-			{"f": P4 + "enemies/cucumber/cucumber_frames.tres", "a": "run", "x": 0.7,
-				"walk": [0.62, 0.74, 3.0], "dy": -1, "s": 0.8, "face": -1},
-			{"f": P4 + "characters/bomb_guy/bomb_guy_frames.tres", "a": "run", "x": 0.3,
-				"walk": [0.25, 0.42, 3.0], "dy": -1, "s": 0.8},
 		],
 	},
 ]
@@ -326,7 +291,7 @@ func _draw_card(i: int) -> void:
 	draw_rect(Rect2(origin + Vector2(2, 2), Vector2(CARD.x - 4, 14)), accent.darkened(0.45) if unlocked else Color("3a3550"))
 	for d in 3:
 		draw_rect(Rect2(origin + Vector2(7 + d * 9, 6), Vector2(5, 5)), [Color("ff6b6b"), Color("ffd34d"), Color("6fe08a")][d])
-	var num := "LEVEL %d" % (i + 1)
+	var num: String = data.get("label", "LEVEL %d" % (i + 1))
 	var nw := _font.get_string_size(num, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
 	draw_string(_font, origin + Vector2(CARD.x - nw - 8, 14), num, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE)
 

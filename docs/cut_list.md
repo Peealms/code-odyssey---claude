@@ -2,8 +2,36 @@
 
 Written 2026-11-12. This replaces the earlier two-topic cut list.
 
-**Progress:** section 1 (the tutorial) is **done** (2026-11-12, `tools/test_level1.gd` passes
-26/26). Sections 2–5 haven't been started.
+**Status: done (2026-11-12).** The tutorial passes `tools/test_level1.gd` (26/26) and Level 1 on
+Treasure Island passes `tools/test_level2.gd` (80/80). The current design is in
+`docs/level1_design.md` and `docs/level2_design.md`; the rest of this file is the plan as it was
+written. What changed from it while building:
+- **Bridges** use whole 32 px planks, so the numbers are 8 (Room 1) and 6 (the exam), not 11.
+- **April's obstacles** are planks floating in the open (3 tiles up in Room 1, 4 in Room 2) with
+  no wall near them, instead of ledges with wall spikes.
+- **No spikes send you back** to a checkpoint any more: the big floor and ceiling spikes do 50
+  damage instead. Wall spikes are gone.
+- **Chelzy and Kervin got more to do:** wall-jump shafts in Room 0, Room 3 and Exam 2; falling
+  floors in Room 2, Room 4 and Exam 1.
+- **Fighting and a boss came back:** Room 3's crab blocks a crawlspace (get the sword with
+  `boolean hasSword = true;`), and Captain Clown Nose guards the treasure in Exam 3. You dodge
+  each of his attacks by switching heroes with hold-Q (`scripts/level2/captain.gd`, rewritten
+  without the rule system).
+- **The exam** is three rooms: the low cave (`jumpPower = 1.0` + Psalm + Kervin), the low bridge
+  (`bridgeLength = 6;` + `path = 'C';` + Chelzy) and the treasure (`anchorUp = true;`,
+  "I can code!" and the captain).
+- **The ship:** `anchorUp = true` makes it shuttle between its two docks; `false` sails it home.
+- **No coin doors:** only rescue flags and the treasure need coins, so `fruit_door.gd` is gone.
+- **Art:** the bridge, falling planks and path planks only appear in Level 1, so their scenes use
+  Treasure Hunters art directly. Byte's gate, the checkpoint flag and the goal appear in both
+  levels, so Level 1 uses inherited scenes that only swap the art (`byte_gate_island.tscn`,
+  `checkpoint_flag.tscn`, `treasure_goal.tscn`).
+- **Kept:** immunity mode, the saw art (the main menu's stage uses it) and Captain Clown Nose's
+  art (the boss, and the sword's sprite).
+- **Not deleted:** `ASSETS CODE ODYSSEY/` isn't in git, so deleting it couldn't be undone. Delete
+  it yourself once you're sure the originals are saved elsewhere.
+- **Not done:** the manuscript (`docs/manuscript/Code_Odyssey_Manuscript.docx`) still describes
+  the old plan. Its objectives, scope and level descriptions need updating.
 
 **Why:** a smaller game is easier to defend, because every one of us has to be able to explain
 every part. This plan keeps Level 1's lessons (already designed and tested), moves them into

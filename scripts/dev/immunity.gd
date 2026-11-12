@@ -16,10 +16,9 @@ extends Node
 ##       Page Up        back to the previous room
 ##
 ## Jumping forward finishes every room you skip the way a player would: it runs the room's
-## `answer` in Byte's terminal (so variables get declared, bridges built, gates opened, fans
-## switched, Level 2's if/else rules saved in their room's machine...), rescues the room's
-## hero and collects all its fruit or coins (so its doors open). The trophy jump also shows
-## a goal the level is still hiding (Level 2's treasure, before the captain is beaten).
+## `answer` in Byte's terminal (so variables get declared, bridges built, gates opened, the
+## ship's anchor raised...), rescues the room's hero and collects all its fruit or coins.
+## The trophy jump also shows a goal the level is still hiding.
 ## Rooms you already walked through keep the code you typed; only their leftovers are collected.
 ## You arrive in the doorway from the room before. It's found from the Terrain tiles, so new
 ## rooms and levels work too; if you land somewhere odd, give that Room a Marker2D child named
@@ -27,8 +26,8 @@ extends Node
 ##
 ## Before publishing: delete this file (and its .uid), then search the project for IMMUNITY
 ## and delete every line it finds - each hook is one whole line, so nothing else needs fixing
-## (game.gd, player.gd, hazard.gd, code_terminal.gd, level_select.gd, and Level 2's water.gd
-## and crew.gd).
+## (game.gd, player.gd, hazard.gd, code_terminal.gd, level_select.gd, hero_wheel.gd and
+## water.gd).
 
 const DOORWAY := 40.0  ## After a jump you may stand just outside the room's area, in its doorway.
 const YELLOW := Color(1, 0.894118, 0.470588)
@@ -188,7 +187,7 @@ func _jump(target: int) -> void:
 		_room_index = target
 	else:
 		spot = level.end_goal.global_position - Vector2(0, _feet(player))
-		if not level.end_goal.monitoring:  # hidden until something happens (Level 2: the captain is beaten)
+		if not level.end_goal.monitoring:  # a goal the level hides until something happens
 			level.end_goal.visible = true
 			level.end_goal.set_deferred("monitoring", true)
 	player.velocity = Vector2.ZERO
@@ -234,21 +233,20 @@ func _finish_room(level: Level, room: Room, run_code: bool) -> void:
 
 ## Runs the room's `answer` in Byte's terminal, without the checklist. Like Java wants, the type
 ## is left out if the variable already exists, and added if it doesn't exist yet.
-## The terminal briefly treats the room as the one you're in: an if/else rule (Level 2) is
-## checked against that room's readings and saved in that room's machine.
+## The terminal briefly treats the room as the one you're in, so its gadgets listen.
 func _run_code(terminal: Node, room: Room) -> void:
 	var checker: CommandChecker = terminal._checker
 	var was_in: Room = terminal.current_room
 	terminal.current_room = room
 	var line := room.answer
-	var result := checker.check(line, terminal._values_with_readings(), [], terminal.values.keys())
+	var result := checker.check(line, terminal.values, [], terminal.values.keys())
 	if not result["ok"]:
 		var variable := line.get_slice("=", 0).strip_edges()
 		if result.has("fix"):
 			line = result["fix"]
 		elif checker.variables.has(variable):
 			line = "%s %s" % [checker.variables[variable]["type"], line]
-		result = checker.check(line, terminal._values_with_readings(), [], terminal.values.keys())
+		result = checker.check(line, terminal.values, [], terminal.values.keys())
 	if result["ok"]:
 		terminal._hint_line("IMMUNITY: " + line)
 		terminal._run_action(result["action"])

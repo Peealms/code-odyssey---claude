@@ -20,8 +20,7 @@ const T := 16
 ## Map legend
 ##   .  air                         #  ground (room's ground)     B  building blocks
 ##   =  floating bar (jump up through it)
-##   f  fruit                       ^  spikes                     x  pit spikes (back to checkpoint)
-##   v  ceiling spikes              V  deadly ceiling spikes      w  wall spikes (point away from the wall)
+##   f  fruit                       ^  spikes
 ##   K  checkpoint flag   h  manual chest   < >  doorway rows (first / last column)
 ## Any other character is an anchor: the room's code in _build() puts something there
 ## (s start, g Byte's gate, k Sarah's rescue flag, G the trophy).
@@ -115,6 +114,7 @@ func _build() -> void:
 	level.set("level_id", "level1")
 	level.set("level_title", "TUTORIAL")
 	level.set("level_number", 0)  # the level-complete screen says "TUTORIAL COMPLETE!"
+	level.set("next_scene", "res://scenes/levels/level2/level2.tscn")  # CONTINUE goes to Level 1
 	level.set("camera_top_margin", 0.0)
 	var heroes: Array[String] = ["chelzy"]
 	level.set("starting_heroes", heroes)
@@ -243,7 +243,7 @@ func _place_rooms() -> void:
 					solid[abs_cell] = {"kind": "ground", "mat": ROOMS[i].ground}
 				"B":
 					solid[abs_cell] = {"kind": "block"}
-				".", "f", "^", "x", "v", "V", "w", "K", "h", "<", ">", "=":
+				".", "f", "^", "K", "h", "<", ">", "=":
 					pass
 				_:
 					if not anchors[i].has(ch):
@@ -405,36 +405,13 @@ func _place_map_things(i: int, fruits: Node, traps: Node, chests: Node, flags: N
 					for k in run:
 						var n := _inst("fruit", fruits, _px(c.x + k + 0.5, c.y + 0.5), {"fruit": kinds[y % kinds.size()]})
 						n.add_to_group("fruit", true)
-				"^", "x":
-					_inst("spikes", traps, _px(c.x, c.y + 1), {"count": run, "send_to_checkpoint": ch == "x"})
-				"v", "V":
-					var s := _inst("spikes", traps, _px(c.x + run, c.y), {"count": run, "send_to_checkpoint": ch == "V"})
-					s.rotation = PI
+				"^":
+					_inst("spikes", traps, _px(c.x, c.y + 1), {"count": run})
 				"K":
 					_inst("checkpoint", flags, _foot(c), {})
 				"h":
 					_inst("chest", chests, _foot(c), {"manual_id": ROOMS[i].manual})
 			x += run
-	# Wall spikes run down a column and point away from the wall next to them. They send you
-	# back to the checkpoint: with plain damage Chelzy could climb through them while
-	# blinking after the first hit.
-	for x in sizes[i].x:
-		var y := 0
-		while y < sizes[i].y:
-			if grids[i].get(Vector2i(x, y), "") != "w":
-				y += 1
-				continue
-			var run := 1
-			while grids[i].get(Vector2i(x, y + run), "") == "w":
-				run += 1
-			var c := o + Vector2i(x, y)
-			if solid.has(c + Vector2i.RIGHT) or not interior.has(c + Vector2i.RIGHT):
-				var s := _inst("spikes", traps, _px(c.x + 1, c.y + run), {"count": run, "send_to_checkpoint": true})
-				s.rotation = -PI / 2.0
-			else:
-				var s := _inst("spikes", traps, _px(c.x, c.y), {"count": run, "send_to_checkpoint": true})
-				s.rotation = PI / 2.0
-			y += run
 
 
 # ---------------- Helpers ----------------

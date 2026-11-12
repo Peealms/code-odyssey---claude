@@ -22,7 +22,7 @@ const EXHAUSTED_COLOR := Color(0.5, 0.48, 0.52)
 @onready var stamina_bar: ProgressBar = $StaminaBar
 
 var fruits := 0  ## Total fruit collected in the level.
-var item_word := "FRUIT"  ## What the level collects: Level 2 sets "COINS".
+var item_word := "FRUIT"  ## What the level collects: Level 1 on Treasure Island sets "COINS".
 var _room: Node  ## The Room whose fruit the counter shows.
 var _message_tween: Tween
 var _health_tween: Tween

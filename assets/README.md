@@ -1,42 +1,39 @@
 # Code Odyssey – Asset Guide
 
-All art is from Pixel Frog's free packs (Pixel Adventure 1, Treasure Hunters,
-Kings and Pigs, Pirate Bomb). Credit "Pixel Frog" in the game and the paper.
+The art is from two of Pixel Frog's free packs: **Pixel Adventure 1** (the tutorial) and
+**Treasure Hunters** (Level 1). Credit "Pixel Frog" in the game and the paper.
 The exceptions are made for this game: Byte (`shared/byte/`), the team heroes
 (`shared/team/` and `shared/heroes/<name>/`, drawn by `tools/make_team_sprites.gd` and
 `tools/make_team_heroes.gd`) and the manual book icons
 (`shared/items/books.png`, drawn by `tools/make_item_icons.gd`).
 The chest window uses the Minecraftia font by Andrew Tyler (`shared/ui/fonts/minecraftia/`) -
 its readme has no licence terms, so confirm it may be used before release and credit him.
+Sound sources and licences: `shared/audio/CREDITS.md` (all CC0).
+
+Only art the game uses is kept here. The rest of the packs (and the Kings and Pigs and Pirate
+Bomb packs) were removed on 2026-11-12; they're in git history if you ever need them.
 
 ## Folder layout
 
 ```
 assets/
-  shared/                     used in every level
-    heroes/                   the team: Chelzy, Sarah, April, Kervin, Psalm (+ swap effect;
-                              the old Pixel Adventure heroes are still here but unused)
+  shared/                     used in both levels
+    heroes/                   the team: Chelzy, Sarah, April, Kervin, Psalm (+ swap effect)
+    team/                     the team's portraits
     byte/                     Byte, the helper robot (24×24, original art)
-    ui/                       buttons, level numbers, pixel font, wood & paper UI, speech bubbles
-    fx/                       dust, confetti, transition
-  level1_pixel_adventure/     Variables & data types
-  level2_treasure_hunters/    Conditionals (if / else)
-  level3_kings_and_pigs/      Logical operators & switch
-  level4_pirate_bomb/         Loops & arrays
+    items/                    hotbar icons (books)
+    ui/                       buttons, menu art, fonts
+    audio/                    music and sound effects
+  level1_pixel_adventure/     the tutorial: terrain, fruit, flags and trophy, Byte's gate blocks,
+                              spikes (both levels), the saw (main menu only), backgrounds
+  level2_treasure_hunters/    Level 1: island terrain, planks, coins, potions, the ship, crabs,
+                              Pink Star, totem and seashell shooters, the pirate flag, chests
+    gadgets/                  sprite frames made for this game from the pack's art: planks,
+                              the pirate-flag checkpoint, the treasure chest goal, the box gate
 ```
 
-Every level folder uses the same sub-folders, so you always know where to look:
-
-| Folder         | What's inside                                      |
-|----------------|----------------------------------------------------|
-| `characters/`  | friendly / playable characters                     |
-| `enemies/`     | enemies, one folder each                           |
-| `tiles/`       | tilesets for the TileMap (size is in the file name)|
-| `backgrounds/` | backgrounds, clouds, trees, water                  |
-| `objects/`     | doors, boxes, chests, cannons, decorations         |
-| `collectibles/`| coins, fruits, diamonds, hearts, potions           |
-| `traps/`       | spikes, saws, shooters, moving platforms           |
-| `_reference/`  | the artist's example scene – handy for level design|
+Each level folder uses the same sub-folders: `characters/`, `enemies/`, `tiles/`,
+`backgrounds/`, `objects/`, `collectibles/`, `traps/`.
 
 ## Animations are ready to use
 
@@ -45,6 +42,9 @@ Every level folder uses the same sub-folders, so you always know where to look:
 * Each character/object folder has a **`*_frames.tres`** (SpriteFrames) with all of
   its animations already sliced and timed. To use it: add an **AnimatedSprite2D**,
   then drag the `_frames.tres` file into its **Sprite Frames** property. Done.
+* `level2_treasure_hunters/gadgets/` frames use the animation names the game's scripts already
+  play (e.g. the plank has `on` / `off`, the flag has `no_flag` / `flag_out` / `flag_idle`), so a
+  Treasure Hunters scene only swaps the art and keeps the same script.
 
 ## Byte (helper robot)
 
@@ -59,13 +59,12 @@ Every level folder uses the same sub-folders, so you always know where to look:
 
 ## Tile sizes
 
-* Level 1 terrain: 16×16
-* Level 2 & 3 tiles: 32×32
-* Level 4 tiles: 64×64 (scale the TileMapLayer to 0.5 to match the 32 px heroes, or keep for a "bigger" ship look)
+* Tutorial terrain (Pixel Adventure): 16×16
+* Level 1 terrain and planks (Treasure Hunters): 32×32
 
 ## Notes
 
-* Names are lowercase with underscores (`pig_with_bomb`, `dead_hit`) so they are easy to type in code.
-* Typos from the original packs were fixed (e.g. "Pink Start" → `pink_star`, "Bold Pirate" → `bald_pirate`).
-* The original pack folder (`ASSETS CODE ODYSSEY`) has a `.gdignore` file, so Godot ignores it.
-  You can delete that folder once you're happy – the originals are still in your Downloads folder.
+* Names are lowercase with underscores (`pink_star`, `dead_hit`) so they are easy to type in code.
+* Typos from the original packs were fixed (e.g. "Pink Start" → `pink_star`).
+* The original pack folder (`ASSETS CODE ODYSSEY`, not in git) has a `.gdignore` file, so Godot
+  ignores it. You can delete it once you're sure the originals are saved somewhere else.

@@ -1,240 +1,182 @@
 extends SceneTree
-## Builds scenes/levels/level2/level2.tscn from the room maps below (see docs/level2_design.md).
+## Builds Level 1 on Treasure Island, scenes/levels/level2/level2.tscn, from the room maps below
+## (see docs/level2_design.md). The level id stays "level2"; players see it as LEVEL 1.
 ## Run:  godot --headless --path . --script res://tools/build_level2.gd
 ## WARNING: this overwrites level2.tscn (and resources/tilesets/level2_tileset.tres). Change
 ## the maps here and re-run, rather than editing the scene by hand.
 ##
-## Treasure Hunters tiles are 32 x 32 and drawn at full size (one screen = 20 x 11 tiles).
-## Each room is a text map of its inside, one character per tile. Rooms are placed left to
-## right with a 1-tile wall between them, moved up or down so the `>` doorway rows of one room
-## line up with the `<` rows of the next. Everything outside the rooms is solid rock (island
-## rooms) or brick (ship rooms), painted with the right edge and corner pieces automatically.
+## The lessons are the old Pixel Adventure Level 1's (String, int, double, boolean, char and
+## changing a variable), in Treasure Hunters art. Tiles are 32 x 32 and drawn at full size
+## (one screen = 20 x 11 tiles). Each room is a text map of its inside, one character per
+## tile. Rooms are placed left to right with a 1-tile wall between them, moved up or down so
+## the `>` doorway rows of one room line up with the `<` rows of the next. Everything outside
+## the rooms is solid rock, painted with the right edge and corner pieces automatically.
 
 const OUT := "res://scenes/levels/level2/level2.tscn"
 const TILESET_OUT := "res://resources/tilesets/level2_tileset.tres"
 const T := 32
+const BIG_SPIKES := 50.0  ## Damage of the big floor and ceiling spikes (x, V).
 const ISLAND_TEX := "res://assets/level2_treasure_hunters/tiles/island_terrain_32x32.png"
-const SHIP_TEX := "res://assets/level2_treasure_hunters/tiles/ship_terrain_and_backwall_32x32.png"
 const PLANK_TEX := "res://assets/level2_treasure_hunters/tiles/ship_platforms_32x32.png"
-const BACKWALL := Vector2i(2, 8)  ## Plain back wall in the ship sheet.
 
 ## Map legend
 ##   .  air            #  ground             =  plank (jump up through it)
 ##   c  coin           K  checkpoint flag    h  manual chest       p  potion
-##   ^  spikes         x  pit spikes (back to the checkpoint)
+##   ^  spikes (20 damage)                   x  big floor spikes (50 damage)
+##   V  big ceiling spikes (50 damage)       ~  water (falling in sends you back to the checkpoint)
 ##   _  low beam: solid top 14 px of the tile, so only tiny Psalm fits under it
 ##   L  falling plank (only Kervin's sprint makes it)
+##   A B C  path planks: solid only while `path` is that letter
 ##   < >  doorway rows (first / last column)
-## Any other character is an anchor: the room's code in _build() puts something there.
+## Any other character is an anchor: the room's code in _build() puts something there
+## (s start, k rescue flag, q the bridge's first plank, S / Z the ship's two docks,
+## g Byte's gate, a the arena's left edge, X Captain Clown Nose, G the treasure,
+## e crab, P Pink Star, T totem head).
 
-# Room 0 - the two doors: beach, wall-jump shaft (Chelzy), the captain's doors on the plateau.
-# 1 / 2 = the left / right door, l = arrive in the closet, b = closet's way back,
-# r = arrive by the exit, d = way back.
+# Room 0 - the wide gap: a wall-jump shaft up from the start (Chelzy), then a crawlspace too
+# low to jump in, with a gap only Sarah's dash crosses.
 const R0 := [
-	".........#.........#......",
-	".........#.........#.....>",
-	".........#.........#drcc.>",
-	".blc.c.C.#.........#######",
-	"############.......c......",
-	"..........##...K.1....2...",
-	"..........##..############",
-	"..c.c.c...##..############",
-	"..............############",
-	".s.h...C......############",
-	"##########################",
-	"##########################",
+	"#######.....##########........",
+	"#######.....##########........",
+	"#######.....##########..c..c.>",
+	"#######......c......c..e..k..>",
+	"#######..#######..############",
+	"#######..#######..############",
+	"#######c.#######~~############",
+	"....cc...#######~~############",
+	".s.h.....#####################",
+	"##############################",
+	"##############################",
 ]
 
-# Room 1 - the reef: the ship waits for tide 4+ (anchor rule), April double-jumps to the far shore.
+# Room 1 - the broken bridge: an 8-plank gap for the int bridge, then planks 3 tiles up over
+# the water: April's double jump from the edge. No wall is near them, so Chelzy can't climb up.
 const R1 := [
-	"..............................",
-	"<.............................",
-	"<K...........................>",
-	"###...................c...Q..>",
-	"###.hT................########",
-	"#######...c.c...c.c...########",
-	"#######...............########",
-	"#######...............########",
-	"#######.S....###......########",
-	"#######......###......########",
-	"##############################",
-	"##############################",
+	".............................>",
+	".......................c.k.c.>",
+	".....................=========",
+	"<.cc....c.c.c..cc.............",
+	"<K..hT.........p..............",
+	"######q.......######..........",
+	"######~~~~~~~~######~~~~~~~~~~",
+	"######~~~~~~~~######~~~~~~~~~~",
+	"######~~~~~~~~######~~~~~~~~~~",
+	"######~~~~~~~~######~~~~~~~~~~",
+	"######~~~~~~~~######~~~~~~~~~~",
+	"######~~~~~~~~######~~~~~~~~~~",
 ]
 
-# Room 2 - the tide locks: gates shut at high tide (else!), totems, Psalm's beam, stairs out.
+# Room 2 - the high ledge: a falling floor in a crawlspace (Kervin's sprint), then planks
+# 4 tiles up in the open that only a double jump at jumpPower 2.0 reaches. They start 5 tiles
+# from the nearest wall and end over water, so Chelzy can't climb up to them.
 const R2 := [
-	"......#####################.....",
-	"......#####################.....",
-	"<.....#####################....>",
-	"<K.T..#####################....>",
-	"####..#####################..###",
-	"####..#####################==...",
-	"####..#####################..==.",
-	"####........#........#..###==...",
-	"####..c..c.....c..c.....###c.==.",
-	"####....c..VGU...c...G.c___==...",
-	"################################",
-	"################################",
+	"......########................",
+	"......########................",
+	"......########...............>",
+	"......########.......c..k.c..>",
+	"......########......==========",
+	"......########................",
+	"<..cc.########................",
+	"<K......c..c...c..............",
+	"#######LLLLLL##########.......",
+	"#######~~~~~~##########~~~~~~~",
+	"#######~~~~~~##########~~~~~~~",
 ]
 
-# Room 3 - the storm: sail across with an else-if rule for the sails.
+# Room 3 - the ship: low beams only tiny Psalm fits under, a ship that sails once its anchor
+# is up, a crab in a crawlspace (you can't jump over it: fight it with the sword), then a
+# wall-jump shaft up to the exit (Chelzy).
 const R3 := [
-	"........................................",
-	"........................................",
-	"<.......................................",
-	"<K.hW..................................>",
-	"######....c...c...c...c...c...c......P.>",
-	"######.S...........................#####",
-	"######.............................#####",
-	"######.............................#####",
-	"######.............................#####",
-	"########################################",
-	"########################################",
-	"########################################",
+	"........####.................#####......",
+	"........####.................#####.....>",
+	"........####.................#####...c.>",
+	"........####.................#####..####",
+	"........####.................#####c.####",
+	"........####.................#####..####",
+	"<.......####.................#####..####",
+	"<K.h....____.K....c..c..c...K..e....####",
+	"###############.S........Z.#############",
+	"###############~~~~~~~~~~~~#############",
+	"###############~~~~~~~~~~~~#############",
+	"###############~~~~~~~~~~~~#############",
+	"###############~~~~~~~~~~~~#############",
 ]
 
-# Room 4 - the password: falling gangplank (Kervin), the lookout, the boarding gate, the cannon.
+# Room 4 - three paths: A, B or C planks over the water (the sign's riddle says B), then a
+# falling floor in a crawlspace that only Kervin's sprint gets over.
 const R4 := [
-	"..........#.................",
-	"..........#.................",
-	"..........#...O.............",
-	"<..######.....===..........>",
-	"<Kh..c....GA..c....F....c.p>",
-	"###LLLLLL###################",
-	"###......###################",
-	"###......###################",
-	"###......###################",
-	"###......###################",
-	"############################",
-	"############################",
+	"................########......",
+	"<.....c..c..c...########.....>",
+	"<K..AAAAAAAAAAAA..c..c....P..>",
+	"####BBBBBBBBBBBB#LLLLLL#######",
+	"####CCCCCCCCCCCC#......#######",
+	"####............#......#######",
+	"####............#......#######",
+	"####~~~~~~~~~~~~#~~~~~~#######",
+	"####~~~~~~~~~~~~#~~~~~~#######",
+	"####~~~~~~~~~~~~#~~~~~~#######",
+	"####~~~~~~~~~~~~#~~~~~~#######",
 ]
 
-# Room 5 - the sleeping crew: lanterns (l), crew (z), Sarah's dash over the bilge trench.
-const R5 := [
-	"############################",
-	"############################",
-	"############################",
-	"<..........................>",
-	"<K....l......l......l.....p>",
-	"###.....................####",
-	"###.........#######..==.####",
-	"###....................=####",
-	"###.z.c.^^.z.c...c...==.####",
-	"##############xxx###########",
-	"############################",
-	"############################",
-]
-
-# Exam 1 - the stuck gate: if (tide = 0).
+# Exam 1 - the low cave: big spikes on the ceiling (jumpPower back to 1.0), a beam only tiny
+# Psalm fits under, then a long falling floor (Kervin's sprint).
 const E1 := [
-	"............#.....",
-	"............#.....",
-	"............#.....",
-	"<................>",
-	"<Kh.T......c.G..c>",
-	"##################",
-	"##################",
-	"##################",
-	"##################",
-	"##################",
-	"##################",
-	"##################",
+	"VVVVVVVV###VVVVVVVVVVVVVVV",
+	"<.......###..............>",
+	"<K.h.x.c___c..........c..>",
+	"#############LLLLLLLL#####",
+	"#############........#####",
+	"#############........#####",
+	"#############~~~~~~~~#####",
+	"#############~~~~~~~~#####",
 ]
 
-# Exam 2 - the runaway boat: if (tide >= 4); { anchorUp = true; }
+# Exam 2 - the low bridge: a 6-plank gap under a low ceiling, three paths (C this time), then a
+# wall-jump shaft up to the exit (Chelzy).
 const E2 := [
-	"......................",
-	"......................",
-	"......................",
-	"<.....................",
-	"<K.T.................>",
-	"#####.S..........c...>",
-	"#####............#####",
-	"#####............#####",
-	"#####.....##.....#####",
-	"#####.....##.....#####",
-	"######################",
-	"######################",
+	"....######..........####......",
+	"....######..........####.....>",
+	"....######..........####..c..>",
+	"....######..........####c.####",
+	"....######..........####..####",
+	"....######..........####..####",
+	"<...######.....c..........####",
+	"<K....c.....AAAAAAAA.c....####",
+	"####q.....##BBBBBBBB##########",
+	"####......##CCCCCCCC##########",
+	"####......##........##########",
+	"####~~~~~~##~~~~~~~~##########",
+	"####~~~~~~##~~~~~~~~##########",
 ]
 
-# Exam 3 - the backwards sails.
+# Exam 3 - the treasure: another anchored ship, Byte's gate (print "I can code!"), then a drop
+# into Captain Clown Nose's arena. The treasure appears when he's beaten.
 const E3 := [
-	"..............................",
-	"..............................",
-	"..............................",
-	"..............................",
-	"<.............................",
-	"<K.W.....c...c...c...c.......>",
-	"#####.S...................c..>",
-	"#####.....................####",
-	"#####.....................####",
-	"#####.....................####",
-	"##############################",
-	"##############################",
+	"......................................",
+	"<.....................................",
+	"<K.....c..c....cg.K...................",
+	"####.S......Z.######..................",
+	"####~~~~~~~~~~######..................",
+	"####~~~~~~~~~~######..................",
+	"####~~~~~~~~~~######..................",
+	"####~~~~~~~~~~######..................",
+	"####~~~~~~~~~~######a............X..G.",
+	"####~~~~~~~~~~########################",
+	"####~~~~~~~~~~########################",
 ]
 
-# Exam 4 - the vault: equals("Treasure").
-const E4 := [
-	"...........#......",
-	"...........#......",
-	"...........#......",
-	".....O.....#......",
-	"....===....#......",
-	"<................>",
-	"<K....c....G..c..>",
-	"##################",
-	"##################",
-	"##################",
-	"##################",
-	"##################",
-]
-
-# Exam 5 - the dark cave: if (awake) { lightsOn = false; } with no else.
-const E5 := [
-	"####################",
-	"####################",
-	"####################",
-	"....................",
-	"...l.....l.....l....",
-	"<..................>",
-	"<K..z..^^..z...^^.c>",
-	"####################",
-	"####################",
-	"####################",
-	"####################",
-	"####################",
-]
-
-# Exam 6 - Captain Clown Nose. X = the captain, g = the treasure (appears when he's beaten).
-const E6 := [
-	".......#..................",
-	".......#..................",
-	".......#..................",
-	".......#..................",
-	".......#..................",
-	"<.........................",
-	"<K................X...g...",
-	"##########################",
-	"##########################",
-	"##########################",
-	"##########################",
-	"##########################",
-]
-
-## style: "island" or "ship"; music: Sound track; manual: chest manual id (for h).
+## One entry per room, in the order you play them. manual: the chest's manual (for h);
+## zone: rooms with the same zone count as one place for code gadgets (the exam);
+## music: Sound track.
 const ROOMS := [
-	{"map": R0, "style": "island", "manual": "if_else"},
-	{"map": R1, "style": "island", "manual": "comparing"},
-	{"map": R2, "style": "island"},
-	{"map": R3, "style": "island", "manual": "else_if"},
-	{"map": R4, "style": "ship", "manual": "strings_booleans"},
-	{"map": R5, "style": "ship"},
-	{"map": E1, "style": "island", "manual": "fixing_bugs", "music": "final_exam"},
-	{"map": E2, "style": "island", "music": "final_exam"},
-	{"map": E3, "style": "island", "music": "final_exam"},
-	{"map": E4, "style": "island", "music": "final_exam"},
-	{"map": E5, "style": "ship", "music": "final_exam"},
-	{"map": E6, "style": "island", "music": "final_exam"},
+	{"map": R0, "manual": "variables_101"},
+	{"map": R1, "manual": "numbers"},
+	{"map": R2},
+	{"map": R3, "manual": "booleans_chars"},
+	{"map": R4},
+	{"map": E1, "manual": "changing_variables", "zone": "exam", "music": "final_exam"},
+	{"map": E2, "zone": "exam", "music": "final_exam"},
+	{"map": E3, "zone": "exam", "music": "final_exam"},
 ]
 
 const SCENES := {
@@ -246,19 +188,21 @@ const SCENES := {
 	"hotbar": "res://scenes/ui/hotbar.tscn",
 	"reader": "res://scenes/ui/manual_reader.tscn",
 	"chest_window": "res://scenes/ui/chest_window.tscn",
-	"goal": "res://scenes/objects/end_goal.tscn",
+	"goal": "res://scenes/objects/treasure_goal.tscn",
 	"chest": "res://scenes/objects/manual_chest.tscn",
-	"checkpoint": "res://scenes/objects/checkpoint.tscn",
+	"checkpoint": "res://scenes/objects/checkpoint_flag.tscn",
 	"room": "res://scenes/levels/room.tscn",
+	"gate": "res://scenes/gadgets/byte_gate_island.tscn",
+	"bridge": "res://scenes/gadgets/code_bridge.tscn",
 	"falling": "res://scenes/gadgets/falling_platform.tscn",
+	"path": "res://scenes/gadgets/path_platform.tscn",
 	"spikes": "res://scenes/gadgets/spikes.tscn",
 	"potion": "res://scenes/objects/health_potion.tscn",
 	"crab": "res://scenes/enemies/crabby.tscn",
 }
 const L2 := "res://scripts/level2/"
-const ALL_VARIABLES: Array[String] = ["hero", "hasSword", "key", "tide", "wind", "word", "awake", "move",
-	"distance", "coins", "coinsLeft", "leftDoorOpen", "rightDoorOpen", "doorOpen", "anchorUp", "gateOpen",
-	"sails", "lightsOn"]
+## Variables players can use in this level (see VariableLibrary).
+const VARIABLES: Array[String] = ["hero", "bridgeLength", "jumpPower", "anchorUp", "path", "hasSword"]
 
 var level: Node2D
 var grids: Array[Dictionary] = []  # per room: local Vector2i -> map character
@@ -266,7 +210,7 @@ var sizes: Array[Vector2i] = []
 var origins: Array[Vector2i] = []  # absolute tile of each map's top-left
 var anchors: Array[Dictionary] = []  # per room: character -> absolute cells (reading order)
 var interior := {}  # absolute cell -> room index (inside a room or its doorway)
-var solid := {}  # absolute cell -> style
+var solid := {}  # absolute cell -> true
 var room_nodes: Array = []
 var bounds := Rect2i()
 var f := 0
@@ -289,10 +233,11 @@ func _build() -> void:
 	level.name = "Level2"
 	level.set_script(load(L2 + "level2.gd"))
 	level.set("level_id", "level2")
-	level.set("level_title", "LEVEL 2 - CONDITIONALS")
-	level.set("level_number", 2)
+	level.set("level_title", "LEVEL 1 - VARIABLES")
+	level.set("level_number", 1)
 	level.set("camera_top_margin", 0.0)
-	var heroes: Array[String] = ["chelzy", "sarah", "april", "kervin", "psalm"]
+	# Chelzy, and Sarah from the tutorial; the others are rescued here.
+	var heroes: Array[String] = ["chelzy", "sarah"]
 	level.set("starting_heroes", heroes)
 
 	var bg := CanvasLayer.new()
@@ -300,190 +245,98 @@ func _build() -> void:
 	bg.set_script(load(L2 + "background.gd"))
 	_add(bg)
 	var tileset := _make_tileset()
-	var backwall := TileMapLayer.new()
-	backwall.name = "Backwall"
-	backwall.tile_set = tileset
-	_add(backwall)
 	var terrain := TileMapLayer.new()
 	terrain.name = "Terrain"
 	terrain.tile_set = tileset
-	_paint(terrain, backwall)
+	_paint(terrain)
 	_add(terrain)
 
 	var rooms := _group("Rooms")
-	var things := _group("Things")
+	var things := _group("Gadgets")
 	var coins := _group("Coins")
 	var traps := _group("Traps")
 	var flags := _group("Checkpoints")
 	var signs := _group("Signs")
 
-	# ---------------- Room 0: the two doors ----------------
-	_room(rooms, 0, "THE TWO DOORS",
-		"The doors follow the captain's rule: if key is 7 the right door opens, otherwise the left one does. Make an int called key and store 7 in it. Coins are behind both doors, so try another number too.",
-		"int key = _;", "int key = 7;")
-	_runner(0, "Doors", "if (key == 7) { rightDoorOpen = true; } else { leftDoorOpen = true; }", {
-		"locked": true, "machine_vars": ["leftDoorOpen", "rightDoorOpen"], "trigger_text": "every time key changes",
-		"locked_message": "These doors follow the captain's rule - you can't change it. Change key instead!"})
-	_door(things, _a(0, "1"), "leftDoorOpen", "portal", _foot(_a(0, "l")) + Vector2(0, -16))
-	_door(things, _a(0, "2"), "rightDoorOpen", "portal", _foot(_a(0, "r")) + Vector2(0, -16))
-	_door(things, _a(0, "b"), "", "portal", _foot(_a(0, "1")) + Vector2(-24, -16), true)
-	_door(things, _a(0, "d"), "", "portal", _foot(_a(0, "2")) + Vector2(-24, -16), true)
-	for cell in anchors[0].get("C", []):
-		_inst("crab", traps, _foot(cell), {"patrol_left": -48.0, "patrol_right": 48.0})
-	_sign(signs, 0, 10, 8, "ONLY A WALL JUMP\nCLIMBS THIS")
-	_sign(signs, 0, 13, 6, "THE CAPTAIN'S DOORS\nCOINS BEHIND BOTH!\nW: GO THROUGH")
-	_exit_door(things, 0, "if (coins >= %d) { doorOpen = true; }")
+	# ---------------- Room 0: the wide gap (Chelzy, then Sarah) ----------------
+	_room(rooms, 0, "THE WIDE GAP",
+		"Only Chelzy's wall jump climbs the shaft. Up top, the crawlspace is too low to jump over the gap - only Sarah's dash crosses it: walk to the edge and press Shift. Store Sarah's name in a String called hero.",
+		"String hero = \"_____\";", "String hero = \"Sarah\";")
+	_flag(flags, 0, _a(0, "k"), "april")
+	_enemy(traps, _a(0, "e"), "crabby", 32.0)
+	_sign(signs, 0, 1, 6, "ONLY A WALL JUMP\nCLIMBS THIS")
+	_sign(signs, 0, 9, 0, "TOO LOW TO JUMP!\nSARAH CAN DASH")
 
-	# ---------------- Room 1: the reef ----------------
-	_room(rooms, 1, "THE REEF",
-		"The reef needs a tide of 4 or more. The anchor is a machine, so give it a rule: if the tide is 4 or more, anchorUp is true. Get on the ship and wait. At the far shore, April's double jump reaches the high dock.",
-		"if (tide >= _) { anchorUp = ____; }", "if (tide >= 4) { anchorUp = true; }")
-	_runner(1, "Anchor", "", {"machine_vars": ["anchorUp"], "reading_names": ["tide"], "trigger_text": "every time the tide changes"})
-	_tide(things, _a(1, "T"), [0, 1, 2, 3, 4, 5, 4, 3, 2, 1], 1.5)
-	_water(things, 1, 7, 22, 9, "tide", 64.0)
-	_ship(things, _a(1, "S"), "anchor", Vector2(11.5 * T, 0), 0.5)
-	_shooter(traps, _a(1, "Q"), "seashell", -1, 2.6)
-	_sign(signs, 1, 7, 6, "THE REEF:\nTIDE 4 OR MORE")
-	_exit_door(things, 1, "if (coins == %d) { doorOpen = true; }")
+	# ---------------- Room 1: the broken bridge (April) ----------------
+	_room(rooms, 1, "THE BROKEN BRIDGE",
+		"Count the gap: it is 8 planks wide. Store that whole number in an int called bridgeLength. Then the planks over the water are too high for one jump - switch to April, and since hero already exists, leave out the type.",
+		"int bridgeLength = _;", "int bridgeLength = 8;")
+	var q := _a(1, "q")
+	_inst("bridge", things, _px(q.x, q.y), {"max_blocks": 10, "gap_blocks": 8})  # 8 exactly: more jams and collapses
+	_shooter(traps, _a(1, "T"), "totem", 1, 3.0, 0.0, 256.0)  # shoots across the bridge
+	_flag(flags, 1, _a(1, "k"), "kervin")
+	_sign(signs, 1, 6, 1, "GAP = 8 PLANKS")
+	_sign(signs, 1, 15, 0, "TOO HIGH FOR\nONE JUMP")
 
-	# ---------------- Room 2: the tide locks ----------------
-	_room(rooms, 2, "THE TIDE LOCKS",
-		"At high tide (3 or more) an open gate floods the cave, but shut gates keep you stuck. The rule must say what to do both ways: if the tide is 3 or more the gates shut, else they open.",
-		"if (tide >= _) { gateOpen = _____; } else { gateOpen = ____; }",
-		"if (tide >= 3) { gateOpen = false; } else { gateOpen = true; }")
-	_runner(2, "Gates", "", {"machine_vars": ["gateOpen"], "reading_names": ["tide"], "trigger_text": "every time the tide changes"})
-	_tide(things, _a(2, "T"), [0, 1, 2, 3, 4, 5, 4, 3, 2, 1], 1.5)
-	for cell in anchors[2].get("G", []):
-		_door(things, cell, "gateOpen", "block", Vector2.ZERO)
-	_water(things, 2, 4, 30, 10, "flood", 0.0, 28.0)
-	_shooter(traps, _a(2, "U"), "totem", 1, 2.2)
-	_shooter(traps, _a(2, "V"), "totem", -1, 2.6, 1.0)
-	_sign(signs, 2, 6, 7, "HIGH TIDE - 3 OR MORE -\nFLOODS AN OPEN CAVE")
-	_exit_door(things, 2, "if (coinsLeft == 0) { doorOpen = true; }")
+	# ---------------- Room 2: the high ledge (Kervin, then April) ----------------
+	_room(rooms, 2, "THE HIGH LEDGE",
+		"Kervin can sprint over the falling floor - hold Shift while running. The planks up high are too high even for a double jump: make your first jump higher with a double called jumpPower (1.0 to 2.0 - try the highest), then double jump as April under them.",
+		"double jumpPower = ___;", "double jumpPower = 2.0;")
+	_flag(flags, 2, _a(2, "k"), "psalm")
+	_sign(signs, 2, 1, 4, "RUN FAST!")
+	_sign(signs, 2, 15, 5, "TOO HIGH!\nJUMP HIGHER")
 
-	# ---------------- Room 3: the storm ----------------
-	_room(rooms, 3, "THE STORM",
-		"Turn the sailor's table into one rule, biggest wind first: if wind >= 7 the sails are 0, else if wind >= 3 they are 1, else 2. Then get on board.",
-		"if (wind >= _) { sails = _; } else if (wind >= _) { sails = _; } else { sails = _; }",
-		"if (wind >= 7) { sails = 0; } else if (wind >= 3) { sails = 1; } else { sails = 2; }")
-	_runner(3, "Sails", "", {"machine_vars": ["sails"], "reading_names": ["wind"], "trigger_text": "every time the wind changes"})
-	_wind(things, _a(3, "W"), [1, 5, 8, 2, 6, 9, 3, 0, 7, 4])
-	_water(things, 3, 6, 35, 6, "fixed", 160.0)
-	_ship(things, _a(3, "S"), "sail", Vector2(26.0 * T, 0), 0.0)
-	_enemy(traps, _a(3, "P"), "pink_star", 32.0)
-	_sign(signs, 3, 6, 0, "SAILOR'S TABLE\nWIND 7-9: SAILS 0\nWIND 3-6: SAILS 1\nWIND 0-2: SAILS 2")
+	# ---------------- Room 3: the ship (Psalm, the sword, Chelzy) ----------------
+	_room(rooms, 3, "THE SHIP",
+		"Only tiny Psalm fits under the beams: switch to him and hold Down. The ship is anchored: pull the anchor up with a boolean called anchorUp (true or false, no quotes), then ride it across. A crab blocks the tunnel on the far side and you can't jump over it: give yourself a sword with another boolean, hasSword, and left-click to swing. Chelzy climbs the shaft to the exit.",
+		"boolean anchorUp = ____;", "boolean anchorUp = true;")
+	_ship(things, 3)
+	_enemy(traps, _a(3, "e"), "crabby", 24.0)
+	_sign(signs, 3, 4, 3, "TINY PSALM FITS\nUNDER THE BEAMS")
+	_sign(signs, 3, 15, 3, "THE SHIP IS\nANCHORED")
+	_sign(signs, 3, 27, 4, "A CRAB! NO WAY\nOVER IT: FIGHT!")
 
-	# ---------------- Room 4: the password ----------------
-	_room(rooms, 4, "THE PASSWORD",
-		"The gate may only be open when the lookout shouts ahoy. Strings are compared with .equals: if word equals \"ahoy\" the gate opens, else it shuts. Kervin sprints over the falling gangplank.",
-		"if (word.equals(\"____\")) { gateOpen = ____; } else { gateOpen = _____; }",
-		"if (word.equals(\"ahoy\")) { gateOpen = true; } else { gateOpen = false; }")
-	_runner(4, "Gate", "", {"machine_vars": ["gateOpen"], "reading_names": ["word"], "trigger_text": "every time the lookout shouts"})
-	_door(things, _a(4, "G"), "gateOpen", "block", Vector2.ZERO)
-	_lookout(things, _a(4, "O"), ["avast", "ahoy", "arrr", "yo-ho", "ahoy", "avast", "arrr", "ahoy"], "ahoy")
-	_shooter(traps, _a(4, "A"), "cannon", -1, 0.0, 0.0, true)
-	_water(things, 4, 3, 9, 7, "fixed", 96.0)
-	_enemy(traps, _a(4, "F"), "fierce_tooth", 64.0)
-	_sign(signs, 4, 2, 6, "ONLY KERVIN'S SPRINT\nMAKES THE GANGPLANK")
-	_exit_door(things, 4, "if (coinsLeft < 1) { doorOpen = true; }")
+	# ---------------- Room 4: three paths (Kervin) ----------------
+	_room(rooms, 4, "THREE PATHS",
+		"The sign's riddle: the 2nd letter of the alphabet. Choose it with a char called path - single quotes! Coins are on path A too: go back to the ledge, change path, collect, come back. The falling floor at the end needs Kervin's sprint.",
+		"char path = '_';", "char path = 'B';")
+	_enemy(traps, _a(4, "P"), "pink_star", 32.0)
+	_sign(signs, 4, 4, 0, "SAFE PATH = THE 2ND\nLETTER OF THE ABC")
 
-	# ---------------- Room 5: the sleeping crew ----------------
-	_room(rooms, 5, "THE SLEEPING CREW",
-		"When the crew is awake the lanterns must be off, otherwise on. awake is already true or false, so the condition is just: if (awake). Sarah's dash crosses the bilge trench.",
-		"if (_____) { lightsOn = _____; } else { lightsOn = ____; }",
-		"if (awake) { lightsOn = false; } else { lightsOn = true; }")
-	_runner(5, "Lanterns", "", {"machine_vars": ["lightsOn"], "reading_names": ["awake"], "trigger_text": "every time the crew wakes or sleeps"})
-	_crew(things, 5, 4.0)
-	_lanterns(things, 5)
-	_sign(signs, 5, 12, 4, "BILGE TRENCH:\nDASH!")
-	_exit_door(things, 5, "if (coinsLeft != 0) { doorOpen = false; } else { doorOpen = true; }")
-
-	# ---------------- Exam 1: the stuck gate ----------------
-	_room(rooms, 6, "EXAM 1: THE STUCK GATE",
-		"One = stores a value; it can't compare. The captain meant: is the tide equal to 0? Use ==.",
-		"if (tide __ 0) { gateOpen = true; } else { gateOpen = false; }",
-		"if (tide == 0) { gateOpen = true; } else { gateOpen = false; }")
-	_runner(6, "Gate", "if (tide = 0) { gateOpen = true; } else { gateOpen = false; }", {
-		"machine_vars": ["gateOpen"], "reading_names": ["tide"], "trigger_text": "every time the tide changes",
-		"offer_start_rule": true})
-	_tide(things, _a(6, "T"), [0, 0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1], 1.0)
-	_door(things, _a(6, "G"), "gateOpen", "block", Vector2.ZERO)
-
-	# ---------------- Exam 2: the runaway boat ----------------
-	_room(rooms, 7, "EXAM 2: THE RUNAWAY BOAT",
-		"The ; right after if (...) ends the if, so the { } after it always runs and the anchor comes up at any tide. Take the ; out.",
-		"if (tide >= 4) { anchorUp = true; }", "if (tide >= 4) { anchorUp = true; }")
-	_runner(7, "Anchor", "if (tide >= 4); { anchorUp = true; }", {
-		"machine_vars": ["anchorUp"], "reading_names": ["tide"], "trigger_text": "every time the tide changes",
-		"offer_start_rule": true})
-	_tide(things, _a(7, "T"), [0, 1, 2, 3, 4, 5, 4, 3, 2, 1], 1.5)
-	_water(things, 7, 5, 17, 9, "tide", 64.0)
-	_ship(things, _a(7, "S"), "anchor", Vector2(9.0 * T, 0), 0.45)
-
-	# ---------------- Exam 3: the backwards sails ----------------
-	_room(rooms, 8, "EXAM 3: THE BACKWARDS SAILS",
-		"Java checks from the top. With wind >= 3 first, a storm of 8 never reaches wind >= 7. Put the biggest number first.",
-		"if (wind >= _) { sails = 0; } else if (wind >= _) { sails = 1; } else { sails = 2; }",
-		"if (wind >= 7) { sails = 0; } else if (wind >= 3) { sails = 1; } else { sails = 2; }")
-	_runner(8, "Sails", "if (wind >= 3) { sails = 1; } else if (wind >= 7) { sails = 0; } else { sails = 2; }", {
-		"machine_vars": ["sails"], "reading_names": ["wind"], "trigger_text": "every time the wind changes",
-		"offer_start_rule": true})
-	_wind(things, _a(8, "W"), [1, 8, 5, 9, 2, 6])
-	_water(things, 8, 5, 26, 7, "fixed", 96.0)
-	_ship(things, _a(8, "S"), "sail", Vector2(18.0 * T, 0), 0.0)
-
-	# ---------------- Exam 4: the vault ----------------
-	_room(rooms, 9, "EXAM 4: THE VAULT",
-		"equals checks every letter, capitals too. Listen: the lookout shouts treasure in lowercase.",
-		"if (word.equals(\"________\")) { gateOpen = true; } else { gateOpen = false; }",
-		"if (word.equals(\"treasure\")) { gateOpen = true; } else { gateOpen = false; }")
-	_runner(9, "Vault", "if (word.equals(\"Treasure\")) { gateOpen = true; } else { gateOpen = false; }", {
-		"machine_vars": ["gateOpen"], "reading_names": ["word"], "trigger_text": "every time the lookout shouts",
-		"offer_start_rule": true})
-	_door(things, _a(9, "G"), "gateOpen", "block", Vector2.ZERO)
-	_lookout(things, _a(9, "O"), ["gold", "treasure", "rum", "parrot", "treasure", "map"], "treasure")
-
-	# ---------------- Exam 5: the dark cave ----------------
-	_room(rooms, 10, "EXAM 5: THE DARK CAVE",
-		"An if without an else never undoes its change: the lights go off and never come back. Add else { lightsOn = true; }.",
-		"if (awake) { lightsOn = false; } else { lightsOn = ____; }",
-		"if (awake) { lightsOn = false; } else { lightsOn = true; }")
-	_runner(10, "Lanterns", "if (awake) { lightsOn = false; }", {
-		"machine_vars": ["lightsOn"], "reading_names": ["awake"], "trigger_text": "every time the crew wakes or sleeps",
-		"offer_start_rule": true})
-	_crew(things, 10, 2.0)
-	_lanterns(things, 10)
-
-	# ---------------- Exam 6: Captain Clown Nose ----------------
-	_room(rooms, 11, "EXAM 6: CAPTAIN CLOWN NOSE",
-		"Byte has to hide during the fight, so leave a rule that picks the hero: 'C' charge - April jumps twice over it; 'T' thrown sword - tiny Psalm (hold Down) fits under it; 'S' swing - Sarah dashes away. Hit him while he's dizzy or unarmed.",
-		"if (move == '_') { hero = \"April\"; } else if (move == '_') { hero = \"Psalm\"; } else { hero = \"_____\"; }",
-		"if (move == 'C') { hero = \"April\"; } else if (move == 'T') { hero = \"Psalm\"; } else { hero = \"Sarah\"; }")
-	_runner(11, "Heroes", "", {"reading_names": ["move", "distance"], "trigger_text": "every time the captain picks a move"})
-	var x_cell := _a(11, "X")
-	var body := CharacterBody2D.new()
-	body.name = "Captain"
-	body.set_script(load(L2 + "captain.gd"))
-	var o := origins[11]
-	body.set("arena_left", float((o.x + 8) * T))
-	body.set("arena_right", float((o.x + sizes[11].x) * T))
-	body.set("start_x", float((o.x + 8.5) * T))
-	body.set("sign_position", Vector2((o.x + 8.3) * T, (o.y + 2.0) * T))
-	body.position = _foot(x_cell)
-	_add(body, level)
-	var goal := _inst("goal", level, _foot(_a(11, "g")), {}, "EndGoal")
-	goal.set("rooms", [] as Array[Node])
+	# ---------------- The exam: every variable gets a new value ----------------
+	_room(rooms, 5, "EXAM 1: THE LOW CAVE",
+		"With a high jumpPower every jump hits the ceiling spikes. Change jumpPower back to 1.0. Then only Psalm fits under the beams, and only Kervin's sprint makes it over the falling floor.",
+		"jumpPower = ___;", "jumpPower = 1.0;")
+	_room(rooms, 6, "EXAM 2: THE LOW BRIDGE",
+		"This gap is 6 planks wide. bridgeLength already exists - give it the new number. Then the safe path is the 3rd letter: change path (single quotes!). Chelzy climbs the shaft at the end.",
+		"bridgeLength = _;", "bridgeLength = 6;")
+	q = _a(6, "q")
+	_inst("bridge", things, _px(q.x, q.y), {"max_blocks": 8, "gap_blocks": 6})
+	_sign(signs, 6, 4, 7, "GAP = 6\nPLANKS")
+	_sign(signs, 6, 12, 2, "SAFE PATH = THE\n3RD LETTER")
+	_room(rooms, 7, "EXAM 3: THE TREASURE",
+		"This ship is anchored too: anchorUp already exists, so set it without the type and ride across. Print exactly: I can code! Then Captain Clown Nose guards the treasure. Have your sword (hasSword), switch heroes with Q to dodge him - April jumps his charge, tiny Psalm ducks his thrown sword, Sarah dashes from his swing - and hit him while he's dizzy.",
+		"anchorUp = ____;", "anchorUp = true;")
+	_ship(things, 7)
+	_inst("gate", things, _foot(_a(7, "g")), {"height": 3, "required_text": "I can code!"})
+	_captain(7)
+	_sign(signs, 7, 14, 0, "PRINT\n\"I can code!\"")
+	_sign(signs, 7, 21, 1, "HOLD Q TO SWITCH HEROES!\nCHARGE - APRIL JUMPS\nTHROW - TINY PSALM\nSWING - SARAH DASHES")
 
 	# ---------------- Map characters ----------------
 	for i in ROOMS.size():
 		_place_map_things(i, coins, traps, flags, things)
 
-	# ---------------- Start, player, Byte, UI ----------------
+	# ---------------- Start, treasure, player, Byte, UI ----------------
 	var start := _foot(_a(0, "s")) + Vector2(0, -16)
 	var spawn := Marker2D.new()
 	spawn.name = "SpawnPoint"
 	spawn.position = start
 	_add(spawn)
+	var exam_rooms: Array[Node] = []
+	exam_rooms.assign(room_nodes.slice(5))
+	_inst("goal", level, _foot(_a(7, "G")), {"rooms": exam_rooms}, "EndGoal")
+
 	var byte := _inst("byte", level, start + Vector2(-20, -22), {}, "Byte")
 	var player := _inst("player", level, start, {}, "Player")
 	byte.set("target", player)
@@ -491,14 +344,8 @@ func _build() -> void:
 	var terminal := _inst("terminal", level, Vector2.ZERO, {}, "CodeTerminal")
 	terminal.set("player", player)
 	terminal.set("byte", byte)
-	terminal.set("allowed_variables", ALL_VARIABLES)
+	terminal.set("allowed_variables", VARIABLES)
 	terminal.set("require_unlocked_heroes", true)
-	var declared: Array[String] = ["hero"]
-	terminal.set("start_declared", declared)
-	var panel := CanvasLayer.new()
-	panel.name = "RulePanel"
-	panel.set_script(load("res://scripts/ui/rule_panel.gd"))
-	_add(panel)
 	_inst("reader", level, Vector2.ZERO, {}, "ManualReader")
 	_inst("chest_window", level, Vector2.ZERO, {}, "ChestWindow")
 	var hotbar := _inst("hotbar", level, Vector2.ZERO, {}, "Hotbar")
@@ -566,8 +413,8 @@ func _place_rooms() -> void:
 				var cell := o + Vector2i(xx, yy)
 				interior[cell] = i
 				if ch == "#":
-					solid[cell] = ROOMS[i].style
-				elif not ch in [".", "=", "c", "K", "h", "p", "^", "x", "_", "L", "<", ">"]:
+					solid[cell] = true
+				elif not ch in [".", "=", "c", "K", "h", "p", "^", "x", "V", "~", "_", "L", "A", "B", "C", "<", ">"]:
 					if not a.has(ch):
 						a[ch] = []
 					a[ch].append(cell)
@@ -582,18 +429,12 @@ func _place_rooms() -> void:
 		for xx in range(bounds.position.x, bounds.end.x):
 			var cell := Vector2i(xx, yy)
 			if not interior.has(cell):
-				solid[cell] = _style_at(xx)
-
-
-func _style_at(x: int) -> String:
-	for i in ROOMS.size():
-		if x <= origins[i].x + sizes[i].x:
-			return ROOMS[i].style
-	return ROOMS[-1].style
+				solid[cell] = true
 
 
 # ---------------- Tiles ----------------
 
+## Source 0: the island terrain (solid). Source 1: the planks (one-way: jump up through them).
 func _make_tileset() -> TileSet:
 	var ts := TileSet.new()
 	ts.tile_size = Vector2i(T, T)
@@ -602,7 +443,7 @@ func _make_tileset() -> TileSet:
 	ts.set_physics_layer_collision_mask(0, 0)
 	var full := PackedVector2Array([Vector2(-16, -16), Vector2(16, -16), Vector2(16, 16), Vector2(-16, 16)])
 	var plank := PackedVector2Array([Vector2(-16, -16), Vector2(16, -16), Vector2(16, -10), Vector2(-16, -10)])
-	for spec in [[ISLAND_TEX, 0, 99], [SHIP_TEX, 1, 6], [PLANK_TEX, 2, -1]]:
+	for spec in [[ISLAND_TEX, 0], [PLANK_TEX, 1]]:
 		var src := TileSetAtlasSource.new()
 		src.texture = load(spec[0])
 		src.texture_region_size = Vector2i(T, T)
@@ -613,39 +454,31 @@ func _make_tileset() -> TileSet:
 				var c := Vector2i(xx, yy)
 				src.create_tile(c)
 				var data := src.get_tile_data(c, 0)
-				if spec[1] == 2:
-					data.add_collision_polygon(0)
+				data.add_collision_polygon(0)
+				if spec[1] == 1:
 					data.set_collision_polygon_points(0, 0, plank)
 					data.set_collision_polygon_one_way(0, 0, true)
-				elif yy <= spec[2]:
-					data.add_collision_polygon(0)
+				else:
 					data.set_collision_polygon_points(0, 0, full)
 	return ts
 
 
-func _paint(layer: TileMapLayer, backwall: TileMapLayer) -> void:
+func _paint(layer: TileMapLayer) -> void:
 	for cell in solid:
-		var base := Vector2i.ZERO if solid[cell] == "island" else Vector2i(1, 1)
-		layer.set_cell(cell, 0 if solid[cell] == "island" else 1, base + _shape(cell))
+		layer.set_cell(cell, 0, _shape(cell))
 	for i in ROOMS.size():
 		for yy in sizes[i].y:
 			for xx in sizes[i].x:
-				var cell := origins[i] + Vector2i(xx, yy)
-				var ch: String = grids[i][Vector2i(xx, yy)]
-				if ch == "=":
-					var left: bool = grids[i].get(Vector2i(xx - 1, yy), "") == "="
-					var right: bool = grids[i].get(Vector2i(xx + 1, yy), "") == "="
-					var col := 4 if not left and not right else (1 if not left else (3 if not right else 2))
-					layer.set_cell(cell, 2, Vector2i(col, 1))
-				if ROOMS[i].style == "ship" and not solid.has(cell):
-					backwall.set_cell(cell, 1, BACKWALL)
-		if ROOMS[i].style == "ship":
-			for yy in _door_rows(i, sizes[i].x - 1, ">"):
-				backwall.set_cell(origins[i] + Vector2i(sizes[i].x, yy), 1, BACKWALL)
+				if grids[i][Vector2i(xx, yy)] != "=":
+					continue
+				var left: bool = grids[i].get(Vector2i(xx - 1, yy), "") == "="
+				var right: bool = grids[i].get(Vector2i(xx + 1, yy), "") == "="
+				var col := 4 if not left and not right else (1 if not left else (3 if not right else 2))
+				layer.set_cell(origins[i] + Vector2i(xx, yy), 1, Vector2i(col, 1))
 
 
 ## Which piece of the 3x3 block (plus pillars, bars and inner corners) a solid cell needs,
-## from which of its neighbours are open. Same layout in the island and ship sheets.
+## from which of its neighbours are open.
 func _shape(cell: Vector2i) -> Vector2i:
 	var n := not solid.has(cell + Vector2i.UP)
 	var s := not solid.has(cell + Vector2i.DOWN)
@@ -687,6 +520,7 @@ func _open(cell: Vector2i) -> bool:
 
 func _place_map_things(i: int, coins: Node, traps: Node, flags: Node, things: Node) -> void:
 	var o := origins[i]
+	var lettered := {}
 	for y in sizes[i].y:
 		var x := 0
 		while x < sizes[i].x:
@@ -704,17 +538,32 @@ func _place_map_things(i: int, coins: Node, traps: Node, flags: Node, things: No
 						coin.position = _px(c.x + k + 0.5, c.y + 0.5)
 						_add(coin, coins)
 				"^", "x":
-					_inst("spikes", traps, _px(c.x, c.y + 1), {"count": run * 2, "send_to_checkpoint": ch == "x"})
+					_inst("spikes", traps, _px(c.x, c.y + 1), {"count": run * 2, "damage": BIG_SPIKES if ch == "x" else 20.0})
+				"V":
+					var s := _inst("spikes", traps, _px(c.x + run, c.y), {"count": run * 2, "damage": BIG_SPIKES})
+					s.rotation = PI
+				"~":
+					# The top row of a pool: one Water node, as deep as the ~ rows below it.
+					if grids[i].get(Vector2i(x, y - 1), "") != "~":
+						var depth := 0
+						while grids[i].get(Vector2i(x, y + depth), "") == "~":
+							depth += 1
+						_water(things, i, x, x + run, y, depth * T)
 				"L":
 					for k in run:
 						_inst("falling", things, Vector2((c.x + k + 0.5) * T, c.y * T + 3), {"fall_delay": 0.14, "return_time": 2.0})
+				"A", "B", "C":
+					for k in run:
+						_inst("path", things, Vector2((c.x + k + 0.5) * T, c.y * T + 3), {
+							"letter": ch, "show_letter": not lettered.has(ch)})
+						lettered[ch] = true
 				"_":
 					for k in run:
 						_beam(things, c + Vector2i(k, 0))
 				"K":
 					_inst("checkpoint", flags, _foot(c), {})
 				"h":
-					_inst("chest", things, _foot(c), {"manual_id": ROOMS[i].get("manual", "if_else")})
+					_inst("chest", things, _foot(c), {"manual_id": ROOMS[i].get("manual", "variables_101")})
 				"p":
 					_inst("potion", things, _foot(c))
 			x += run
@@ -741,115 +590,60 @@ func _beam(parent: Node, cell: Vector2i) -> void:
 
 # ---------------- Helpers for the rooms ----------------
 
-## A Room node covering room i and its right-hand wall (where its exit door stands).
+## A Room node covering room i and its right-hand wall.
 func _room(parent: Node, i: int, title: String, hint: String, blanks: String, answer: String) -> void:
 	var size := Vector2(sizes[i].x + 1, sizes[i].y) * T
 	var node := _inst("room", parent, Vector2(origins[i]) * T + size / 2.0, {
 		"size": size, "title": title, "hint": hint, "blanks": blanks, "answer": answer,
-		"music": ROOMS[i].get("music", "rooms")})
+		"zone": ROOMS[i].get("zone", ""), "music": ROOMS[i].get("music", "rooms")})
 	node.name = "Room%d_%s" % [i, title.get_slice(":", title.count(":")).strip_edges().replace(" ", "_").replace("'", "")]
 	room_nodes.append(node)
 
 
-func _runner(i: int, node_name: String, start_rule: String, props: Dictionary) -> Node:
-	var r := Node.new()
-	r.name = "Rule" + node_name
-	r.set_script(load("res://scripts/levels/rule_runner.gd"))
-	r.set("start_rule", start_rule)
-	for k in props:
-		if k in ["machine_vars", "reading_names"]:
-			var arr: Array[String] = []
-			arr.assign(props[k])
-			r.set(k, arr)
-		else:
-			r.set(k, props[k])
-	_add(r, room_nodes[i])
-	return r
+## A rescue flag: the hero waits beside it until every coin in room i is collected.
+func _flag(parent: Node, i: int, cell: Vector2i, hero: String) -> void:
+	_inst("checkpoint", parent, _foot(cell), {"unlock_hero": hero, "room": room_nodes[i]})
 
 
-## The room's exit: crates in the > doorway that follow a locked captain's rule. `rule` may
-## have %d for the number of coins in the room.
-func _exit_door(parent: Node, i: int, rule: String) -> void:
-	var count := 0
-	for y in sizes[i].y:
-		for x in sizes[i].x:
-			if grids[i][Vector2i(x, y)] == "c":
-				count += 1
-	var text := rule % count if "%d" in rule else rule
-	_runner(i, "ExitDoor", text, {"locked": true, "machine_vars": ["doorOpen"], "on_panel": false})
-	var rows := _door_rows(i, sizes[i].x - 1, ">")
-	var door := Node2D.new()
-	door.name = "ExitDoor"
-	door.set_script(load(L2 + "pirate_door.gd"))
-	door.set("size", Vector2(32, rows.size() * T))
-	door.position = _px(origins[i].x + sizes[i].x + 0.5, origins[i].y + rows[-1] + 1)
-	_add(door, parent)
+## Captain Clown Nose in room i. He waits at X; his arena runs from the `a` cell to the room's
+## right wall, and the fight starts when the hero walks two tiles into it.
+func _captain(i: int) -> void:
+	var left := _a(i, "a")
+	var body := CharacterBody2D.new()
+	body.name = "Captain"
+	body.set_script(load(L2 + "captain.gd"))
+	body.set("arena_left", float(left.x * T))
+	body.set("arena_right", float((origins[i].x + sizes[i].x) * T))
+	body.set("start_x", (left.x + 2.5) * T)
+	body.position = _foot(_a(i, "X"))
+	_add(body, level)
 
 
-func _door(parent: Node, cell: Vector2i, variable: String, kind: String, target: Vector2, always_open := false) -> void:
-	var door := Node2D.new()
-	door.name = "Door"
-	door.set_script(load(L2 + "code_door.gd"))
-	var vars: Array[String] = []
-	if variable != "":
-		vars.append(variable)
-	door.set("variables", vars)
-	door.set("kind", kind)
-	door.set("target", target)
-	door.set("start_open", always_open)
-	door.set("size", Vector2(32, 64) if kind == "block" else Vector2(32, 48))
-	door.position = _foot(cell)
-	_add(door, parent)
-
-
-func _tide(parent: Node, cell: Vector2i, pattern: Array, step: float) -> void:
+## The ship of room i: it rests at its dock S and sails to Z when anchorUp is true.
+## The deck rests 10 px above the water, which starts in the row below S.
+func _ship(parent: Node, i: int) -> void:
+	var from := _a(i, "S")
+	var to := _a(i, "Z")
 	var n := Node2D.new()
-	n.name = "TidePost"
-	n.set_script(load(L2 + "tide.gd"))
-	var p: Array[int] = []
-	p.assign(pattern)
-	n.set("pattern", p)
-	n.set("step_time", step)
-	n.position = _foot(cell)
+	n.name = "Ship"
+	n.set_script(load("res://scripts/gadgets/code_ship.gd"))
+	n.set("trip", Vector2((to.x - from.x) * T, 0))
+	n.position = Vector2((from.x + 0.5) * T, (from.y + 1) * T - 10)
 	_add(n, parent)
 
 
-func _wind(parent: Node, cell: Vector2i, pattern: Array) -> void:
-	var n := Node2D.new()
-	n.name = "WindVane"
-	n.set_script(load(L2 + "wind.gd"))
-	var p: Array[int] = []
-	p.assign(pattern)
-	n.set("pattern", p)
-	n.position = _foot(cell)
-	_add(n, parent)
-
-
-## Water in room i from column x0 to x1 (map columns), lowest surface at the top of map row y.
-func _water(parent: Node, i: int, x0: int, x1: int, y: int, mode: String, depth: float, rise := 16.0) -> void:
+## Water in room i from column x0 to x1 (map columns), its surface at the top of map row y.
+func _water(parent: Node, i: int, x0: int, x1: int, y: int, depth: float) -> void:
 	var n := Node2D.new()
 	n.name = "Water"
 	n.set_script(load(L2 + "water.gd"))
-	n.set("mode", mode)
 	n.set("width", float((x1 - x0) * T))
 	n.set("depth", depth)
-	n.set("rise", rise)
 	n.position = _px(origins[i].x + x0, origins[i].y + y)
 	_add(n, parent)
 
 
-func _ship(parent: Node, cell: Vector2i, mode: String, trip: Vector2, reef_at: float) -> void:
-	var n := Node2D.new()
-	n.name = "Ship"
-	n.set_script(load(L2 + "ship.gd"))
-	n.set("mode", mode)
-	n.set("trip", trip)
-	n.set("reef_at", reef_at)
-	n.position = _px(cell.x + 0.5, cell.y + 0.5)
-	_add(n, parent)
-
-
-func _shooter(parent: Node, cell: Vector2i, kind: String, direction: int, interval: float, delay := 0.0, on_call := false) -> void:
+func _shooter(parent: Node, cell: Vector2i, kind: String, direction: int, interval: float, delay := 0.0, reach := 320.0) -> void:
 	var n := Node2D.new()
 	n.name = kind.capitalize()
 	n.set_script(load(L2 + "shooter.gd"))
@@ -857,59 +651,18 @@ func _shooter(parent: Node, cell: Vector2i, kind: String, direction: int, interv
 	n.set("direction", direction)
 	n.set("interval", interval)
 	n.set("delay", delay)
-	n.set("on_call", on_call)
-	if on_call:
-		n.set("to_checkpoint", true)
-		n.set("speed", 220.0)
-		n.set("reach", 420.0)
-	var lift := {"seashell": 19.0, "totem": 24.0, "cannon": 30.0}
+	n.set("reach", reach)
+	var lift := {"seashell": 19.0, "totem": 24.0}
 	n.position = _foot(cell) + Vector2(0, -lift[kind])
 	_add(n, parent)
 
 
-func _lookout(parent: Node, cell: Vector2i, words: Array, password: String) -> void:
-	var n := Node2D.new()
-	n.name = "Lookout"
-	n.set_script(load(L2 + "lookout.gd"))
-	var w: Array[String] = []
-	w.assign(words)
-	n.set("words", w)
-	n.set("password", password)
-	n.position = _foot(cell)
-	_add(n, parent)
-
-
-func _crew(parent: Node, i: int, first_sleep: float) -> void:
-	var cells: Array = anchors[i].get("z", [])
-	var n := Node2D.new()
-	n.name = "Crew"
-	n.set_script(load(L2 + "crew.gd"))
-	n.position = _foot(cells[0])
-	var spots: Array[Vector2] = []
-	for cell in cells:
-		spots.append(_foot(cell) - n.position)
-	n.set("spots", spots)
-	n.set("first_sleep", first_sleep)
-	_add(n, parent)
-
-
-func _lanterns(parent: Node, i: int) -> void:
-	var cells: Array = anchors[i].get("l", [])
-	var n := Node2D.new()
-	n.name = "Lanterns"
-	n.set_script(load(L2 + "lanterns.gd"))
-	n.position = _px(cells[0].x + 0.5, cells[0].y + 0.5)
-	var spots: Array[Vector2] = []
-	for cell in cells:
-		spots.append(_px(cell.x + 0.5, cell.y + 0.5) - n.position)
-	n.set("spots", spots)
-	_add(n, parent)
-
-
+## A patrolling enemy: crabby, or another enemy's art on the same script (pink_star, fierce_tooth).
 func _enemy(parent: Node, cell: Vector2i, kind: String, patrol: float) -> void:
-	_inst("crab", parent, _foot(cell), {
-		"frames": load("res://assets/level2_treasure_hunters/enemies/%s/%s_frames.tres" % [kind, kind]),
-		"patrol_left": -patrol, "patrol_right": patrol})
+	var props := {"patrol_left": -patrol, "patrol_right": patrol}
+	if kind != "crabby":
+		props["frames"] = load("res://assets/level2_treasure_hunters/enemies/%s/%s_frames.tres" % [kind, kind])
+	_inst("crab", parent, _foot(cell), props)
 
 
 func _a(i: int, ch: String, n := 0) -> Vector2i:

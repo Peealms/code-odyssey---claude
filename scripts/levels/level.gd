@@ -1,6 +1,6 @@
 class_name Level
 extends Node2D
-## Base script for every level (and the test room). It wires up what all levels share:
+## Base script for every level (the tutorial and Level 1). It wires up what they share:
 ##   - camera limits from the "Terrain" TileMapLayer
 ##   - HUD: hero, health, stamina, fruits
 ##   - checkpoints: last flag touched = respawn point, and hero unlocks
@@ -13,7 +13,7 @@ extends Node2D
 @export var level_title := ""  ## Shown when the level starts.
 @export var level_number := 0  ## Shown on the level-complete screen (0 = use the title).
 ## Heroes the player has when this level starts (empty = keep whatever is unlocked).
-## Level 1 starts with just Chelzy; the other heroes are rescued room by room.
+## The tutorial starts with just Chelzy; the other heroes are rescued at flags.
 @export var starting_heroes: Array[String] = []
 @export var next_scene := "res://scenes/ui/main_menu.tscn"
 @export var fall_limit_margin := 64.0  ## How far below the map the player can fall before respawning.
@@ -127,16 +127,16 @@ func _on_hero_rescued(checkpoint: Area2D) -> void:
 func _on_rescue_blocked(checkpoint: Area2D) -> void:
 	Sound.play("blocked")
 	var hero_name: String = player.HERO_DATA[checkpoint.unlock_hero]["name"]
-	hud.show_message("COLLECT ALL THE FRUIT!", 2.0)
+	hud.show_message("COLLECT ALL THE %s!" % hud.item_word, 2.0)
 	if byte:
-		byte.say("%d MORE FRUIT TO FREE %s!" % [checkpoint.fruit_left(), hero_name.to_upper()], 3.0)
+		byte.say("%d MORE %s TO FREE %s!" % [checkpoint.fruit_left(), hud.item_word, hero_name.to_upper()], 3.0)
 
 
 func _on_goal_blocked(fruit_left: int, where: String) -> void:
 	Sound.play("blocked")
-	hud.show_message("COLLECT ALL THE FRUIT!", 2.0)
+	hud.show_message("COLLECT ALL THE %s!" % hud.item_word, 2.0)
 	if byte:
-		byte.say("%d MORE FRUIT: %s" % [fruit_left, where], 4.0)
+		byte.say("%d MORE %s: %s" % [fruit_left, hud.item_word, where], 4.0)
 
 
 func _on_level_complete() -> void:

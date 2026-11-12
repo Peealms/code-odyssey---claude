@@ -1,17 +1,18 @@
 extends CodeGadget
 ## A bridge that builds itself from the player's int: `int bridgeLength = 6;` pops in 6
-## crate blocks, one by one, going right. Changing the number adds or removes blocks.
+## planks, one by one, going right. Changing the number adds or removes blocks.
 ## If `gap_blocks` is set, the number must fit the gap exactly: too few leaves a hole, and too
 ## many jams against the far side so the whole bridge collapses (and Byte explains why).
 ## The node's position is the top-left corner of the first block (line it up with the ground).
+## Each block is one Treasure Hunters plank.
 
-const TILE := preload("res://assets/level1_pixel_adventure/tiles/terrain_16x16.png")
-const BLOCK_REGION := Rect2(192, 144, 16, 16)  ## The orange crate tile.
-const SIZE := 16
 const POP_TIME := 0.09  ## Seconds between blocks appearing.
 
 @export var max_blocks := 12
 @export var gap_blocks := 0  ## Width of the gap in blocks (0 = any length is fine).
+@export var block_texture: Texture2D = preload("res://assets/level2_treasure_hunters/tiles/ship_platforms_32x32.png")
+@export var block_region := Rect2(64, 65, 32, 10)  ## The part of block_texture one block shows.
+@export var block_size := Vector2(32, 10)  ## One block's size (also its solid box).
 
 var _blocks: Array[StaticBody2D] = []
 var _target := 0
@@ -49,7 +50,7 @@ func _too_long(wanted: int) -> void:
 	else:
 		while _building:
 			await get_tree().process_frame
-	Sound.play_at("bridge_collapse", global_position + Vector2(gap_blocks * SIZE / 2.0, 0))
+	Sound.play_at("bridge_collapse", global_position + Vector2(gap_blocks * block_size.x / 2.0, 0))
 	# Jam: shake, then everything drops.
 	for b in _blocks:
 		var shake := b.create_tween()
@@ -76,19 +77,19 @@ func _build() -> void:
 
 
 func _add_block(index: int) -> void:
-	Sound.play_at("bridge_block", global_position + Vector2(index * SIZE, 0), 0.0)
+	Sound.play_at("bridge_block", global_position + Vector2(index * block_size.x, 0), 0.0)
 	var body := StaticBody2D.new()
 	body.collision_layer = 1
-	body.position = Vector2(index * SIZE + SIZE / 2.0, SIZE / 2.0)
+	body.position = Vector2(index * block_size.x, 0) + block_size / 2.0
 	var shape := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
-	rect.size = Vector2(SIZE, SIZE)
+	rect.size = block_size
 	shape.shape = rect
 	body.add_child(shape)
 	var sprite := Sprite2D.new()
 	var atlas := AtlasTexture.new()
-	atlas.atlas = TILE
-	atlas.region = BLOCK_REGION
+	atlas.atlas = block_texture
+	atlas.region = block_region
 	sprite.texture = atlas
 	body.add_child(sprite)
 	add_child(body)
