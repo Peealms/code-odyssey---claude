@@ -1,5 +1,5 @@
 extends Control
-## Main menu: Play / Continue / Settings / Quit.
+## Main menu: Play / Continue / Story (watch the backstory again) / Settings / Quit.
 
 const LEVEL_SELECT := "res://scenes/ui/level_select.tscn"
 const BADGE := preload("res://scripts/ui/title_badge.gd")
@@ -12,6 +12,7 @@ const FIRST_LEVEL := "res://scenes/levels/level1/level1.tscn"
 @onready var menu_buttons: VBoxContainer = $MenuButtons
 @onready var play_button: Button = $MenuButtons/PlayButton
 @onready var continue_button: Button = $MenuButtons/ContinueButton
+@onready var story_button: Button = $MenuButtons/StoryButton
 @onready var settings_button: Button = $MenuButtons/SettingsButton
 @onready var quit_button: Button = $MenuButtons/QuitButton
 @onready var settings_panel: PanelContainer = $SettingsPanel
@@ -28,6 +29,7 @@ var _title_base_y := 0.0
 func _ready() -> void:
 	play_button.pressed.connect(_on_play)
 	continue_button.pressed.connect(_on_continue)
+	story_button.pressed.connect(func(): Game.play_story(scene_file_path))  # back here after
 	settings_button.pressed.connect(_open_settings)
 	quit_button.pressed.connect(func(): get_tree().quit())
 	back_button.pressed.connect(_close_settings)

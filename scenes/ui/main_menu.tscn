@@ -50,11 +50,11 @@ anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -60.0
-offset_top = 192.0
+offset_top = 188.0
 offset_right = 60.0
-offset_bottom = 292.0
+offset_bottom = 304.0
 grow_horizontal = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 4
 
 [node name="PlayButton" type="Button" parent="MenuButtons" unique_id=1110993193]
 layout_mode = 2
@@ -63,6 +63,10 @@ text = "PLAY"
 [node name="ContinueButton" type="Button" parent="MenuButtons" unique_id=239515479]
 layout_mode = 2
 text = "CONTINUE"
+
+[node name="StoryButton" type="Button" parent="MenuButtons"]
+layout_mode = 2
+text = "STORY"
 
 [node name="SettingsButton" type="Button" parent="MenuButtons" unique_id=897601245]
 layout_mode = 2

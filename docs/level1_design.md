@@ -7,6 +7,23 @@ The old Level 1 is now a **one-room tutorial**: its first room, where Byte teach
 works. Its other lessons are in **Level 1 on Treasure Island** (`docs/level2_design.md`), which
 the tutorial's CONTINUE button leads to.
 
+## Before the tutorial: the backstory
+`scenes/ui/story_intro.tscn` (`scripts/ui/story_intro.gd`, about a minute). It plays the first
+time the tutorial is started from the level select. `Game.story_seen` is saved, so it plays only
+once; STORY on the main menu replays it and comes back to the menu. Enter moves on, Esc skips
+(once the first shot has faded in). Every shot is built in code from the game's own art, drawn 2x.
+
+| Shot | What happens | Who talks |
+|---|---|---|
+| 1. The lab | The five of us (`assets/shared/team/`) at 11:59 PM, typing our game. Byte appears on the screen, and the screen pulls us in. | narrator, Byte |
+| 2. Byte's world | Treasure Island art. `int bridgeLength = 4;` types out and builds a 4-plank bridge. | Byte |
+| 3. The theft | Captain Clown Nose's sword swing pulls that line and other variables (`String hero`, `double jumpPower`, `boolean anchorUp`, `char path`) into his treasure chest. The bridge falls into the sea, and he runs off with the chest. | captain, Byte |
+| 4. The fall | The five heroes tumble out of a portal and scatter. | narrator |
+| 5. The landing | Pixel Adventure art, Byte's gate. Chelzy lands, out cold, and Byte asks for a coder: he can check code but has no hands to type it. | Byte |
+
+Then the tutorial starts with "Wake up, Chelzy!". The lines are in `story_intro.gd`. The
+dialogue box is `scripts/ui/dialogue_box.gd`, the same one Byte's talks use.
+
 ## The tutorial room
 One 44 x 21 tile room, about one screen: start, Byte's gate (`System.out.println`), the spike
 corridor, the Variables manual chest, Chelzy's wall-jump shaft, the fruit gallery, and on the
@@ -41,6 +58,10 @@ The terminal's `wrong_try(room, tries)` and `closed` signals exist for these tal
 - `tools/test_level1.gd` plays the tutorial (needs a window, not `--headless`):
   `godot --path . --script res://tools/test_level1.gd` - prints 26 PASS/FAIL checks, and saves
   screenshots of Byte's talks to the user data folder (`test_screenshots/`).
+- `tools/test_story.gd` plays the backstory the same way (window needed):
+  `godot --path . --script res://tools/test_story.gd` - 9 checks (the level select plays it
+  once, every line shows, it ends in the tutorial and is saved, STORY replays it, Esc skips),
+  and a screenshot of every line (`test_screenshots/story_*.png`).
 
 The old seven-room Level 1 (its maps, its 105 checks and this file's old room tables) is in git
 history, commit 80011e1. Its lessons now live in Level 1 on Treasure Island: `docs/level2_design.md`.

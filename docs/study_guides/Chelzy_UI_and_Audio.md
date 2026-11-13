@@ -3,8 +3,16 @@
 ## You explain: every screen and widget the player sees or hears.
 
 ### Screens (`scenes/ui/` + `scripts/ui/`)
-- **Main menu** (`main_menu.gd`, animated stage `menu_stage.gd`): play/continue, settings
-  (volume sliders, fullscreen), reset progress. Play starts the tutorial.
+- **Main menu** (`main_menu.gd`, animated stage `menu_stage.gd`): play/continue, STORY (watch
+  the backstory again), settings (volume sliders, fullscreen), reset progress. Play goes to the
+  level select.
+- **The backstory** (`story_intro.gd`, scene `story_intro.tscn`): five shots built in code from
+  the game's own art, drawn 2x so the pixel art is big. The lab (the five of us at 11:59 PM;
+  Byte appears on our screen and it pulls us in), Byte's world (`int bridgeLength = 4;` builds
+  a bridge), the theft (Captain Clown Nose steals every variable into his chest, and the bridge
+  falls), the fall (we scatter), and Chelzy landing where the tutorial starts. It plays the
+  first time the tutorial is started from the level select (`Game.story_seen`, saved), Enter
+  moves on, Esc skips. `Game.play_story(next_scene)` starts it and says where to go after.
 - **Level select** (`level_select.gd`): two cards, TUTORIAL and LEVEL 1, each with an animated
   preview made from that level's art. Level 1 unlocks once the tutorial has a star.
 - **Pause menu** (`pause_menu.gd`): resume, settings, quit to menu.
@@ -14,8 +22,11 @@
 - **Code terminal** (`code_terminal.tscn`): the visual side (logic is Psalm's): output log with
   colors (white = your code, green = pass, red = fail, cyan = Byte, grey = hint, gold = answer),
   input line, Show answer button.
+- **The dialogue box** (`dialogue_box.gd`): the paper box at the bottom of the screen, with a
+  face, a name and the line typed out letter by letter. Byte's talks and the backstory both use
+  it (with no face it's the narrator's caption).
 - **Byte talks** (`byte_talk.gd`): the game pauses, the HUD hides, the camera glides to what Byte
-  is talking about, and his lines appear in a dialogue box (Enter moves on). The tutorial's
+  is talking about, and his lines appear in the dialogue box (Enter moves on). The tutorial's
   lessons use it, and so does the **hero cutscene** (`hero_cutscene.gd`): on a rescue the camera
   zooms in, Byte introduces the hero, then a looping card shows the ability, key, stamina cost
   and the `hero = "...";` line.
@@ -43,6 +54,8 @@
 - UI uses Godot **Control** nodes, a shared **Theme**, and signals from the Player (health_changed, etc.) to update.
 - Why a book for manuals: players read the concept, then apply it in the terminal.
 - Why the tutorial pauses for Byte: one idea at a time, at the moment the player needs it.
+- Why a backstory: it gives the player a reason to code. The world runs on variables, the
+  captain stole them, and Byte can check code but can't type it, so the player has to.
 
 ### Likely questions
 - How does the HUD know the player's health? (signal)

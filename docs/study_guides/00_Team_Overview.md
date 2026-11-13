@@ -8,6 +8,12 @@ Goal: teach **declaring variables of each basic type** (`String`, `int`, `double
 `char`) and **changing a variable that already exists** (`name = value;`). About 15-20 minutes.
 
 ## The game in one minute
+- **Backstory** (the first time you start the tutorial; STORY on the main menu replays it):
+  five IT students (us) finish their game in the lab at night. Byte appears on the screen and
+  pulls us into his world, where everything runs on Java variables. Captain Clown Nose has
+  stolen them all and locked them in his treasure chest, so nothing works. The trip scatters us,
+  Chelzy lands where the tutorial starts, and Byte, who can check code but can't type it, asks
+  for help.
 - **Tutorial** (Pixel Adventure art, one room): Byte teaches moving, the terminal, reading a
   manual, hints and Show answer, and the first line of Java, `System.out.println("Hi");`, which
   opens his gate. Ends with rescuing Sarah.
@@ -25,8 +31,8 @@ Goal: teach **declaring variables of each basic type** (`String`, `int`, `double
 - Falling, the sea or 0 HP = back to the last checkpoint flag; variables you set stay set.
 
 ## How the pieces connect
-main menu -> level select -> `Level` (tutorial.gd / level2.gd) -> `Room`s -> Player + Byte +
-CodeTerminal + gadgets.
+main menu -> level select -> (the backstory, `story_intro.gd`, the first time) -> `Level`
+(tutorial.gd / level2.gd) -> `Room`s -> Player + Byte + CodeTerminal + gadgets.
 Typing a valid line -> `CommandChecker` validates -> `CodeTerminal` emits `variable_set(name, value)`
 -> gadgets (bridge, ship, path planks, Byte's gate) listen and react, but only if the player is
 in their room/zone.
