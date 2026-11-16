@@ -22,6 +22,9 @@ Goal: teach **declaring variables of each basic type** (`String`, `int`, `double
   then the exam changes them again, `System.out.println("I can code!");` opens the way, and
   **Captain Clown Nose** guards the treasure: you dodge each attack by switching to the right
   hero (hold Q) and hit him with the sword while he's dizzy.
+- **Ending** (after Level 1's results): the chest opens, the variables fly back home and the
+  bridge rebuilds itself, Byte thanks us, and a portal takes us back to the lab just after
+  midnight. THE END shows who made the game and the credits.
 - You start with only Chelzy. Rescuing a hero unlocks them; the next room has an obstacle
   only that hero can pass, so you must switch with `hero = "April";`.
 - Collect **fruit** (tutorial) or **coins** (Level 1): rescue flags and the goal need all of it.

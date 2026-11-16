@@ -9,6 +9,8 @@
 - Asset credits: `assets/README.md`, `assets/shared/audio/CREDITS.md` (Pixel Frog art packs, CC0 audio).
 - Test evidence: `tools/test_level1.gd` (26 checks) and `tools/test_level2.gd` (95 checks) play
   every room automatically and print PASS/FAIL, including every anti-skip obstacle.
+  `tools/test_story.gd` (9, the backstory), `tools/test_ending.gd` (12, the ending, CONTINUE and
+  RESET PROGRESS) and `tools/test_sound.gd` (9, the music never doubles up).
 - Study guides: this folder (`docs/study_guides/`).
 
 ### What the papers must clearly state

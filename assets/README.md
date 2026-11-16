@@ -6,8 +6,9 @@ Level 1's signs are a note from Treasure Hunters' Wood and Paper UI (prefab 7, c
 `level2_treasure_hunters/ui/sign_paper.png`).
 The exceptions are made for this game: Byte (`shared/byte/`), the team heroes
 (`shared/team/` and `shared/heroes/<name>/`, drawn by `tools/make_team_sprites.gd` and
-`tools/make_team_heroes.gd`) and the manual book icons
-(`shared/items/books.png`, drawn by `tools/make_item_icons.gd`).
+`tools/make_team_heroes.gd`), the manual book icons
+(`shared/items/books.png`, drawn by `tools/make_item_icons.gd`) and the game icon (Byte,
+`shared/icon.png`, drawn by `tools/make_icon.gd`).
 Fonts (credit both in the paper):
 - **Pixel Operator** by Jayvee Enaguas, CC0 (`shared/ui/fonts/pixel_operator/`): the books,
   chest window and signs. Taken from github.com/bauripalash/ttf-pixeloperator-fork, a copy of

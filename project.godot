@@ -10,10 +10,10 @@ config_version=5
 
 [application]
 
-config/name="CODE ODYSSEY - CLAUDE"
+config/name="Code Odyssey"
 run/main_scene="res://scenes/ui/main_menu.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
-config/icon="res://icon.svg"
+config/icon="res://assets/shared/icon.png"
 
 [autoload]
 

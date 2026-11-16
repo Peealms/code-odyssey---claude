@@ -245,10 +245,13 @@ func has_save() -> bool:
 	return FileAccess.file_exists(SAVE_PATH)
 
 
+## Starts the game over, as on a new computer: heroes, stars and the backstory. The save file
+## is deleted, so CONTINUE is off until a level is played. Settings (volume...) are kept.
 func reset_progress() -> void:
 	unlocked_heroes = [HEROES[0]]
 	current_hero = HEROES[0]
 	wheel_heroes = [HEROES[0]]
 	best_stars = {}
 	story_seen = false
-	save_progress()
+	if has_save():
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))

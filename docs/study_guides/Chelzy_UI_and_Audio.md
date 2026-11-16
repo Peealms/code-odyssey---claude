@@ -6,9 +6,17 @@
 - **Main menu** (`main_menu.gd`, animated stage `menu_stage.gd`: one runner swaps heroes for
   each obstacle - Sarah dashes over spikes, Chelzy wall-jumps up a pillar, April double-jumps a
   saw, Kervin sprints over bars that drop behind him, Psalm shrinks under a slab): play/continue, STORY (watch
-  the backstory again), settings (volume sliders, fullscreen), reset progress. Play goes to the
-  level select. (The floating topic tags beside the title were removed: the game teaches one
+  the backstory again), settings (volume sliders, fullscreen, RESET PROGRESS). Play goes to the
+  level select. CONTINUE goes to the furthest level (Level 1 once the tutorial has a star).
+  RESET PROGRESS needs two presses ("SURE? PRESS AGAIN") and deletes the save, for the next
+  player on a shared computer. The window is called "Code Odyssey" and its icon is Byte
+  (`assets/shared/icon.png`, drawn by `tools/make_icon.gd`). (The floating topic tags beside the title were removed: the game teaches one
   topic, variables.)
+- **The title logo** (`title_logo.gd`; letters drawn by `tools/make_title_logo.gd`) reads
+  `{ CODE } ODYSSEY`, with Byte's teal code braces. The letters drop in one by one and squash
+  as they land, then ride a gentle wave over soft shadows that stay on the ground. Every 4.5 s
+  a band of light sweeps across (`resources/shaders/title_shine.gdshader`, one material per
+  letter), sparkles twinkle on the letters, and every 7 s a ripple of hops runs along them.
 - **The backstory** (`story_intro.gd`, scene `story_intro.tscn`): five shots built in code from
   the game's own art, drawn 2x so the pixel art is big. The lab (the five of us at 11:59 PM;
   Byte appears on our screen and it pulls us in), Byte's world (`int bridgeLength = 4;` builds
@@ -16,6 +24,9 @@
   falls), the fall (we scatter), and Chelzy landing where the tutorial starts. It plays the
   first time the tutorial is started from the level select (`Game.story_seen`, saved), Enter
   moves on, Esc skips. `Game.play_story(next_scene)` starts it and says where to go after.
+- **The ending** (`story_ending.gd`, scene `story_ending.tscn`): extends the backstory's script.
+  After Level 1's results: the chest opens and the variables fly home, the bridge rebuilds, Byte
+  thanks us, a portal takes us back to the lab (12:01), and THE END with the credits.
 - **Level select** (`level_select.gd`): two cards, TUTORIAL and LEVEL 1, each with an animated
   preview made from that level's art. Level 1 unlocks once the tutorial has a star.
 - **Pause menu** (`pause_menu.gd`): resume, settings, quit to menu.

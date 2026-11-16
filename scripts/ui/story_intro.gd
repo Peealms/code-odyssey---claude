@@ -13,6 +13,7 @@ extends Node2D
 ## Enter (or Space / F) moves the dialogue on and Esc skips. At the end the game remembers the
 ## story was seen (Game.story_seen) and goes to Game.story_next: the tutorial, or the main menu.
 ## Every wait and move is a tween of this node, so turning the node off freezes the shot.
+## The ending (story_ending.gd) extends this script: same helpers, its own shots.
 
 signal _advance
 
@@ -47,8 +48,9 @@ const LINEUP := ["april", "sarah", "psalm", "kervin", "chelzy"]
 ## What the team is typing on the lab's screen.
 const LAB_CODE := "// our capstone game\nString game = \"Code Odyssey\";\nint bugsLeft = 0;\nSystem.out.println(\"Done!\");"
 ## The variables the captain steals from all over Byte's world (they fly in from off-screen).
-const STOLEN := ["String hero = \"Chelzy\";", "double jumpPower = 2.0;", "boolean anchorUp = true;",
-	"char path = 'B';"]
+## (Not the rooms' answers, so the story doesn't give them away.)
+const STOLEN := ["String hero = \"Chelzy\";", "double jumpPower = 1.2;", "boolean anchorUp = false;",
+	"char path = 'A';"]
 ## Where each hero tumbles to in the fall, and where they fly off to.
 const FALL_SPOTS := {"chelzy": Vector2(160, 96), "sarah": Vector2(70, 60), "april": Vector2(250, 56),
 	"kervin": Vector2(92, 116), "psalm": Vector2(228, 118)}
@@ -66,7 +68,7 @@ var _box: DialogueBox
 var _skip: Label
 var _flash: ColorRect
 var _fade: ColorRect
-var _mono: SystemFont
+var _mono: Font
 var _waiting := false  ## True while a line shows in full and waits for Enter.
 var _done := false
 var _snores := 0  ## Zs floated up so far.
@@ -78,9 +80,8 @@ var _planks: Array[Sprite2D] = []
 
 
 func _ready() -> void:
-	# Code keeps a monospace font, so capitals show exactly as Java needs them.
-	_mono = SystemFont.new()
-	_mono.font_names = PackedStringArray(["Consolas", "Courier New", "Monospace"])
+	# Code is in the game's code font, so capitals show exactly as Java needs them.
+	_mono = GameFonts.CODE
 	_build_ui()
 	Sound.stop_music()
 	_play()
@@ -122,45 +123,15 @@ func _finish() -> void:
 # ---------------- 1. The lab ----------------
 
 func _lab() -> void:
-	_new_shot()
-	# The lab at night: a wall with a window and a clock, the floor, and the big screen.
-	_rect(Color("262438"), Rect2(0, 0, 320, 128))
-	for x in [30, 110, 210, 290]:
-		_rect(Color("2b2940"), Rect2(x, 0, 2, 128))
-	_rect(Color("3b3d52"), Rect2(14, 16, 50, 40))  # window frame
-	_rect(Color("121733"), Rect2(17, 19, 44, 34))  # the night outside
-	_rect(Color("3b3d52"), Rect2(38, 19, 2, 34))
-	_disc(Vector2(21, 23), Color("f3e9c6"))  # the moon, cut into a crescent...
-	_disc(Vector2(24, 21), Color("121733"))
-	for star in [Vector2(46, 24), Vector2(54, 31), Vector2(44, 42), Vector2(57, 47), Vector2(27, 45)]:
-		_rect(Color("c9d3ff"), Rect2(star, Vector2.ONE))
-	_rect(Color("3b3d52"), Rect2(256, 20, 46, 20))  # clock
-	_rect(Color("121216"), Rect2(258, 22, 42, 16))
-	_caption("11:59", Vector2(279, 30), Color("ff5a5a"))
-	_rect(Color("1a1828"), Rect2(0, 128, 320, 52))  # floor
-	_rect(Color("3b3d52"), Rect2(0, 128, 320, 2))
-	_rect(Color("45475e"), Rect2(94, 6, 132, 56))  # the screen
-	var screen := _rect(Color("0f1320"), Rect2(98, 10, 124, 48))
-	var glow := Polygon2D.new()
-	glow.polygon = PackedVector2Array([Vector2(98, 58), Vector2(222, 58), Vector2(296, 150), Vector2(24, 150)])
-	glow.color = Color(0.56, 0.89, 1.0, 0.0)
-	_stage.add_child(glow)
+	var lab := _lab_room("11:59")
+	var screen: ColorRect = lab["screen"]
+	var glow: Polygon2D = lab["glow"]
+	var people: Array[Sprite2D] = lab["people"]
+	var names: Array[Label] = lab["names"]
 	var code := _code_label(LAB_CODE, 9)
 	code.position = Vector2(102, 12) * ZOOM
 	code.visible_characters = 0
 	_overlay.add_child(code)
-	for y in range(10, 58, 3):  # scan lines
-		_rect(Color(0, 0, 0, 0.2), Rect2(98, y, 124, 1))
-	# The five of us, with our names.
-	var people: Array[Sprite2D] = []
-	var names: Array[Label] = []
-	for i in LINEUP.size():
-		var person := Sprite2D.new()
-		person.texture = load("res://assets/shared/team/%s.png" % LINEUP[i])
-		person.position = Vector2(72 + i * 44, 106)  # the middle: feet on the floor at y = 140
-		_stage.add_child(person)
-		people.append(person)
-		names.append(_caption(PLAYER.HERO_DATA[LINEUP[i]]["name"].to_upper(), Vector2(72 + i * 44, 66)))
 
 	await _fade_in(1.0)
 	_skip.visible = true
@@ -200,6 +171,48 @@ func _lab() -> void:
 	_fade.color.a = 1.0
 	await _move(_flash, "color:a", 0.0, 0.35).finished
 	await _wait(0.3)
+
+
+## A new shot of the lab at night, the clock showing `clock`: a wall with a window, the floor,
+## the big screen (with its glow, off) and the five of us with our names. Returns
+## {screen, glow, people, names}.
+func _lab_room(clock: String) -> Dictionary:
+	_new_shot()
+	# The lab at night: a wall with a window and a clock, the floor, and the big screen.
+	_rect(Color("262438"), Rect2(0, 0, 320, 128))
+	for x in [30, 110, 210, 290]:
+		_rect(Color("2b2940"), Rect2(x, 0, 2, 128))
+	_rect(Color("3b3d52"), Rect2(14, 16, 50, 40))  # window frame
+	_rect(Color("121733"), Rect2(17, 19, 44, 34))  # the night outside
+	_rect(Color("3b3d52"), Rect2(38, 19, 2, 34))
+	_disc(Vector2(21, 23), Color("f3e9c6"))  # the moon, cut into a crescent...
+	_disc(Vector2(24, 21), Color("121733"))
+	for star in [Vector2(46, 24), Vector2(54, 31), Vector2(44, 42), Vector2(57, 47), Vector2(27, 45)]:
+		_rect(Color("c9d3ff"), Rect2(star, Vector2.ONE))
+	_rect(Color("3b3d52"), Rect2(256, 20, 46, 20))  # clock
+	_rect(Color("121216"), Rect2(258, 22, 42, 16))
+	_caption(clock, Vector2(279, 30), Color("ff5a5a"))
+	_rect(Color("1a1828"), Rect2(0, 128, 320, 52))  # floor
+	_rect(Color("3b3d52"), Rect2(0, 128, 320, 2))
+	_rect(Color("45475e"), Rect2(94, 6, 132, 56))  # the screen
+	var screen := _rect(Color("0f1320"), Rect2(98, 10, 124, 48))
+	var glow := Polygon2D.new()
+	glow.polygon = PackedVector2Array([Vector2(98, 58), Vector2(222, 58), Vector2(296, 150), Vector2(24, 150)])
+	glow.color = Color(0.56, 0.89, 1.0, 0.0)
+	_stage.add_child(glow)
+	for y in range(10, 58, 3):  # scan lines
+		_rect(Color(0, 0, 0, 0.2), Rect2(98, y, 124, 1))
+	# The five of us, with our names.
+	var people: Array[Sprite2D] = []
+	var names: Array[Label] = []
+	for i in LINEUP.size():
+		var person := Sprite2D.new()
+		person.texture = load("res://assets/shared/team/%s.png" % LINEUP[i])
+		person.position = Vector2(72 + i * 44, 106)  # the middle: feet on the floor at y = 140
+		_stage.add_child(person)
+		people.append(person)
+		names.append(_caption(PLAYER.HERO_DATA[LINEUP[i]]["name"].to_upper(), Vector2(72 + i * 44, 66)))
+	return {"screen": screen, "glow": glow, "people": people, "names": names}
 
 
 ## A swirl where the person stood, then they stretch thin and fly into the screen.

@@ -252,6 +252,7 @@ func _build() -> void:
 	# Chelzy, and Sarah from the tutorial; the others are rescued here.
 	var heroes: Array[String] = ["chelzy", "sarah"]
 	level.set("starting_heroes", heroes)
+	level.set("next_scene", "res://scenes/ui/story_ending.tscn")  # CONTINUE after the results: the ending
 
 	var bg := CanvasLayer.new()
 	bg.name = "Background"

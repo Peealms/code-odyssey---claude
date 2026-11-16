@@ -1,8 +1,9 @@
 extends SceneTree
 ## Draws the "CODE ODYSSEY" title letters into assets/shared/ui/menu/title_letters.png:
-## one chunky, glossy, colourful block letter per cell (11 cells, in the order C O D E O D Y S S E Y),
-## which scripts/ui/title_logo.gd places and bounces. The letter shapes are hand-made 7x9 bitmaps
-## below (no font files used).
+## one chunky, glossy, colourful block letter per cell (13 cells, in the order
+## C O D E O D Y S S E Y { }), which scripts/ui/title_logo.gd places and bounces. The last two
+## are the code braces around CODE, in Byte's teal. The shapes are hand-made 7x9 bitmaps below
+## (no font files used).
 ## Run:  godot --headless --path . --script res://tools/make_title_logo.gd
 ## Then: godot --headless --path . --import
 
@@ -14,7 +15,7 @@ const PAD := 5  ## Room around a glyph for the outline and the 3D side.
 const EXTRUDE := 3
 const LETTER_W := GW * CELL + PAD * 2 + EXTRUDE  ## Keep in step with title_logo.gd
 const LETTER_H := GH * CELL + PAD * 2 + EXTRUDE
-const TEXT := "CODEODYSSEY"
+const TEXT := "CODEODYSSEY{}"
 
 const GLYPHS := {
 	"C": ["0111110", "1111111", "1100011", "1100000", "1100000", "1100000", "1100011", "1111111", "0111110"],
@@ -23,7 +24,11 @@ const GLYPHS := {
 	"E": ["1111111", "1111111", "1100000", "1111100", "1111100", "1100000", "1100000", "1111111", "1111111"],
 	"Y": ["1100011", "1100011", "1110111", "0111110", "0011100", "0011100", "0011100", "0011100", "0011100"],
 	"S": ["0111111", "1111111", "1100000", "1111110", "0111111", "0000011", "0000011", "1111111", "1111110"],
+	"{": ["0001111", "0011111", "0011000", "0011000", "1110000", "0011000", "0011000", "0011111", "0001111"],
+	"}": ["1111000", "1111100", "0001100", "0001100", "0000111", "0001100", "0001100", "1111100", "1111000"],
 }
+## The braces' colours: Byte's teal (code), not one of the letters' rainbow.
+const BRACE_COLORS := [Color("8ff7e8"), Color("2ab3a2"), Color("16645b")]
 
 ## [face top, face bottom, 3D side]
 const COLORS := [
@@ -53,7 +58,7 @@ func _init() -> void:
 
 func _draw_letter(ch: String, index: int) -> void:
 	var rows: Array = GLYPHS[ch]
-	var pal: Array = COLORS[index % COLORS.size()]
+	var pal: Array = BRACE_COLORS if ch in ["{", "}"] else COLORS[index % COLORS.size()]
 	# Pixel mask of the glyph, placed at (PAD, PAD) in the cell.
 	var w := LETTER_W
 	var h := LETTER_H
