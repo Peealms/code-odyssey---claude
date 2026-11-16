@@ -43,7 +43,7 @@ func _ready() -> void:
 	if not starting_heroes.is_empty():
 		Game.unlocked_heroes = starting_heroes.duplicate()
 		if not Game.current_hero in starting_heroes:
-			player.set_hero(starting_heroes[0], false)
+			player.set_hero(starting_heroes[0], false, true)
 	_setup_camera_limits()
 	hero_wheel = HeroWheel.new()
 	hero_wheel.player = player

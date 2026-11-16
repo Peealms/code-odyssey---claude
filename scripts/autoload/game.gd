@@ -4,6 +4,7 @@ extends Node
 
 const SETTINGS_PATH := "user://settings.cfg"
 const SAVE_PATH := "user://save.cfg"
+const STORY_SCENE := "res://scenes/ui/story_intro.tscn"
 
 ## Hero ids (the five of us), in the order they are rescued.
 const HEROES := ["chelzy", "sarah", "april", "kervin", "psalm"]
@@ -15,6 +16,10 @@ var unlocked_heroes: Array = ["chelzy"]
 var wheel_heroes: Array = ["chelzy"]
 ## Best stars per level id, e.g. {"level1": 3}. Saved with progress.
 var best_stars: Dictionary = {}
+## True once the backstory has been watched or skipped. Saved with progress.
+var story_seen := false
+## Where the backstory goes when it ends (set by play_story()).
+var story_next := ""
 
 # The level being played right now (reset by start_level).
 var level_id := ""
@@ -63,6 +68,12 @@ func change_scene(path: String) -> void:
 
 func reload_scene() -> void:
 	change_scene(get_tree().current_scene.scene_file_path)
+
+
+## Plays the backstory (story_intro.gd), then goes to `next_scene`.
+func play_story(next_scene: String) -> void:
+	story_next = next_scene
+	change_scene(STORY_SCENE)
 
 
 func _build_fade_layer() -> void:
@@ -198,6 +209,7 @@ func save_progress() -> void:
 	cfg.set_value("progress", "current_hero", current_hero)
 	cfg.set_value("progress", "wheel_heroes", wheel_heroes)
 	cfg.set_value("progress", "best_stars", best_stars)
+	cfg.set_value("progress", "story_seen", story_seen)
 	cfg.save(SAVE_PATH)
 
 
@@ -209,6 +221,7 @@ func load_progress() -> void:
 		# A save from before the hero wheel: the hero being played was surely typed.
 		wheel_heroes = cfg.get_value("progress", "wheel_heroes", [HEROES[0], current_hero])
 		best_stars = cfg.get_value("progress", "best_stars", best_stars)
+		story_seen = cfg.get_value("progress", "story_seen", false)
 		_drop_unknown_heroes()
 
 
@@ -237,4 +250,5 @@ func reset_progress() -> void:
 	current_hero = HEROES[0]
 	wheel_heroes = [HEROES[0]]
 	best_stars = {}
+	story_seen = false
 	save_progress()

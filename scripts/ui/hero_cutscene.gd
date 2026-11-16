@@ -98,10 +98,10 @@ func _build_card(hero_id: String, hero_name: String, data: Dictionary) -> void:
 	_card.add_child(center)
 
 	var frame := PanelContainer.new()
-	frame.add_theme_stylebox_override("panel", _box(WOOD, INK, 1, Vector4(3, 3, 3, 3), WOOD_DARK))
+	frame.add_theme_stylebox_override("panel", DialogueBox.style(WOOD, INK, 1, Vector4(3, 3, 3, 3), WOOD_DARK))
 	center.add_child(frame)
 	var paper := PanelContainer.new()
-	paper.add_theme_stylebox_override("panel", _box(PAPER, WOOD_DARK, 1, Vector4(14, 10, 14, 10)))
+	paper.add_theme_stylebox_override("panel", DialogueBox.style(PAPER, WOOD_DARK, 1, Vector4(14, 10, 14, 10)))
 	frame.add_child(paper)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 6)

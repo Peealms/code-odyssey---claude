@@ -2,12 +2,22 @@
 
 The art is from two of Pixel Frog's free packs: **Pixel Adventure 1** (the tutorial) and
 **Treasure Hunters** (Level 1). Credit "Pixel Frog" in the game and the paper.
+Level 1's signs are a note from Treasure Hunters' Wood and Paper UI (prefab 7, cropped to
+`level2_treasure_hunters/ui/sign_paper.png`).
 The exceptions are made for this game: Byte (`shared/byte/`), the team heroes
 (`shared/team/` and `shared/heroes/<name>/`, drawn by `tools/make_team_sprites.gd` and
 `tools/make_team_heroes.gd`) and the manual book icons
 (`shared/items/books.png`, drawn by `tools/make_item_icons.gd`).
-The chest window uses the Minecraftia font by Andrew Tyler (`shared/ui/fonts/minecraftia/`) -
-its readme has no licence terms, so confirm it may be used before release and credit him.
+Fonts (credit both in the paper):
+- **Pixel Operator** by Jayvee Enaguas, CC0 (`shared/ui/fonts/pixel_operator/`): the books,
+  chest window and signs. Taken from github.com/bauripalash/ttf-pixeloperator-fork, a copy of
+  the original release.
+- **JetBrains Mono** by JetBrains, SIL Open Font License 1.1 (`shared/ui/fonts/jetbrains_mono/`,
+  licence in `OFL.txt`): every line of code - the books, signs and Byte's terminal.
+- The HUD and menus keep the pixel font in `shared/ui/fonts/pixel_font.fnt`.
+- `shared/ui/fonts/minecraftia/` (Andrew Tyler, no licence terms in its readme) isn't used any
+  more and can be deleted.
+
 Sound sources and licences: `shared/audio/CREDITS.md` (all CC0).
 
 Only art the game uses is kept here. The rest of the packs (and the Kings and Pigs and Pirate

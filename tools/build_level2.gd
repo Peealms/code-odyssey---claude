@@ -16,15 +16,22 @@ const OUT := "res://scenes/levels/level2/level2.tscn"
 const TILESET_OUT := "res://resources/tilesets/level2_tileset.tres"
 const T := 32
 const BIG_SPIKES := 50.0  ## Damage of the big floor and ceiling spikes (x, V).
+## How much of a `_` tile the low beam fills. The 14 px left under it fit tiny Psalm (12 px) but
+## clearly not full-size Psalm (drawn 19 px tall, 24 px hitbox).
+const BEAM := 18.0
 const ISLAND_TEX := "res://assets/level2_treasure_hunters/tiles/island_terrain_32x32.png"
 const PLANK_TEX := "res://assets/level2_treasure_hunters/tiles/ship_platforms_32x32.png"
+## A pinned-up note from Treasure Hunters' Wood and Paper UI (prefab 7, cropped): the signs.
+const SIGN_PAPER := "res://assets/level2_treasure_hunters/ui/sign_paper.png"
 
 ## Map legend
 ##   .  air            #  ground             =  plank (jump up through it)
+##   -  plank half a tile lower (its top across the middle of the cell): for heights
+##      between whole tiles. A coin or flag right above one is lowered with it.
 ##   c  coin           K  checkpoint flag    h  manual chest       p  potion
 ##   ^  spikes (20 damage)                   x  big floor spikes (50 damage)
 ##   V  big ceiling spikes (50 damage)       ~  water (falling in sends you back to the checkpoint)
-##   _  low beam: solid top 14 px of the tile, so only tiny Psalm fits under it
+##   _  low beam: solid top 18 px of the tile, so only tiny Psalm fits under it
 ##   L  falling plank (only Kervin's sprint makes it)
 ##   A B C  path planks: solid only while `path` is that letter
 ##   < >  doorway rows (first / last column)
@@ -67,14 +74,15 @@ const R1 := [
 ]
 
 # Room 2 - the high ledge: a falling floor in a crawlspace (Kervin's sprint), then planks
-# 4 tiles up in the open that only a double jump at jumpPower 2.0 reaches. They start 5 tiles
-# from the nearest wall and end over water, so Chelzy can't climb up to them.
+# 3.5 tiles (112 px) up in the open. April's double jump reaches 100 px at jumpPower 1.0 and
+# 125 px at 1.5 (the most jumpPower allows), so it takes a number with a decimal point. They
+# start 6 tiles from the nearest wall and end over water, so Chelzy can't climb up to them.
 const R2 := [
 	"......########................",
 	"......########................",
 	"......########...............>",
 	"......########.......c..k.c..>",
-	"......########......==========",
+	"......########......----------",
 	"......########................",
 	"<..cc.########................",
 	"<K......c..c...c..............",
@@ -102,11 +110,12 @@ const R3 := [
 	"###############~~~~~~~~~~~~#############",
 ]
 
-# Room 4 - three paths: A, B or C planks over the water (the sign's riddle says B), then a
-# falling floor in a crawlspace that only Kervin's sprint gets over.
+# Room 4 - three paths: A, B or C planks over the water (the sign's riddle says B; A and C fall
+# into the sea the moment you stand on them), then a falling floor in a crawlspace that only
+# Kervin's sprint gets over.
 const R4 := [
 	"................########......",
-	"<.....c..c..c...########.....>",
+	"<..........c.c.c########.....>",
 	"<K..AAAAAAAAAAAA..c..c....P..>",
 	"####BBBBBBBBBBBB#LLLLLL#######",
 	"####CCCCCCCCCCCC#......#######",
@@ -131,8 +140,8 @@ const E1 := [
 	"#############~~~~~~~~#####",
 ]
 
-# Exam 2 - the low bridge: a 6-plank gap under a low ceiling, three paths (C this time), then a
-# wall-jump shaft up to the exit (Chelzy).
+# Exam 2 - the low bridge: a 6-plank gap under a low ceiling, three paths (C this time, level
+# with the ground; A and B fall when stood on), then a wall-jump shaft up to the exit (Chelzy).
 const E2 := [
 	"....######..........####......",
 	"....######..........####.....>",
@@ -142,8 +151,8 @@ const E2 := [
 	"....######..........####..####",
 	"<...######.....c..........####",
 	"<K....c.....AAAAAAAA.c....####",
-	"####q.....##BBBBBBBB##########",
-	"####......##CCCCCCCC##########",
+	"####q.....##CCCCCCCC##########",
+	"####......##BBBBBBBB##########",
 	"####......##........##########",
 	"####~~~~~~##~~~~~~~~##########",
 	"####~~~~~~##~~~~~~~~##########",
@@ -169,13 +178,13 @@ const E3 := [
 ## zone: rooms with the same zone count as one place for code gadgets (the exam);
 ## music: Sound track.
 const ROOMS := [
-	{"map": R0, "manual": "variables_101"},
-	{"map": R1, "manual": "numbers"},
-	{"map": R2},
-	{"map": R3, "manual": "booleans_chars"},
-	{"map": R4},
+	{"map": R0, "manual": "variables_101", "teaches": ["hero", "hasSword"]},
+	{"map": R1, "manual": "numbers", "teaches": ["bridgeLength"]},
+	{"map": R2, "teaches": ["jumpPower"]},
+	{"map": R3, "manual": "booleans_chars", "teaches": ["anchorUp"]},
+	{"map": R4, "teaches": ["path"], "safe_path": "B"},
 	{"map": E1, "manual": "changing_variables", "zone": "exam", "music": "final_exam"},
-	{"map": E2, "zone": "exam", "music": "final_exam"},
+	{"map": E2, "zone": "exam", "music": "final_exam", "safe_path": "C"},
 	{"map": E3, "zone": "exam", "music": "final_exam"},
 ]
 
@@ -213,6 +222,10 @@ var interior := {}  # absolute cell -> room index (inside a room or its doorway)
 var solid := {}  # absolute cell -> true
 var room_nodes: Array = []
 var bounds := Rect2i()
+## Names a sign may not show again. A name is shown once, on the first sign that needs it; after
+## that, finding it is the player's job. These two were named before any sign: Byte's first tip
+## says hasSword, and the tutorial's gate sign shows System.out.println.
+var named := {"hasSword": true, "System.out.println": true}
 var f := 0
 
 
@@ -250,13 +263,20 @@ func _build() -> void:
 	terrain.tile_set = tileset
 	_paint(terrain)
 	_add(terrain)
+	# The '-' planks: the same plank tiles on a layer moved down half a tile.
+	var low := TileMapLayer.new()
+	low.name = "LowPlanks"
+	low.tile_set = tileset
+	low.position = Vector2(0, T / 2.0)
+	_paint_planks(low, "-")
+	_add(low)
 
+	var signs := _group("Signs")  # right after the terrain: drawn over the rock, under everything else
 	var rooms := _group("Rooms")
 	var things := _group("Gadgets")
 	var coins := _group("Coins")
 	var traps := _group("Traps")
 	var flags := _group("Checkpoints")
-	var signs := _group("Signs")
 
 	# ---------------- Room 0: the wide gap (Chelzy, then Sarah) ----------------
 	_room(rooms, 0, "THE WIDE GAP",
@@ -264,8 +284,8 @@ func _build() -> void:
 		"String hero = \"_____\";", "String hero = \"Sarah\";")
 	_flag(flags, 0, _a(0, "k"), "april")
 	_enemy(traps, _a(0, "e"), "crabby", 32.0)
-	_sign(signs, 0, 1, 6, "ONLY A WALL JUMP\nCLIMBS THIS")
-	_sign(signs, 0, 9, 0, "TOO LOW TO JUMP!\nSARAH CAN DASH")
+	_sign(signs, 0, 0, 7, "ONLY A WALL JUMP\nCLIMBS THIS")
+	_sign(signs, 0, 7, 0, "TOO LOW TO JUMP!\nSARAH CAN DASH", "hero")
 
 	# ---------------- Room 1: the broken bridge (April) ----------------
 	_room(rooms, 1, "THE BROKEN BRIDGE",
@@ -275,16 +295,16 @@ func _build() -> void:
 	_inst("bridge", things, _px(q.x, q.y), {"max_blocks": 10, "gap_blocks": 8})  # 8 exactly: more jams and collapses
 	_shooter(traps, _a(1, "T"), "totem", 1, 3.0, 0.0, 256.0)  # shoots across the bridge
 	_flag(flags, 1, _a(1, "k"), "kervin")
-	_sign(signs, 1, 6, 1, "GAP = 8 PLANKS")
+	_sign(signs, 1, 6, 1, "GAP = 8 PLANKS", "bridgeLength")
 	_sign(signs, 1, 15, 0, "TOO HIGH FOR\nONE JUMP")
 
 	# ---------------- Room 2: the high ledge (Kervin, then April) ----------------
 	_room(rooms, 2, "THE HIGH LEDGE",
-		"Kervin can sprint over the falling floor - hold Shift while running. The planks up high are too high even for a double jump: make your first jump higher with a double called jumpPower (1.0 to 2.0 - try the highest), then double jump as April under them.",
-		"double jumpPower = ___;", "double jumpPower = 2.0;")
+		"Kervin can sprint over the falling floor - hold Shift while running. The planks up high are too high even for a double jump: make your first jump higher with a double called jumpPower (1.0 to 1.5 - it needs a decimal point), then double jump as April under them.",
+		"double jumpPower = ___;", "double jumpPower = 1.5;")
 	_flag(flags, 2, _a(2, "k"), "psalm")
 	_sign(signs, 2, 1, 4, "RUN FAST!")
-	_sign(signs, 2, 15, 5, "TOO HIGH!\nJUMP HIGHER")
+	_sign(signs, 2, 15, 5, "TOO HIGH!\nJUMP HIGHER", "jumpPower")
 
 	# ---------------- Room 3: the ship (Psalm, the sword, Chelzy) ----------------
 	_room(rooms, 3, "THE SHIP",
@@ -292,27 +312,27 @@ func _build() -> void:
 		"boolean anchorUp = ____;", "boolean anchorUp = true;")
 	_ship(things, 3)
 	_enemy(traps, _a(3, "e"), "crabby", 24.0)
-	_sign(signs, 3, 4, 3, "TINY PSALM FITS\nUNDER THE BEAMS")
-	_sign(signs, 3, 15, 3, "THE SHIP IS\nANCHORED")
-	_sign(signs, 3, 27, 4, "A CRAB! NO WAY\nOVER IT: FIGHT!")
+	_sign(signs, 3, 3, 3, "TINY PSALM FITS\nUNDER THE BEAMS")
+	_sign(signs, 3, 15, 3, "THE SHIP IS\nANCHORED", "anchorUp")
+	_sign(signs, 3, 25, 4, "A CRAB! NO WAY\nOVER IT: FIGHT!")  # hasSword: Byte's first tip named it
 
 	# ---------------- Room 4: three paths (Kervin) ----------------
 	_room(rooms, 4, "THREE PATHS",
-		"The sign's riddle: the 2nd letter of the alphabet. Choose it with a char called path - single quotes! Coins are on path A too: go back to the ledge, change path, collect, come back. The falling floor at the end needs Kervin's sprint.",
+		"The sign's riddle: the 2nd letter of the alphabet. Choose it with a char called path - single quotes! A wrong path falls into the sea as soon as you stand on it. The falling floor at the end needs Kervin's sprint.",
 		"char path = '_';", "char path = 'B';")
 	_enemy(traps, _a(4, "P"), "pink_star", 32.0)
-	_sign(signs, 4, 4, 0, "SAFE PATH = THE 2ND\nLETTER OF THE ABC")
+	_sign(signs, 4, 5, 0, "SAFE PATH = THE 2ND\nLETTER OF THE ABC", "path")
 
 	# ---------------- The exam: every variable gets a new value ----------------
 	_room(rooms, 5, "EXAM 1: THE LOW CAVE",
 		"With a high jumpPower every jump hits the ceiling spikes. Change jumpPower back to 1.0. Then only Psalm fits under the beams, and only Kervin's sprint makes it over the falling floor.",
 		"jumpPower = ___;", "jumpPower = 1.0;")
 	_room(rooms, 6, "EXAM 2: THE LOW BRIDGE",
-		"This gap is 6 planks wide. bridgeLength already exists - give it the new number. Then the safe path is the 3rd letter: change path (single quotes!). Chelzy climbs the shaft at the end.",
+		"This gap is 6 planks wide. bridgeLength already exists - give it the new number. Then the safe path is the 3rd letter: change path (single quotes!) - a wrong path falls. Chelzy climbs the shaft at the end.",
 		"bridgeLength = _;", "bridgeLength = 6;")
 	q = _a(6, "q")
 	_inst("bridge", things, _px(q.x, q.y), {"max_blocks": 8, "gap_blocks": 6})
-	_sign(signs, 6, 4, 7, "GAP = 6\nPLANKS")
+	_sign(signs, 6, 0, 3, "GAP = 6 PLANKS")
 	_sign(signs, 6, 12, 2, "SAFE PATH = THE\n3RD LETTER")
 	_room(rooms, 7, "EXAM 3: THE TREASURE",
 		"This ship is anchored too: anchorUp already exists, so set it without the type and ride across. Print exactly: I can code! Then Captain Clown Nose guards the treasure. Have your sword (hasSword), switch heroes with Q to dodge him - April jumps his charge, tiny Psalm ducks his thrown sword, Sarah dashes from his swing - and hit him while he's dizzy.",
@@ -320,7 +340,8 @@ func _build() -> void:
 	_ship(things, 7)
 	_inst("gate", things, _foot(_a(7, "g")), {"height": 3, "required_text": "I can code!"})
 	_captain(7)
-	_sign(signs, 7, 14, 0, "PRINT\n\"I can code!\"")
+	# Left of Byte's gate (col 16): its boxes stand 3 high, right up to the sign's row.
+	_sign(signs, 7, 11, 0, "PRINT\n\"I can code!\"")  # println: the tutorial's gate sign named it
 	_sign(signs, 7, 21, 1, "HOLD Q TO SWITCH HEROES!\nCHARGE - APRIL JUMPS\nTHROW - TINY PSALM\nSWING - SARAH DASHES")
 
 	# ---------------- Map characters ----------------
@@ -414,7 +435,7 @@ func _place_rooms() -> void:
 				interior[cell] = i
 				if ch == "#":
 					solid[cell] = true
-				elif not ch in [".", "=", "c", "K", "h", "p", "^", "x", "V", "~", "_", "L", "A", "B", "C", "<", ">"]:
+				elif not ch in [".", "=", "-", "c", "K", "h", "p", "^", "x", "V", "~", "_", "L", "A", "B", "C", "<", ">"]:
 					if not a.has(ch):
 						a[ch] = []
 					a[ch].append(cell)
@@ -466,15 +487,25 @@ func _make_tileset() -> TileSet:
 func _paint(layer: TileMapLayer) -> void:
 	for cell in solid:
 		layer.set_cell(cell, 0, _shape(cell))
+	_paint_planks(layer, "=")
+
+
+## The plank tiles for every `ch` cell, with end pieces where a row of them stops.
+func _paint_planks(layer: TileMapLayer, ch: String) -> void:
 	for i in ROOMS.size():
 		for yy in sizes[i].y:
 			for xx in sizes[i].x:
-				if grids[i][Vector2i(xx, yy)] != "=":
+				if grids[i][Vector2i(xx, yy)] != ch:
 					continue
-				var left: bool = grids[i].get(Vector2i(xx - 1, yy), "") == "="
-				var right: bool = grids[i].get(Vector2i(xx + 1, yy), "") == "="
+				var left: bool = grids[i].get(Vector2i(xx - 1, yy), "") == ch
+				var right: bool = grids[i].get(Vector2i(xx + 1, yy), "") == ch
 				var col := 4 if not left and not right else (1 if not left else (3 if not right else 2))
 				layer.set_cell(origins[i] + Vector2i(xx, yy), 1, Vector2i(col, 1))
+
+
+## How far down (px) something in room i's local `cell` goes to sit on a '-' plank below it.
+func _low(i: int, cell: Vector2i) -> float:
+	return T / 2.0 if grids[i].get(cell + Vector2i.DOWN, "") == "-" else 0.0
 
 
 ## Which piece of the 3x3 block (plus pillars, bars and inner corners) a solid cell needs,
@@ -535,7 +566,7 @@ func _place_map_things(i: int, coins: Node, traps: Node, flags: Node, things: No
 						var coin := Area2D.new()
 						coin.name = "Coin"
 						coin.set_script(load(L2 + "coin.gd"))
-						coin.position = _px(c.x + k + 0.5, c.y + 0.5)
+						coin.position = _px(c.x + k + 0.5, c.y + 0.5) + Vector2(0, _low(i, Vector2i(x + k, y)))
 						_add(coin, coins)
 				"^", "x":
 					_inst("spikes", traps, _px(c.x, c.y + 1), {"count": run * 2, "damage": BIG_SPIKES if ch == "x" else 20.0})
@@ -555,7 +586,7 @@ func _place_map_things(i: int, coins: Node, traps: Node, flags: Node, things: No
 				"A", "B", "C":
 					for k in run:
 						_inst("path", things, Vector2((c.x + k + 0.5) * T, c.y * T + 3), {
-							"letter": ch, "show_letter": not lettered.has(ch)})
+							"letter": ch, "show_letter": not lettered.has(ch), "safe": ch == ROOMS[i].get("safe_path", ch)})
 						lettered[ch] = true
 				"_":
 					for k in run:
@@ -569,22 +600,28 @@ func _place_map_things(i: int, coins: Node, traps: Node, flags: Node, things: No
 			x += run
 
 
-## A wooden beam filling the top 14 px of the cell: only tiny Psalm fits under it.
+## A wooden beam filling the top BEAM px of the cell: only tiny Psalm fits under it.
 func _beam(parent: Node, cell: Vector2i) -> void:
 	var body := StaticBody2D.new()
 	body.name = "Beam"
 	body.collision_layer = 1
-	body.position = _px(cell.x + 0.5, cell.y + 7.0 / T)
+	body.position = _px(cell.x + 0.5, cell.y + BEAM / 2.0 / T)
 	var shape := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
-	rect.size = Vector2(T, 14)
+	rect.size = Vector2(T, BEAM)
 	shape.shape = rect
 	body.add_child(shape)
-	var art := Sprite2D.new()
-	art.texture = load(PLANK_TEX)
-	art.region_enabled = true
-	art.region_rect = Rect2(64, 64, 32, 14)
-	body.add_child(art)
+	# The plank art is only 9 px tall, so two planks (the lower one darker) fill the beam's
+	# whole 18 px: what you see is exactly what blocks you.
+	for dy in [9.0, 0.0]:
+		var art := Sprite2D.new()
+		art.texture = load(PLANK_TEX)
+		art.region_enabled = true
+		art.region_rect = Rect2(64, 65, 32, 9)
+		art.position.y = -BEAM / 2.0 + dy + 4.5
+		if dy > 0.0:
+			art.modulate = Color(0.7, 0.7, 0.7)
+		body.add_child(art)
 	_add(body, parent)
 
 
@@ -595,14 +632,16 @@ func _room(parent: Node, i: int, title: String, hint: String, blanks: String, an
 	var size := Vector2(sizes[i].x + 1, sizes[i].y) * T
 	var node := _inst("room", parent, Vector2(origins[i]) * T + size / 2.0, {
 		"size": size, "title": title, "hint": hint, "blanks": blanks, "answer": answer,
-		"zone": ROOMS[i].get("zone", ""), "music": ROOMS[i].get("music", "rooms")})
+		"zone": ROOMS[i].get("zone", ""), "music": ROOMS[i].get("music", "rooms"),
+		"teaches": PackedStringArray(ROOMS[i].get("teaches", []))})
 	node.name = "Room%d_%s" % [i, title.get_slice(":", title.count(":")).strip_edges().replace(" ", "_").replace("'", "")]
 	room_nodes.append(node)
 
 
 ## A rescue flag: the hero waits beside it until every coin in room i is collected.
 func _flag(parent: Node, i: int, cell: Vector2i, hero: String) -> void:
-	_inst("checkpoint", parent, _foot(cell), {"unlock_hero": hero, "room": room_nodes[i]})
+	var drop := _low(i, cell - origins[i])
+	_inst("checkpoint", parent, _foot(cell) + Vector2(0, drop), {"unlock_hero": hero, "room": room_nodes[i]})
 
 
 ## Captain Clown Nose in room i. He waits at X; his arena runs from the `a` cell to the room's
@@ -714,13 +753,21 @@ func _inst(key: String, parent: Node, pos: Vector2, props := {}, node_name := ""
 	return n
 
 
-## A sign at tile (c, r) of room i's map.
-func _sign(parent: Node, i: int, c: int, r: int, text: String) -> void:
-	var l := Label.new()
-	l.text = text
-	l.position = _px(origins[i].x + c, origins[i].y + r) + Vector2(4, 4)
-	l.add_theme_color_override("font_color", Color(1, 1, 1, 0.9))
-	l.add_theme_color_override("font_shadow_color", Color(0.129, 0.122, 0.188, 1))
-	l.add_theme_constant_override("shadow_offset_x", 1)
-	l.add_theme_constant_override("shadow_offset_y", 1)
-	_add(l, parent)
+## A sign (scripts/objects/sign_board.gd, on Treasure Hunters parchment) at tile (c, r) of room
+## i: the clue, and under it the name of the variable that solves it ("bridgeLength"). Only the
+## name, and only the first time: the type, the value and later uses are the player's to work
+## out (the Variable Dictionary helps). A name already shown is dropped, with a warning.
+func _sign(parent: Node, i: int, c: int, r: int, text: String, code := "") -> void:
+	if named.has(code):
+		push_warning("Sign '%s': %s was already named on an earlier sign, so it's left off." % [text.replace("\n", " "), code])
+		code = ""
+	if code != "":
+		named[code] = true
+	var sign := Node2D.new()
+	sign.name = "Sign"
+	sign.set_script(load("res://scripts/objects/sign_board.gd"))
+	sign.set("text", text)
+	sign.set("code", code)
+	sign.set("paper", load(SIGN_PAPER))  # Treasure Hunters' parchment, not the tutorial's board
+	sign.position = _px(origins[i].x + c, origins[i].y + r) + Vector2(4, 4)
+	_add(sign, parent)

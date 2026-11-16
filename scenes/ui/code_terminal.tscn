@@ -2,9 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/terminal/code_terminal.gd" id="1_script"]
 [ext_resource type="SpriteFrames" path="res://assets/shared/byte/byte_frames.tres" id="2_frames"]
-
-[sub_resource type="SystemFont" id="mono"]
-font_names = PackedStringArray("Consolas", "Courier New", "Monospace")
+[ext_resource type="FontFile" path="res://assets/shared/ui/fonts/jetbrains_mono/JetBrainsMono-Regular.ttf" id="3_mono"]
 
 [sub_resource type="StyleBoxFlat" id="screen"]
 content_margin_left = 8.0
@@ -138,7 +136,7 @@ text = "SHOW ANSWER: -1 STAR"
 layout_mode = 2
 size_flags_vertical = 3
 focus_mode = 0
-theme_override_fonts/normal_font = SubResource("mono")
+theme_override_fonts/normal_font = ExtResource("3_mono")
 theme_override_font_sizes/normal_font_size = 8
 theme_override_styles/normal = SubResource("empty")
 bbcode_enabled = true
@@ -150,7 +148,7 @@ layout_mode = 2
 [node name="Prompt" type="Label" parent="Panel/HBox/VBox/InputRow"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.368627, 0.94902, 0.878431, 1)
-theme_override_fonts/font = SubResource("mono")
+theme_override_fonts/font = ExtResource("3_mono")
 theme_override_font_sizes/font_size = 9
 text = ">"
 
@@ -160,7 +158,7 @@ size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/caret_color = Color(0.368627, 0.94902, 0.878431, 1)
 theme_override_colors/font_placeholder_color = Color(0.560784, 0.639216, 0.74902, 0.7)
-theme_override_fonts/font = SubResource("mono")
+theme_override_fonts/font = ExtResource("3_mono")
 theme_override_font_sizes/font_size = 9
 theme_override_styles/normal = SubResource("input_box")
 theme_override_styles/focus = SubResource("empty")

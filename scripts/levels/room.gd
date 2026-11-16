@@ -26,6 +26,8 @@ signal fruit_changed(collected: int, total: int)
 @export var zone := ""
 ## Music track (see Sound.MUSIC) that plays while the player is in this room.
 @export var music := "rooms"
+## Variables first needed here: walking in fills in their Variable Dictionary pages.
+@export var teaches: PackedStringArray = []
 
 var wrong_tries := 0
 var answer_shown := false  ## Only the first "Show answer" in a room costs a star.
@@ -92,6 +94,10 @@ func _on_body_entered(body: Node2D) -> void:
 		fader.show_background(background)
 	if music != "":
 		Sound.music(music)
+	var reader := get_tree().get_first_node_in_group("manual_reader")
+	if reader:
+		for v in teaches:
+			reader.unlock(v)
 	_entered = true
 
 

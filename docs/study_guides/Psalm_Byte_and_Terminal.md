@@ -18,7 +18,7 @@
   not declared yet -> value fits the type -> value is allowed (range, hero rescued).
   Also checks `System.out.println(...)`. Returns pass/fail steps with an error message.
 - `scripts/terminal/variable_library.gd` - every variable the game knows: hero, hasSword,
-  bridgeLength, jumpPower, anchorUp, path, with its type and rules (e.g. jumpPower 1.0-2.0).
+  bridgeLength, jumpPower, anchorUp, path, with its type and rules (e.g. jumpPower 1.0-1.5: the answer needs a decimal point).
   Each level's terminal picks its **Allowed Variables**.
 - `scripts/gadgets/code_gadget.gd` - base class for anything code-driven. Set `variable_name`,
   override `_on_value`. Children: `code_bridge` (int), `code_ship` (boolean), `path_platform`
@@ -29,12 +29,16 @@
 ### Key ideas to be able to say
 - **Redeclaration rule (Java's rule):** `String hero = "X";` when `hero` exists is refused.
   Byte explains and puts the fixed line `hero = "X";` in the input. It is not counted as a wrong try.
-  (`allow_redeclare` switch exists.)
+  (`allow_redeclare` switch exists.) It's taught **before** it happens: the first variable made
+  in a level adds a RULE line to the log and emits `first_declaration`; Level 1 then has Byte
+  stop the game to say a variable is made only once.
+- **Wrong path:** standing on a path the sign doesn't name drops it (`path_platform.gd`) and
+  calls `terminal.wrong_path(letter)`: Byte says why, and it counts as a wrong try.
 - **Type errors teach:** `int bridgeLength = 5.5;` -> Byte explains int can't hold decimals.
 - **Gadgets only react in their own room** (or that room's doorway), so the exam can reuse
   `bridgeLength`, `anchorUp` and `path` without changing solved rooms. The exam's rooms share a **zone**.
 - Puzzle code: tutorial `System.out.println("Hi");` | Level 1: R0 `String hero = "Sarah";` |
-  R1 `int bridgeLength = 8;` | R2 `double jumpPower = 2.0;` | R3 `boolean anchorUp = true;` |
+  R1 `int bridgeLength = 8;` | R2 `double jumpPower = 1.5;` | R3 `boolean anchorUp = true;` |
   R4 `char path = 'B';` | exam `jumpPower = 1.0;`, `bridgeLength = 6;`, `path = 'C';`,
   `anchorUp = true;`, `System.out.println("I can code!");`.
 - **Signals** (Godot's event system) decouple everything: the terminal emits, gadgets listen.

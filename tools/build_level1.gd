@@ -147,7 +147,7 @@ func _build() -> void:
 		"System.out.println(\"_____\");", "System.out.println(\"Hello Byte\");")
 	_inst("gate", gadgets, _foot(_a(0, "g")), {"height": 3})
 	_flag(flags, 0, _a(0, "k"), "sarah")
-	_sign(signs, 0, 1, 13, "BYTE'S GATE: PRINT\nA MESSAGE TO OPEN IT")
+	_sign(signs, 0, 1, 13, "BYTE'S GATE: PRINT\nA MESSAGE TO OPEN IT", "System.out.println")
 	_sign(signs, 0, 21, 13, "ONLY A WALL JUMP\nCLIMBS THIS SHAFT")
 	_sign(signs, 0, 1, 1, "FRUIT GALLERY")
 
@@ -481,13 +481,14 @@ func _flag(parent: Node, i: int, cell: Vector2i, hero: String) -> Node:
 	return _inst("checkpoint", parent, _foot(cell), props)
 
 
-## A sign at tile (c, r) of room i's map.
-func _sign(parent: Node, i: int, c: int, r: int, text: String) -> void:
-	var l := Label.new()
-	l.text = text
-	l.position = _px(origins[i].x + c, origins[i].y + r)
-	l.add_theme_color_override("font_color", Color(1, 1, 1, 0.9))
-	l.add_theme_color_override("font_shadow_color", Color(0.129, 0.122, 0.188, 1))
-	l.add_theme_constant_override("shadow_offset_x", 1)
-	l.add_theme_constant_override("shadow_offset_y", 1)
-	_add(l, parent)
+## A wooden sign (scripts/objects/sign_board.gd) at tile (c, r) of room i's map: the clue, and
+## under it the code that solves it ("" for none).
+func _sign(parent: Node, i: int, c: int, r: int, text: String, code := "") -> void:
+	var sign := Node2D.new()
+	sign.name = "Sign"
+	sign.set_script(load("res://scripts/objects/sign_board.gd"))
+	sign.set("text", text)
+	sign.set("code", code)
+	sign.set("small", true)  # 16 px tiles: half-size letters
+	sign.position = _px(origins[i].x + c, origins[i].y + r)
+	_add(sign, parent)

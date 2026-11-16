@@ -16,6 +16,8 @@ signal closed
 ## A wrong line counted in `room` (`tries` = that room's wrong tries so far). The tutorial
 ## listens to it to explain hints and "Show answer".
 signal wrong_try(room: Room, tries: int)
+## The player's first declaration in this level worked (the level can teach "declare once").
+signal first_declaration(name: String)
 
 const STEP_DELAY := 0.18  ## Seconds between Byte's checklist lines.
 const HINT_AT := 3  ## Wrong tries in a room before the hint and "Show answer".
@@ -56,6 +58,7 @@ var _history: Array[String] = []
 var _history_index := 0
 var _player_input_before := true
 var _confirming_answer := false
+var _told_declare_once := false
 
 @onready var panel: PanelContainer = $Panel
 @onready var portrait: AnimatedSprite2D = $Panel/HBox/Portrait/Sprite
@@ -188,10 +191,11 @@ func _run_action(action: Dictionary) -> void:
 
 	var name: String = action["name"]
 	var value = action["value"]
-	if name == "hero" and value != player.hero_id and not player.can_change_hero():
-		# Valid Java, but Psalm is shrunk in a tunnel where a bigger hero wouldn't fit.
+	if name == "hero" and value != player.hero_id and not player.can_change_hero(value):
+		# Valid Java, but the new hero wouldn't fit here (shrunk Psalm in a tunnel, or Chelzy in a
+		# crawlspace).
 		Sound.play("blocked")
-		_byte_line("No room! Psalm is squeezed under a low ceiling. Get out of the tunnel first, then switch.")
+		_byte_line("No room! " + player.no_room_reason(value))
 		if byte:
 			byte.react(false)
 			byte.say("NO ROOM!", 1.5)
@@ -206,6 +210,11 @@ func _run_action(action: Dictionary) -> void:
 		_byte_line("Nice! You made %s and stored %s in it." % [name, values[name]])
 	else:
 		_byte_line("Nice! %s changed to %s." % [name, values[name]])
+	if action["declare"] and not _told_declare_once:
+		# The first variable made: say straight away that it's made only once.
+		_told_declare_once = true
+		_append("[color=#%s]   RULE: %s exists now. Java makes a variable only ONCE. To change it later, leave out the type: %s = ...;[/color]" % [COLOR_ANSWER, name, name])
+		first_declaration.emit(name)
 	if joined_wheel:
 		_byte_line("%s is on your hero wheel now! Close me, then hold Q to switch heroes without typing." % values[name])
 	if byte:
@@ -230,11 +239,11 @@ func _apply_value(name: String, value: Variant) -> void:
 
 ## The hero wheel (hold Q) switches hero. If `hero` exists in the code it changes too, exactly
 ## like typing hero = "April";, and the line shows in the log.
-## Returns false if Psalm is shrunk somewhere a bigger hero wouldn't fit.
+## Returns false if that hero wouldn't fit here (see Player.can_change_hero).
 func switch_from_wheel(hero_id: String) -> bool:
 	if hero_id == player.hero_id:
 		return true
-	if not player.can_change_hero():
+	if not player.can_change_hero(hero_id):
 		return false
 	if not values.has("hero"):
 		return player.set_hero(hero_id)
@@ -280,6 +289,17 @@ func byte_says(text: String) -> void:
 		_byte_line(text)
 	else:
 		pending_hint = text
+
+
+## The player stood on a path the sign doesn't name, and it fell (path_platform.gd). It counts
+## as a wrong try, so the room's hint still comes after three.
+func wrong_path(letter: String) -> void:
+	Sound.play("code_error")
+	if byte:
+		byte.react(false)
+		byte.say("WRONG PATH!", 2.0)
+	byte_says("Path %s wasn't safe, so it fell into the sea! Read the sign again: which letter does it name? path already exists, so change it without the type." % letter)
+	_count_wrong_try()
 
 
 func _count_wrong_try(room: Room = null) -> void:

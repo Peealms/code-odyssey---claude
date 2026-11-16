@@ -7,7 +7,7 @@
 - Design docs: `docs/level1_design.md` (the tutorial) and `docs/level2_design.md` (Level 1).
 - Why the game was cut down from four levels to two: `docs/cut_list.md`.
 - Asset credits: `assets/README.md`, `assets/shared/audio/CREDITS.md` (Pixel Frog art packs, CC0 audio).
-- Test evidence: `tools/test_level1.gd` (26 checks) and `tools/test_level2.gd` (80 checks) play
+- Test evidence: `tools/test_level1.gd` (26 checks) and `tools/test_level2.gd` (95 checks) play
   every room automatically and print PASS/FAIL, including every anti-skip obstacle.
 - Study guides: this folder (`docs/study_guides/`).
 

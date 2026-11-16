@@ -21,7 +21,7 @@
 | Tutorial | Wake up | the terminal, manuals, `println` | Chelzy's wall-jump shaft; rescues Sarah |
 | Level 1 | 0 The wide gap | `String hero` | Chelzy's shaft, then Sarah's dash in a crawlspace; rescues April |
 | | 1 The broken bridge | `int bridgeLength = 8` (9 collapses, 5.5 error) | April's double jump to planks 3 tiles up over water; rescues Kervin |
-| | 2 The high ledge | `double jumpPower = 2.0` | Kervin's sprint over falling planks, April's double jump to planks 4 tiles up; rescues Psalm |
+| | 2 The high ledge | `double jumpPower = 1.5` | Kervin's sprint over falling planks, April's double jump to planks 3.5 tiles up (`-`, half a tile lower); rescues Psalm |
 | | 3 The ship | `boolean anchorUp = true`, `boolean hasSword = true` | tiny Psalm under beams, the ship, a crab to fight, Chelzy's shaft |
 | | 4 Three paths | `char path = 'B'` | Kervin's sprint over falling planks |
 | | Exam 1 The low cave | `jumpPower = 1.0` (ceiling spikes) | tiny Psalm under a beam, Kervin's falling floor |
@@ -33,10 +33,14 @@ Coins per Level 1 room: 7, 9, 7, 5, 5, then 3 / 5 / 3 in the exam. The tutorial 
 ### The generators (be able to explain them)
 Both builders read **text maps**: one character per tile. Level 1's legend: `#` ground, `=`
 plank, `c` coin, `^` spikes (20 damage), `x` / `V` big floor / ceiling spikes (50 damage), `~`
-water, `_` beam, `L` falling plank, `A B C` path planks, `K` checkpoint, `h` chest, `p` potion,
+water, `_` beam, `-` plank half a tile lower, `L` falling plank, `A B C` path planks, `K` checkpoint, `h` chest, `p` potion,
 `<` `>` doorways; any other letter is an anchor the room's code puts something on (`S`/`Z` the
 ship's two docks, `q` the bridge, `g` the gate, `a` the arena's edge, `X` the captain, `G` the
-treasure, `k` a rescue flag, `e` a crab). Edit a map,
+treasure, `k` a rescue flag, `e` a crab). A beam fills the top 18 px of its tile (`BEAM`). In
+`ROOMS`, `teaches` lists the variables whose dictionary pages a room fills in, and
+`safe_path` is the only path letter that doesn't drop. `_sign(..., text, code)` makes a
+parchment sign; `code` is a variable's name, shown only the first time (the `named` list
+drops repeats). Every sign sits in open air, clear of coins and path letters. Edit a map,
 then re-run, e.g. `godot --headless --path . --script res://tools/build_level2.gd` (it
 overwrites level2.tscn). `tools/test_level1.gd` and `tools/test_level2.gd` play every room
 automatically and print PASS/FAIL checks.

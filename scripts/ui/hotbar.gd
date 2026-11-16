@@ -1,7 +1,9 @@
 extends CanvasLayer
-## Minecraft-style hotbar: 5 slots at the bottom of the screen.
-## Keys 1-5 or the mouse wheel pick a slot; the selected slot is the item in the hero's hand.
+## Minecraft-style hotbar: 6 slots at the bottom of the screen.
+## Keys 1-6 or the mouse wheel pick a slot; the selected slot is the item in the hero's hand.
 ## Item names and icons come from ItemDB.
+## set_badge(item, true) puts a bobbing NEW tag on that item's slot (the Variable Dictionary,
+## while it has a page the player hasn't read).
 
 const SLOT_SIZE := 22
 const ICON_SCALE := 1.0
@@ -9,6 +11,8 @@ const ICON_SCALE := 1.0
 const SLOT_BG := Color(0.12, 0.12, 0.14, 0.6)
 const SLOT_BORDER := Color(0.55, 0.55, 0.6, 0.9)
 const SELECTED_BORDER := Color(1, 1, 1, 1)
+const BADGE := Color("c0392b")
+const BADGE_EDGE := Color("33323d")
 
 @export var player: CharacterBody2D
 
@@ -16,6 +20,8 @@ var _slots: Array[Panel] = []
 var _icons: Array[Control] = []
 var _name_tween: Tween
 var _last_held := ""
+var _badges := {}  ## Item ids whose slot shows the NEW tag.
+var _time := 0.0
 
 @onready var bar: HBoxContainer = $Bar
 @onready var item_name: Label = $ItemName
@@ -54,6 +60,28 @@ func _unhandled_input(event: InputEvent) -> void:
 			player.select_slot(player.selected_slot + 1)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			player.select_slot(player.selected_slot - 1)
+
+
+## Shows or hides the NEW tag on the slot holding `item_id` (it follows the item if it moves).
+func set_badge(item_id: String, on: bool) -> void:
+	if on:
+		_badges[item_id] = true
+	else:
+		_badges.erase(item_id)
+	_refresh()
+
+
+func has_badge(item_id: String) -> bool:
+	return _badges.has(item_id)
+
+
+func _process(delta: float) -> void:
+	if _badges.is_empty():
+		return
+	_time += delta
+	for i in _icons.size():
+		if player.inventory[i] in _badges:
+			_icons[i].queue_redraw()
 
 
 func _refresh() -> void:
@@ -102,6 +130,13 @@ func _draw_icon(icon: Control, slot: int) -> void:
 	icon.draw_set_transform(center, angle, Vector2.ONE * ICON_SCALE)
 	icon.draw_texture_rect_region(item["texture"], Rect2(-region.size / 2.0, region.size), region)
 	icon.draw_set_transform(Vector2.ZERO)
+	if id in _badges:
+		# A red NEW tag over the slot's top edge, bobbing a pixel up and down.
+		var bob := 1.0 if fmod(_time, 0.8) < 0.4 else 0.0
+		var tag := Rect2(icon.size.x - 15.0, -8.0 - bob, 19.0, 9.0)
+		icon.draw_rect(tag, BADGE)
+		icon.draw_rect(tag, BADGE_EDGE, false, 1.0)
+		icon.draw_string(GameFonts.TEXT_BOLD, tag.position + Vector2(3, 7), "NEW", HORIZONTAL_ALIGNMENT_LEFT, -1, GameFonts.SMALL_TEXT_SIZE, Color.WHITE)
 
 
 func _slot_style(selected: bool) -> StyleBoxFlat:

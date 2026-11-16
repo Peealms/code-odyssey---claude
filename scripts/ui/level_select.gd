@@ -125,7 +125,11 @@ func _play_selected() -> void:
 		return
 	_starting = true
 	Sound.play("ui_select")
-	Game.change_scene(LEVELS[_target]["scene"])
+	var scene: String = LEVELS[_target]["scene"]
+	if LEVELS[_target]["id"] == "level1" and not Game.story_seen:
+		Game.play_story(scene)  # the first time, the backstory plays before the tutorial
+	else:
+		Game.change_scene(scene)
 
 
 func _back() -> void:
