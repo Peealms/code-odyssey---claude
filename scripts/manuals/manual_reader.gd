@@ -1,20 +1,29 @@
 extends CanvasLayer
 ## Shows a manual from ManualLibrary as an open book: two parchment pages side by side, split by
-## the spine (like Minecraft's book and quill), in a leather cover with Byte's teal bookmark.
-## The game pauses while it's open.
+## the spine, in a leather cover with Byte's teal bookmark. The game pauses while it's open.
 ## A / D (or the arrow keys, or the arrow buttons) turn two pages at a time; F or Esc closes it.
 ## Chests find this node through the "manual_reader" group, so put one in every level.
 ## The book is built in code below; change the colours and sizes in the constants.
+##
+## A page is a list of blocks, top to bottom (see manual_library.gd):
+##   "BBCode text"                         words, with [code]...[/code] for code
+##   {"diagram": [...], "box": "..."}      a labelled line of code (CodeDiagram)
+## A page can also need a variable: {"needs": "bridgeLength", "blocks": [...]} stays locked
+## until a room calls unlock("bridgeLength") (the Variable Dictionary fills in as you play).
+## A page filled in but not seen yet is "unread": the book opens straight at it, its header says
+## NEW PAGE!, and `unread_changed` lets the hotbar show a NEW badge until it's read.
 
 signal closed
+signal page_unlocked(variable: String)
+signal unread_changed(count: int)
 
-const FONT := preload("res://assets/shared/ui/fonts/minecraftia/Minecraftia-Regular.ttf")
 const NEXT_ICON := preload("res://assets/shared/ui/buttons/next.png")
 const PREV_ICON := preload("res://assets/shared/ui/buttons/previous.png")
 const CLOSE_ICON := preload("res://assets/shared/ui/buttons/close.png")
 
-const BOOK_SIZE := Vector2(540, 300)
-const PAGE_SIZE := Vector2(244, 262)
+const BOOK_SIZE := Vector2(616, 330)
+const PAGE_SIZE := Vector2(294, 300)
+const BODY_POS := Vector2(12, 20)  ## Where the page's text starts.
 const LEATHER := Color("6b3e26")
 const LEATHER_DARK := Color("3b2114")
 const GOLD := Color("e0b04a")
@@ -26,13 +35,19 @@ const TEAL := Color("2a9d8f")
 const CODE_BG := Color("2b2135")
 const CODE_INK := Color("7cf07c")
 const INLINE_CODE := Color("1e6f66")
-const FONT_SIZE := 8
+const NEW_COLOR := Color("c0392b")
+
+## Variables whose dictionary pages are filled in, in this level.
+var unlocked := {}
+## Filled-in pages the player hasn't seen yet, oldest first.
+var unread: Array[String] = []
 
 var _manual: Dictionary = {}
+var _new_here: Array[String] = []  ## Unread pages on the spread being shown (their header says NEW).
 var _spread := 0  ## Index of the left page being shown (always even).
 
 var _book: Control
-var _pages: Array[RichTextLabel] = []
+var _pages: Array[VBoxContainer] = []
 var _headers: Array[Label] = []
 var _prev: TextureButton
 var _next: TextureButton
@@ -53,6 +68,12 @@ func open(manual_id: String) -> void:
 		push_warning("Unknown manual: %s" % manual_id)
 		return
 	_spread = 0
+	# Straight to the newest page the player hasn't seen yet (the one the note just named).
+	for k in range(unread.size() - 1, -1, -1):
+		var page := _page_of(unread[k])
+		if page != -1:
+			_spread = page / 2 * 2
+			break
 	_title.text = _manual["title"]
 	_show_spread()
 	Sound.play("page_turn")
@@ -72,6 +93,26 @@ func close() -> void:
 	Sound.play("terminal_close")
 	get_tree().paused = false
 	closed.emit()
+
+
+## Fills in a variable's dictionary page. Returns true the first time.
+func unlock(variable: String) -> bool:
+	if unlocked.has(variable):
+		return false
+	unlocked[variable] = true
+	unread.append(variable)
+	page_unlocked.emit(variable)
+	unread_changed.emit(unread.size())
+	return true
+
+
+## The index of the page that needs `variable` in the open manual, or -1.
+func _page_of(variable: String) -> int:
+	var pages: Array = _manual.get("pages", [])
+	for i in pages.size():
+		if pages[i] is Dictionary and pages[i].get("needs", "") == variable:
+			return i
+	return -1
 
 
 func _input(event: InputEvent) -> void:
@@ -108,24 +149,72 @@ func _show_spread() -> void:
 	var pages: Array = _manual["pages"]
 	for side in 2:
 		var i := _spread + side
+		var body := _pages[side]
+		for child in body.get_children():
+			body.remove_child(child)
+			child.queue_free()
+		# The first page starts lower, under the title.
+		body.position.y = BODY_POS.y + (22.0 if i == 0 else 0.0)
+		body.size = Vector2(PAGE_SIZE.x - BODY_POS.x * 2.0, PAGE_SIZE.y - body.position.y - 28.0)
 		if i < pages.size():
-			_pages[side].text = _style_code(pages[i])
+			for block in _blocks(pages[i]):
+				body.add_child(_block_node(block, body.size.x))
 			_headers[side].text = "Page %d of %d" % [i + 1, pages.size()]
+			_headers[side].add_theme_color_override("font_color", FADED)
+			var needs: String = pages[i].get("needs", "") if pages[i] is Dictionary else ""
+			if needs in unread:
+				# Seen now: say it's new this once, and take it off the unread list.
+				_headers[side].text = "NEW PAGE!   Page %d of %d" % [i + 1, pages.size()]
+				_headers[side].add_theme_color_override("font_color", NEW_COLOR)
+				unread.erase(needs)
+				unread_changed.emit(unread.size())
 		else:
-			_pages[side].text = ""
 			_headers[side].text = ""
 	_title.visible = _spread == 0
-	# The first page starts lower, under the title.
-	_pages[0].position.y = 40 if _spread == 0 else 22
-	_pages[0].size.y = PAGE_SIZE.y - _pages[0].position.y - 26
 	_prev.disabled = _spread == 0
 	_next.disabled = _spread + 2 >= pages.size()
 	_prev.modulate.a = 0.3 if _prev.disabled else 1.0
 	_next.modulate.a = 0.3 if _next.disabled else 1.0
 
 
+## A page's blocks, or the "locked" note if its variable isn't unlocked yet.
+func _blocks(page: Variant) -> Array:
+	if page is String:
+		return [page]
+	if page is Dictionary:
+		if page.has("needs") and not unlocked.has(page["needs"]):
+			return ["[b]???[/b]\n\n[color=#%s]You haven't needed this variable yet. Its page fills in when you reach the room that uses it.[/color]" % FADED.to_html(false)]
+		return page["blocks"]
+	return page
+
+
+func _block_node(block: Variant, width: float) -> Control:
+	if block is Dictionary and block.has("diagram"):
+		var diagram := CodeDiagram.new()
+		diagram.setup(block["diagram"], block.get("box", ""), width)
+		return diagram
+	var text := RichTextLabel.new()
+	text.bbcode_enabled = true
+	text.fit_content = true
+	text.scroll_active = false
+	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text.custom_minimum_size.x = width
+	text.add_theme_color_override("default_color", INK)
+	text.add_theme_font_override("normal_font", GameFonts.TEXT)
+	text.add_theme_font_override("bold_font", GameFonts.TEXT_BOLD)
+	text.add_theme_font_override("italics_font", GameFonts.italic())
+	text.add_theme_font_override("mono_font", GameFonts.CODE)
+	for k in ["normal_font_size", "bold_font_size", "italics_font_size"]:
+		text.add_theme_font_size_override(k, GameFonts.TEXT_SIZE)
+	text.add_theme_font_size_override("mono_font_size", GameFonts.CODE_SIZE)
+	text.add_theme_constant_override("line_separation", 0)
+	text.text = _style_code(str(block))
+	return text
+
+
 ## A line that is only code is shown like Byte's terminal (green on a dark strip); code inside
-## a sentence is just dark teal in the book font, so it lines up with the words around it.
+## a sentence is dark teal, in the same code font.
 func _style_code(text: String) -> String:
 	var lines := text.split("\n")
 	for i in lines.size():
@@ -135,7 +224,7 @@ func _style_code(text: String) -> String:
 			lines[i] = lines[i].replace("[code]", "[bgcolor=#%s][color=#%s][code]" % [CODE_BG.to_html(false), CODE_INK.to_html(false)]) \
 				.replace("[/code]", "[/code][/color][/bgcolor]")
 		else:
-			lines[i] = lines[i].replace("[code]", "[color=#%s]" % INLINE_CODE.to_html(false)).replace("[/code]", "[/color]")
+			lines[i] = lines[i].replace("[code]", "[color=#%s][code]" % INLINE_CODE.to_html(false)).replace("[/code]", "[/code][/color]")
 	return "\n".join(lines)
 
 
@@ -180,32 +269,21 @@ func _build() -> void:
 		shade.color = Color(PAPER_EDGE, 0.35)
 		page.add_child(shade)
 
-		var header := _label(page, Vector2(0, 6), Vector2(PAGE_SIZE.x, 12), FADED)
+		var header := _label(page, Vector2(0, 5), Vector2(PAGE_SIZE.x, 10), FADED, GameFonts.TEXT, GameFonts.SMALL_TEXT_SIZE)
 		header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_headers.append(header)
 
-		var body := RichTextLabel.new()
-		body.bbcode_enabled = true
-		body.scroll_active = false
+		var body := VBoxContainer.new()
+		body.position = BODY_POS
 		body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		body.position = Vector2(14, 22)
-		body.size = PAGE_SIZE - Vector2(28, body.position.y + 26)
-		body.add_theme_color_override("default_color", INK)
-		body.add_theme_font_override("normal_font", FONT)
-		body.add_theme_font_override("bold_font", _variation(0.7, 0.0))
-		body.add_theme_font_override("italics_font", _variation(0.0, 0.2))
-		body.add_theme_font_override("mono_font", _mono())
-		for k in ["normal_font_size", "bold_font_size", "italics_font_size", "mono_font_size"]:
-			body.add_theme_font_size_override(k, FONT_SIZE)
-		body.add_theme_constant_override("line_separation", 1)
+		body.add_theme_constant_override("separation", 6)
 		page.add_child(body)
 		_pages.append(body)
 
 	# The first page's top holds the manual's title in Byte's teal, with an underline.
-	_title = _label(_book, Vector2(left_x + 10, top + 20), Vector2(PAGE_SIZE.x - 20, 14), TEAL)
+	_title = _label(_book, Vector2(left_x + 10, top + 16), Vector2(PAGE_SIZE.x - 20, 16), TEAL, GameFonts.TEXT_BOLD, GameFonts.TEXT_SIZE)
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_title.add_theme_font_size_override("font_size", 8)
-	_rect(_title, Vector2(20, 14), Vector2(PAGE_SIZE.x - 60, 1), Color(TEAL, 0.6))
+	_rect(_title, Vector2(20, 17), Vector2(PAGE_SIZE.x - 60, 1), Color(TEAL, 0.6))
 
 	# Spine: a dark groove down the middle.
 	_rect(_book, Vector2(BOOK_SIZE.x / 2.0 - 4, top - 2), Vector2(8, PAGE_SIZE.y + 4), LEATHER_DARK)
@@ -214,7 +292,7 @@ func _build() -> void:
 	# Byte's teal bookmark ribbon hanging over the top of the right page.
 	var ribbon := Polygon2D.new()
 	ribbon.color = TEAL
-	ribbon.polygon = PackedVector2Array([Vector2(0, 0), Vector2(9, 0), Vector2(9, 34), Vector2(4.5, 29), Vector2(0, 34)])
+	ribbon.polygon = PackedVector2Array([Vector2(0, 0), Vector2(9, 0), Vector2(9, 30), Vector2(4.5, 25), Vector2(0, 30)])
 	ribbon.position = Vector2(right_x + PAGE_SIZE.x - 30, top - 4)
 	_book.add_child(ribbon)
 
@@ -223,7 +301,7 @@ func _build() -> void:
 	_next = _button(_book, NEXT_ICON, Vector2(right_x + PAGE_SIZE.x - 27, top + PAGE_SIZE.y - 26), func(): _turn(1))
 	_button(_book, CLOSE_ICON, Vector2(BOOK_SIZE.x - 20, 4), close)
 
-	var keys := _label(holder, Vector2(0, BOOK_SIZE.y + 6), Vector2(BOOK_SIZE.x, 12), Color(1, 1, 1, 0.85))
+	var keys := _label(holder, Vector2(0, BOOK_SIZE.y + 4), Vector2(BOOK_SIZE.x, 16), Color(1, 1, 1, 0.85), GameFonts.TEXT, GameFonts.TEXT_SIZE)
 	keys.text = "A / D  TURN PAGES      F / ESC  CLOSE"
 	keys.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
@@ -252,12 +330,12 @@ func _rect(parent: Node, pos: Vector2, size: Vector2, color: Color) -> ColorRect
 	return r
 
 
-func _label(parent: Node, pos: Vector2, size: Vector2, color: Color) -> Label:
+func _label(parent: Node, pos: Vector2, size: Vector2, color: Color, font: Font, font_size: int) -> Label:
 	var l := Label.new()
 	l.position = pos
 	l.size = size
-	l.add_theme_font_override("font", FONT)
-	l.add_theme_font_size_override("font_size", FONT_SIZE)
+	l.add_theme_font_override("font", font)
+	l.add_theme_font_size_override("font_size", font_size)
 	l.add_theme_color_override("font_color", color)
 	parent.add_child(l)
 	return l
@@ -271,19 +349,3 @@ func _button(parent: Node, icon: Texture2D, pos: Vector2, action: Callable) -> T
 	b.pressed.connect(action)
 	parent.add_child(b)
 	return b
-
-
-## Minecraftia made bolder or slanted (it has no bold or italic of its own).
-func _variation(embolden: float, slant: float) -> FontVariation:
-	var v := FontVariation.new()
-	v.base_font = FONT
-	v.variation_embolden = embolden
-	v.variation_transform = Transform2D(Vector2(1, 0), Vector2(slant, 1), Vector2.ZERO)
-	return v
-
-
-## Code keeps a monospace font so the lined-up examples in the manuals stay lined up.
-func _mono() -> SystemFont:
-	var f := SystemFont.new()
-	f.font_names = PackedStringArray(["Consolas", "Courier New", "Monospace"])
-	return f

@@ -30,6 +30,11 @@ corridor, the Variables manual chest, Chelzy's wall-jump shaft, the fruit galler
 plateau at the top right Sarah's rescue flag and the trophy. All 16 fruit are needed for both.
 The level-complete screen says TUTORIAL COMPLETE!
 
+The signs are the same wooden boards as Level 1's (`scripts/objects/sign_board.gd`), at half
+size for the 16 px tiles; the gate's sign shows `System.out.println` on its code strip. The
+Variables manual draws the parts of `String hero = "Sarah";` and of the println line as
+labelled diagrams (see `docs/level2_design.md`, "Helping players read the code").
+
 ### What Byte teaches (`scripts/levels/tutorial.gd`)
 Each talk pauses the game and shows Byte in a dialogue box (Enter moves on); the camera glides
 to whatever Byte is talking about. The talks are `ByteTalk`s (`scripts/ui/byte_talk.gd`), the same base
@@ -62,6 +67,8 @@ The terminal's `wrong_try(room, tries)` and `closed` signals exist for these tal
   `godot --path . --script res://tools/test_story.gd` - 9 checks (the level select plays it
   once, every line shows, it ends in the tutorial and is saved, STORY replays it, Esc skips),
   and a screenshot of every line (`test_screenshots/story_*.png`).
+- `tools/test_sound.gd` checks the music never doubles up: it replays the backstory's track
+  switches into the tutorial, and switches faster than the fade - 9 checks.
 
 The old seven-room Level 1 (its maps, its 105 checks and this file's old room tables) is in git
 history, commit 80011e1. Its lessons now live in Level 1 on Treasure Island: `docs/level2_design.md`.

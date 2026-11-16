@@ -16,7 +16,7 @@ const VARIABLES := {
 	"hero": {"type": "String", "about": "the hero you play as"},
 	"hasSword": {"type": "boolean", "about": "whether you carry a sword"},
 	"bridgeLength": {"type": "int", "about": "how many blocks the bridge has", "min": 0, "max": 12},
-	"jumpPower": {"type": "double", "about": "how high you jump", "min": 1.0, "max": 2.0},
+	"jumpPower": {"type": "double", "about": "how high you jump", "min": 1.0, "max": 1.5},
 	"anchorUp": {"type": "boolean", "about": "whether the ship's anchor is up"},
 	"path": {"type": "char", "about": "which path appears", "choices": ["A", "B", "C"]},
 }

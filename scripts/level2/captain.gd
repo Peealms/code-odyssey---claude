@@ -20,6 +20,14 @@ const FRAMES := preload("res://assets/level2_treasure_hunters/characters/captain
 const ART_SCALE := 1.5
 ## The frames are 66 x 56 and drawn centred; his feet are on row 34, 6 px below the middle.
 const FEET_BELOW_MIDDLE := 6.0
+## His body isn't in the middle of the frames: it's in the left part, with room on the right for
+## his sword swings. The sprite is moved forward by this much (worked out from the art in
+## _ready) so his body, not the frame, is centred on his hitbox: then turning round at a wall
+## doesn't swing half of him into it.
+var _body_shift := 0.0
+## How far his raised sword reaches in front of him while he charges: he stops when it hits
+## the wall (and gets dizzy), instead of running his sword and face into it.
+var _charge_reach := 20.0
 const TELL_TIME := 1.2  ## Seconds between shouting an attack and doing it.
 const CHARGE_SPEED := 220.0
 const SWORD_SPEED := 230.0
@@ -70,6 +78,11 @@ func _ready() -> void:
 	_sprite.position = Vector2(0, -FEET_BELOW_MIDDLE * ART_SCALE)  # feet on the floor
 	_sprite.play("idle_s")
 	add_child(_sprite)
+	var body := SpriteMetrics.body_rect(FRAMES, "idle")  # without the sword: just him
+	var frame_mid := FRAMES.get_frame_texture("idle", 0).get_width() / 2.0
+	_body_shift = (frame_mid - body.get_center().x) * ART_SCALE
+	_charge_reach = (SpriteMetrics.body_rect(FRAMES, "run_s").end.x - body.get_center().x) * ART_SCALE
+	_face(_facing)
 	_contact = _hurt_area(Vector2(36, 64), Vector2(0, -32))  # up to his raised sword: a normal jump hits it
 	_swing = _hurt_area(Vector2(72, 48), Vector2(0, -24))
 	_bubble = Label.new()
@@ -157,12 +170,17 @@ func _physics_process(delta: float) -> void:
 		S.CHARGE:
 			velocity.x = _facing * CHARGE_SPEED
 			_play("run_s")
-			var edge := arena_left + 20.0 if _facing < 0 else arena_right - 20.0
+			var edge := arena_left + _charge_reach if _facing < 0 else arena_right - _charge_reach
 			if (_facing < 0 and global_position.x <= edge) or (_facing > 0 and global_position.x >= edge):
+				# Sword into the wall: CLANG, a little bounce back, dizzy, then he turns round.
 				velocity.x = 0.0
+				global_position.x = edge
 				_contact.set_deferred("monitoring", false)
 				Sound.play_at("gate_break", global_position)
+				var bounce := create_tween()
+				bounce.tween_property(self, "global_position:x", edge - _facing * 6.0, 0.15).set_ease(Tween.EASE_OUT)
 				_open(1.6, "DIZZY!", "hit")
+				_turn_after_dizzy(1.6)
 		S.THROW:
 			velocity.x = 0.0
 			_move_sword(delta)
@@ -209,8 +227,7 @@ func _try_start(player: CharacterBody2D) -> void:
 
 ## Picks the next attack by distance and shouts it.
 func _think(player: CharacterBody2D) -> void:
-	_facing = -1 if player.global_position.x < global_position.x else 1
-	_sprite.flip_h = _facing < 0
+	_face(-1 if player.global_position.x < global_position.x else 1)
 	var tiles := absf(player.global_position.x - global_position.x) / 32.0
 	if tiles > 5.0:
 		move = "C"
@@ -283,6 +300,21 @@ func _move_sword(delta: float) -> void:
 				_play("idle_s")
 
 
+## Looks left (-1) or right (1). The sprite moves with him so his body stays on his hitbox.
+func _face(dir: int) -> void:
+	_facing = dir
+	_sprite.flip_h = dir < 0
+	_sprite.position.x = _body_shift * dir
+
+
+## After hitting the wall: turn away from it at the end of the dizzy spell.
+func _turn_after_dizzy(seconds: float) -> void:
+	var wall := _facing
+	await get_tree().create_timer(seconds - 0.1).timeout
+	if st == S.OPEN and _facing == wall:
+		_face(-wall)
+
+
 func _open(seconds: float, shout: String, anim: String) -> void:
 	st = S.OPEN
 	_timer = seconds
@@ -353,6 +385,7 @@ func _reset() -> void:
 	_sword.visible = false
 	global_position = _home
 	velocity = Vector2.ZERO
+	_face(-1)
 	_play("idle_s")
 
 

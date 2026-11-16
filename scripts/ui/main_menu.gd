@@ -2,12 +2,10 @@ extends Control
 ## Main menu: Play / Continue / Story (watch the backstory again) / Settings / Quit.
 
 const LEVEL_SELECT := "res://scenes/ui/level_select.tscn"
-const BADGE := preload("res://scripts/ui/title_badge.gd")
 const FIRST_LEVEL := "res://scenes/levels/level1/level1.tscn"
 
 @onready var background: TextureRect = $Background
 @onready var title: Node2D = $Title
-@onready var badges: Node2D = $Badges
 @onready var prompt: Label = $Prompt
 @onready var menu_buttons: VBoxContainer = $MenuButtons
 @onready var play_button: Button = $MenuButtons/PlayButton
@@ -40,7 +38,6 @@ func _ready() -> void:
 	for b in find_children("*", "BaseButton", true, false):
 		b.pressed.connect(Sound.play.bind("ui_select"))
 	Sound.music("menu")
-	_build_badges()
 
 	continue_button.disabled = not Game.has_save()
 	settings_panel.visible = false
@@ -79,7 +76,6 @@ func _open_settings() -> void:
 	settings_panel.visible = true
 	menu_buttons.visible = false
 	title.visible = false
-	badges.visible = false
 	prompt.visible = false
 	volume_slider.grab_focus()
 
@@ -89,24 +85,8 @@ func _close_settings() -> void:
 	settings_panel.visible = false
 	menu_buttons.visible = true
 	title.visible = true
-	badges.visible = true
 	prompt.visible = true
 	settings_button.grab_focus()
-
-
-## The game's four subjects, as tags either side of the title.
-func _build_badges() -> void:
-	var tags := [
-		["x = 5", "VARIABLES", Color("5fb8ff"), Vector2(78, 56)],
-		["if / else", "CONDITIONALS", Color("ffb347"), Vector2(78, 100)],
-		["a && b", "LOGIC", Color("c58bff"), Vector2(562, 56)],
-		["for { }", "LOOPS", Color("6fe08a"), Vector2(562, 100)],
-	]
-	for i in tags.size():
-		var b: Node2D = BADGE.new()
-		b.position = tags[i][3]
-		b.setup(tags[i][0], tags[i][1], tags[i][2], i * 1.3)
-		badges.add_child(b)
 
 
 ## A copy of the VOLUME row for another sound bus, placed at `index` in the settings list.

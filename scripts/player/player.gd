@@ -21,11 +21,15 @@ signal died
 
 ## `hand`: where the sword is held (its pivot), in player pixels, facing right.
 ## `head`: where the head is in the 40x40 idle frames (the HUD portrait and the hero wheel).
+## `height`: the hitbox's height (it's always 16 wide, feet at FEET_Y), as tall as the hero is
+##   drawn, so no head pokes into a ceiling. Chelzy is too tall for a 1-tile crawlspace; Psalm
+##   keeps 24 (he's drawn 19 px tall) so that only tiny Psalm fits under the low beams.
 const HERO_DATA := {
 	"chelzy": {
 		"name": "Chelzy",
 		"frames": "res://assets/shared/heroes/chelzy/chelzy_frames.tres",
 		"trait": "wall_jump",
+		"height": 34.0,
 		"hand": Vector2(5, 1),
 		"head": Rect2(11, 5, 18, 18),
 	},
@@ -47,6 +51,7 @@ const HERO_DATA := {
 		"name": "Kervin",
 		"frames": "res://assets/shared/heroes/kervin/kervin_frames.tres",
 		"trait": "sprint",
+		"height": 27.0,
 		"hand": Vector2(5, 4),
 		"head": Rect2(11, 12, 18, 18),
 	},
@@ -65,6 +70,11 @@ const SPRITE_OFFSET := Vector2(0, -4)
 ## Psalm's hitbox while he's shrunk: it fits a 1-tile (16 px) tunnel that stops everyone
 ## else. Its feet stay where the full hitbox's feet are.
 const SMALL_SIZE := Vector2(10, 12)
+const HITBOX_WIDTH := 16.0
+const DEFAULT_HEIGHT := 24.0
+## The hitbox's bottom edge (the feet), below the player's origin. Every hero's feet are here,
+## whatever their height, so switching hero never lifts or sinks you.
+const FEET_Y := 16.0
 
 @export_group("Health")
 @export var max_health := 100.0
@@ -134,7 +144,7 @@ var has_sword := false:
 			remove_item("sword")
 
 ## Hotbar items by slot ("" = empty). The selected slot is the item in the hero's hand.
-var inventory: Array[String] = ["", "", "", "", ""]
+var inventory: Array[String] = ["", "", "", "", "", ""]
 var selected_slot := 0
 
 var health := 0.0
@@ -159,10 +169,12 @@ var _swing_timer := 0.0
 var _sword_cooldown_timer := 0.0
 var _hit_this_swing: Array = []
 var _swing_tween: Tween
-var _full_shape: RectangleShape2D
+var _full_shape: RectangleShape2D  ## The current hero's full-size hitbox.
 var _full_shape_pos := Vector2.ZERO
+var _hero_shapes := {}  ## hero id -> RectangleShape2D
 var _small_shape := RectangleShape2D.new()
-var _grow_query := PhysicsShapeQueryParameters2D.new()
+var _fit_shape := RectangleShape2D.new()
+var _fit_query := PhysicsShapeQueryParameters2D.new()
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var body_shape: CollisionShape2D = $CollisionShape2D
@@ -176,32 +188,36 @@ var _grow_query := PhysicsShapeQueryParameters2D.new()
 func _ready() -> void:
 	sword_trail.pivot = sword_pivot
 	sprite.offset = SPRITE_OFFSET
-	_full_shape = body_shape.shape
-	_full_shape_pos = body_shape.position
 	_small_shape.size = SMALL_SIZE
-	# Growing back is tested with the full hitbox 1 px smaller all round, so just touching
-	# the floor or a wall doesn't count as being in the way.
-	var grow_shape := RectangleShape2D.new()
-	grow_shape.size = _full_shape.size - Vector2(2, 2)
-	_grow_query.shape = grow_shape
-	_grow_query.collision_mask = collision_mask
-	_grow_query.exclude = [get_rid()]
-	set_hero(Game.current_hero if HERO_DATA.has(Game.current_hero) else Game.HEROES[0], false)
+	# "Does a hitbox fit here?" is tested 1 px smaller all round, so just touching the floor or
+	# a wall doesn't count as being in the way.
+	_fit_query.shape = _fit_shape
+	_fit_query.collision_mask = collision_mask
+	_fit_query.exclude = [get_rid()]
+	set_hero(Game.current_hero if HERO_DATA.has(Game.current_hero) else Game.HEROES[0], false, true)
 	_refresh_held_item()
 	restore_vitals()
 
 
-## Returns false (and keeps the hero) if the name is unknown, or if Psalm is shrunk somewhere
-## a full-size hero wouldn't fit.
-func set_hero(new_hero: String, play_effect := true) -> bool:
+## Returns false (and keeps the hero) if the name is unknown, or if the new hero wouldn't fit
+## here: Psalm is shrunk under a low ceiling, or tall Chelzy is wanted in a crawlspace.
+## `force` skips that check (setting up a level, before the player is placed).
+func set_hero(new_hero: String, play_effect := true, force := false) -> bool:
 	if not HERO_DATA.has(new_hero):
 		push_warning("Unknown hero: %s" % new_hero)
 		return false
-	if is_small and new_hero != hero_id:
-		var nudge = _room_to_grow()
+	var nudge = 0.0
+	if new_hero != hero_id and not force:
+		nudge = _room_for(new_hero)
 		if nudge == null:
 			return false
+	_full_shape = _hero_shape(new_hero)
+	_full_shape_pos = Vector2(0, FEET_Y - _full_shape.size.y / 2.0)
+	if is_small and new_hero != hero_id:
 		_set_small(false, nudge, false)  # the swap effect covers it, no grow animation
+	elif not is_small:
+		body_shape.shape = _full_shape
+		body_shape.position = _full_shape_pos
 	hero_id = new_hero
 	sprite.sprite_frames = load(HERO_DATA[new_hero]["frames"])
 	sprite.play("idle")
@@ -217,9 +233,27 @@ func set_hero(new_hero: String, play_effect := true) -> bool:
 	return true
 
 
-## False while Psalm is squeezed under a low ceiling: another hero wouldn't fit there.
-func can_change_hero() -> bool:
-	return not is_small or _room_to_grow() != null
+## False if `to_hero` wouldn't fit here (Psalm squeezed under a low ceiling, or Chelzy in a
+## crawlspace). With no hero given: false while Psalm is squeezed and no full-size hero fits.
+func can_change_hero(to_hero := "") -> bool:
+	if to_hero == "":
+		return not is_small or _room_to_grow() != null
+	return to_hero == hero_id or _room_for(to_hero) != null
+
+
+## Why `to_hero` can't come out here, for Byte and the hero wheel.
+func no_room_reason(to_hero: String) -> String:
+	if is_small:
+		return "Psalm is squeezed under a low ceiling. Get out of the tunnel first, then switch."
+	return "%s is too tall to fit in here. Get out of the low tunnel first, then switch." % HERO_DATA[to_hero]["name"]
+
+
+func _hero_shape(id: String) -> RectangleShape2D:
+	if not _hero_shapes.has(id):
+		var r := RectangleShape2D.new()
+		r.size = Vector2(HITBOX_WIDTH, HERO_DATA[id].get("height", DEFAULT_HEIGHT))
+		_hero_shapes[id] = r
+	return _hero_shapes[id]
 
 
 func has_trait(trait_name: String) -> bool:
@@ -415,7 +449,7 @@ func _set_small(small: bool, nudge := 0.0, animate := true) -> void:
 	body_shape.position = _full_shape_pos
 	if small:
 		# Same feet: the small box sits at the bottom of the full one.
-		body_shape.position.y += (_full_shape.size.y - SMALL_SIZE.y) / 2.0
+		body_shape.position.y = FEET_Y - SMALL_SIZE.y / 2.0
 		_cancel_swing()  # tiny Psalm can't hold the sword
 	else:
 		position.x += nudge
@@ -430,11 +464,22 @@ func _set_small(small: bool, nudge := 0.0, animate := true) -> void:
 ## How far Psalm must move sideways for the full-size hitbox to fit where he is: 0, a few px
 ## off a wall he's pressed against, or null if there's no room (a ceiling is in the way).
 func _room_to_grow() -> Variant:
+	return _room_for(hero_id)
+
+
+## How far the player must move sideways for `id`'s full-size hitbox to fit here: 0, a few px
+## (tiny Psalm pressed against a wall), or null if it doesn't fit (a ceiling is in the way).
+func _room_for(id: String) -> Variant:
+	var size := _hero_shape(id).size
+	var current: Vector2 = (body_shape.shape as RectangleShape2D).size
+	if size.y <= current.y and size.x <= current.x:
+		return 0.0  # no bigger than now: it fits
 	var space := get_world_2d().direct_space_state
-	var side := (_full_shape.size.x - SMALL_SIZE.x) / 2.0
+	_fit_shape.size = size - Vector2(2, 2)
+	var side := maxf(0.0, (size.x - current.x) / 2.0)
 	for dx in [0.0, -side, side]:
-		_grow_query.transform = Transform2D(0.0, global_position + _full_shape_pos + Vector2(dx, 0.0))
-		if space.intersect_shape(_grow_query, 1).is_empty():
+		_fit_query.transform = Transform2D(0.0, global_position + Vector2(dx, FEET_Y - size.y / 2.0))
+		if space.intersect_shape(_fit_query, 1).is_empty():
 			return dx
 	return null
 

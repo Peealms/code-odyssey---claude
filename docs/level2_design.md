@@ -15,7 +15,7 @@ each basic type (`String`, `int`, `double`, `boolean`, `char`) and change one th
   level2.tscn and `resources/tilesets/level2_tileset.tres`:
   `godot --headless --path . --script res://tools/build_level2.gd`
 - `tools/test_level2.gd` plays every room and fights the boss (needs a window, not `--headless`):
-  `godot --path . --script res://tools/test_level2.gd` - prints 80 PASS/FAIL checks. Each
+  `godot --path . --script res://tools/test_level2.gd` - prints 95 PASS/FAIL checks. Each
   obstacle is tried the wrong way first (the wrong hero, the wrong number), then the right way.
   It backs up and restores your save file.
 - Rooms are laid out left to right, 1 tile of rock between them, moved up or down so their
@@ -27,11 +27,11 @@ each basic type (`String`, `int`, `double`, `boolean`, `char`) and change one th
 |---|---|---|---|---|---|
 | 0 The wide gap | `String hero = "Sarah";` | a wall-jump shaft up from the start (Chelzy), then a 2-tile gap in a crawlspace too low to jump (Sarah's dash) | a crab | April | 7 |
 | 1 The broken bridge | `int bridgeLength = 8;`, then `hero = "April";` | planks 3 tiles up over the water: April's double jump from the edge | a totem head shooting across the bridge | Kervin | 9 |
-| 2 The high ledge | `double jumpPower = 2.0;` | a falling floor in a crawlspace (Kervin's sprint), then planks 4 tiles up in the open (April's double jump at 2.0) | - | Psalm | 7 |
+| 2 The high ledge | `double jumpPower = 1.5;` | a falling floor in a crawlspace (Kervin's sprint), then planks 3.5 tiles (112 px) up in the open (April's double jump at 1.5; 1.0 falls short) | - | Psalm | 7 |
 | 3 The ship | `boolean anchorUp = true;`, `boolean hasSword = true;` | low beams (tiny Psalm), the ship, a crab in a crawlspace you can't jump over (fight it with the sword), then a wall-jump shaft to the exit (Chelzy) | the crab, the sea | - | 5 |
-| 4 Three paths | `char path = 'B';` | a falling floor in a crawlspace at the end (Kervin's sprint) | Pink Star | - | 5 |
-| Exam 1 The low cave | `jumpPower = 1.0;` | big ceiling spikes (every jump at 2.0 hits them), a beam (tiny Psalm), a falling floor (Kervin's sprint) | big floor spikes | - | 3 |
-| Exam 2 The low bridge | `bridgeLength = 6;`, then `path = 'C';` | the bridge is under a low ceiling (no jumping; 6 planks is too far to dash), then a wall-jump shaft to the exit (Chelzy) | the sea | - | 5 |
+| 4 Three paths | `char path = 'B';` | the wrong paths (A, C) drop into the sea the moment you stand on them, every plank at once; then a falling floor in a crawlspace at the end (Kervin's sprint) | Pink Star, the sea | - | 5 |
+| Exam 1 The low cave | `jumpPower = 1.0;` | big ceiling spikes (every jump at 1.5 hits them), a beam (tiny Psalm), a falling floor (Kervin's sprint) | big floor spikes | - | 3 |
+| Exam 2 The low bridge | `bridgeLength = 6;`, then `path = 'C';` | the bridge is under a low ceiling (no jumping; 6 planks is too far to dash; too low for Chelzy), the paths (only C holds), then a wall-jump shaft to the exit (Chelzy) | the sea | - | 5 |
 | Exam 3 The treasure | `anchorUp = true;`, then `System.out.println("I can code!");` | Byte's gate of boxes, then Captain Clown Nose (below) | the sea, the captain | - | 3 |
 
 Every hero has a job:
@@ -56,7 +56,38 @@ Every hero has a job:
   ("SPLASH!"). Small spikes (`^`) do 20 damage, the big floor and ceiling spikes (`x`, `V`) 50.
   At 0 HP you're back at the last checkpoint.
 - **Hints** work as before: 3 wrong lines = the room's hint and Show answer (costs a star),
-  5 = the line with blanks.
+  5 = the line with blanks. Standing on a wrong path counts as a wrong try.
+
+## Helping players read the code
+Beta testers found the books and the structure of a line hard to follow early on, so:
+- **The Variable Dictionary** (`manual_dictionary`, blue book) is in hotbar slot 1 from the
+  start. Every variable has a page: what its name means (bridge + Length, camelCase), its data
+  type, the values it can hold, a labelled diagram of its declaration, and how to change it. A
+  page fills in when you walk into the room that first needs it (`Room.teaches`, set in the
+  builder's `ROOMS`). The last page is `println`.
+- **When a new name can be used:** a note slides in at the top right naming it in the code
+  font (`scripts/ui/page_note.gd`: "NEW DICTIONARY PAGE / bridgeLength / Press 1, then
+  left-click to read"), and the dictionary's hotbar slot gets a bobbing NEW tag that stays until
+  the page has been seen. The book opens straight at the newest unseen page, with NEW PAGE! in
+  its header.
+- **Labelled diagrams** (`scripts/ui/code_diagram.gd`): the manuals show each room's line like
+  a textbook figure, with an arrow from Data Type, Variable Name, Assignment, Value and
+  Semicolon to its part (or New Value, for a change). Each manual uses the variable its room
+  needs: `String hero`, `int bridgeLength`, `double jumpPower`, `boolean anchorUp`, `char path`.
+- **Declare once:** the first variable you make (Room 0's `hero`, usually) adds a RULE line to
+  Byte's log, and when the terminal closes Byte stops the game to say a variable is made only
+  once and changed without its type. Room 1 then asks you to change `hero`.
+- **Signs** (`scripts/objects/sign_board.gd`) are notes of Treasure Hunters parchment (Wood and
+  Paper UI, `assets/level2_treasure_hunters/ui/sign_paper.png`) with the clue and, on a strip
+  like the terminal, **only the name** of the variable - no type, no value - and **only the
+  first time** it's needed: `hero` (Room 0), `bridgeLength` (Room 1), `jumpPower` (Room 2),
+  `anchorUp` (Room 3), `path` (Room 4). Later signs just give the clue. `hasSword` is on no sign
+  (Byte's first tip names it) and neither is `System.out.println` (the tutorial's gate sign
+  shows it). The builder's `named` list drops any name shown before, so it can't creep back.
+  Signs are drawn over the rock but under coins, gadgets and heroes, and every one sits in open
+  air.
+- **Fonts** (`scripts/ui/game_fonts.gd`): Pixel Operator for words and JetBrains Mono for code,
+  in the books, the chest window, the signs and Byte's terminal.
 
 ## Fighting
 - `boolean hasSword = true;` puts the sword in the hotbar; hold it (its number key) and
@@ -82,6 +113,10 @@ treasure chest appears only when he's beaten.
 | CATCH THIS! | 2-5 tiles away | the sword spins across at head height (15-99 px up), sticks in the wall for 1.2 s, comes back | tiny Psalm (hold Down) |
 | SWING! | 2 tiles or less | a wide swing in front of him | Sarah's dash away |
 
+- **His body is centred on his hitbox:** the art has him in the left part of a wide frame, so
+  the sprite is moved forward by the gap (worked out from the art). A charge stops when his
+  raised sword reaches the wall: CLANG, a small bounce back, dizzy, then he turns round. The
+  test checks his drawn body never goes into a wall.
 - **After each attack he's open** (he glows): DIZZY! after a charge (1.6 s, at the wall), MY
   SWORD! while it's stuck in the wall, WHOA! after a swing (1.2 s). Only then does your sword
   hurt him. At other times it bounces off ("HA! MISSED!").
@@ -89,16 +124,26 @@ treasure chest appears only when he's beaten.
   arena, and he resets with full health). Leaving the arena also resets him.
 
 ## Why the numbers changed from the old Level 1
-Treasure Hunters tiles are 32 px (the old ones were 16 px), and a hero is 24 px tall:
+Treasure Hunters tiles are 32 px (the old ones were 16 px). Each hero's hitbox is as tall as
+they're drawn, so no head goes into a ceiling: Chelzy 34 px, Kervin 27 px, Sarah, April and
+Psalm 24 px (`height` in `player.gd`'s `HERO_DATA`):
+- **Chelzy doesn't fit in a crawlspace.** Switch to someone else before one (Room 0's gap, Room
+  3's crab, Exam 2's bridge); Byte and the hero wheel refuse to switch to him inside one.
 - **Bridges** are whole planks: 8 in Room 1 (9 jams and collapses; 5.5 is an int error) and 6 in
   the exam. Both are wider than Sarah's best jump-and-dash or dash.
-- **jumpPower** is in pixels, so the code is unchanged (1.0 = 50 px, 2.0 = 100 px; a double jump
-  adds 50 px). Room 1's planks are 96 px up (only a double jump), Room 2's 128 px (100 px at 1.0,
-  150 px at 2.0).
-- **Shafts** are 5 tiles (160 px): too high for April even at 2.0, and short enough for
+- **jumpPower** is in pixels (1.0 = 50 px, 1.5 = 75 px; a double jump adds 50 px) and may only
+  be **1.0 to 1.5** (`VariableLibrary`), so the answer always has a decimal point: 2.0 would
+  only be a whole number written as a double. Room 1's planks are 96 px up (only a double
+  jump), Room 2's 112 px: 100 px at 1.0 falls short, 125 px at 1.5 makes it. 112 px isn't a
+  whole number of tiles, so those planks are `-` cells: a second plank layer moved down half a
+  tile (`LowPlanks`), and the flag and coins above them are lowered with them.
+- **Shafts** are 5 tiles (160 px): too high for April even at 1.5, and short enough for
   Chelzy's stamina.
-- **Psalm's gaps are beams:** a beam fills the top 14 px of a tile, leaving 18 px - too low for a
-  24 px hero, enough for tiny Psalm (12 px).
+- **Psalm's gaps are beams:** a beam fills the top 18 px of a tile (`BEAM`), leaving 14 px - too
+  low for full-size Psalm (drawn 19 px tall, 24 px hitbox), enough for tiny Psalm (12 px). The
+  plank art is only 9 px tall, so two planks are stacked and the art is exactly the hitbox.
+- **Wrong paths fall all at once:** a 0.15 s shake, then every plank of that letter in the room
+  drops, so no dash or sprint gets across. They come back 2.5 s later.
 - **Crawlspaces are 1 tile high** (32 px): you fit, but you can't jump.
 - **One-way planks catch you if you're close:** a hero falling while overlapping a plank's top
   edge is pushed up onto it. That's why April's planks are at least 3 tiles up: a normal jump

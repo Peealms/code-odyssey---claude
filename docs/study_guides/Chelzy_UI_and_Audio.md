@@ -3,9 +3,12 @@
 ## You explain: every screen and widget the player sees or hears.
 
 ### Screens (`scenes/ui/` + `scripts/ui/`)
-- **Main menu** (`main_menu.gd`, animated stage `menu_stage.gd`): play/continue, STORY (watch
+- **Main menu** (`main_menu.gd`, animated stage `menu_stage.gd`: one runner swaps heroes for
+  each obstacle - Sarah dashes over spikes, Chelzy wall-jumps up a pillar, April double-jumps a
+  saw, Kervin sprints over bars that drop behind him, Psalm shrinks under a slab): play/continue, STORY (watch
   the backstory again), settings (volume sliders, fullscreen), reset progress. Play goes to the
-  level select.
+  level select. (The floating topic tags beside the title were removed: the game teaches one
+  topic, variables.)
 - **The backstory** (`story_intro.gd`, scene `story_intro.tscn`): five shots built in code from
   the game's own art, drawn 2x so the pixel art is big. The lab (the five of us at 11:59 PM;
   Byte appears on our screen and it pulls us in), Byte's world (`int bridgeLength = 4;` builds
@@ -18,7 +21,8 @@
 - **Pause menu** (`pause_menu.gd`): resume, settings, quit to menu.
 - **HUD** (`hud.gd`): health bar, stamina bar, the counter for the current room (FRUIT 3/16 in
   the tutorial, COINS 3/9 in Level 1), room title popup.
-- **Hotbar** (`hotbar.gd`): 5 inventory slots, selected slot highlight.
+- **Hotbar** (`hotbar.gd`): 6 inventory slots (keys 1-6), selected slot highlight. In Level 1,
+  slot 1 holds the Variable Dictionary from the start.
 - **Code terminal** (`code_terminal.tscn`): the visual side (logic is Psalm's): output log with
   colors (white = your code, green = pass, red = fail, cyan = Byte, grey = hint, gold = answer),
   input line, Show answer button.
@@ -38,7 +42,21 @@
 - **Chest window** (`chest_window.gd`) and **manual reader** (`scripts/manuals/manual_reader.gd`): a
   two-page book built in code; content comes from `manual_library.gd`. Manuals: Variables (red,
   the tutorial and Level 1 Room 0), Numbers (orange, Room 1), Booleans & chars (green, Room 3),
-  Changing variables (purple, Exam 1).
+  Changing variables (purple, Exam 1), and the **Variable Dictionary** (blue, Level 1's hotbar):
+  one page per variable - what its name means, its type, its values, how to change it - that
+  fills in when you reach the room that needs it.
+- **Code diagrams** (`scripts/ui/code_diagram.gd`): a line of code in a dashed box, with an
+  arrow from each label (Data Type, Variable Name, Assignment, Value, Semicolon) to its part,
+  like a textbook figure. Labels take turns above and below the line so they never overlap.
+- **Signs** (`scripts/objects/sign_board.gd`): the clue, and on a dark code strip the name of
+  the variable to use - only its name, and only on the first sign that needs it. Level 1's are
+  Treasure Hunters parchment (`paper`, a stretched texture); the tutorial's are half-size wooden
+  boards. Drawn over the rock, under coins and heroes.
+- **New dictionary page** (`scripts/ui/page_note.gd`): a note slides in at the top right naming
+  the new variable, and the hotbar puts a bobbing NEW tag on the dictionary's slot
+  (`hotbar.set_badge`) until the page is seen; the book opens at it, marked NEW PAGE!.
+- **Fonts** (`scripts/ui/game_fonts.gd`): Pixel Operator (words; drawn on a 16 px grid, so it
+  stays sharp at the game's 2x and 3x sizes) and JetBrains Mono (code, also in the terminal).
 - **Damage numbers** (`damage_number.gd`): floating hit text.
 - Theme: `scenes/ui/theme/ui_theme.tres`; pixel font `assets/shared/ui/fonts/pixel_font.fnt`.
   Item names and icons: `scripts/items/item_db.gd`.
@@ -47,6 +65,11 @@
 - `Sound.play("jump")`, `Sound.play_at("fire", pos)` (fades with distance from the camera),
   `Sound.music("rooms")`.
 - Music: menu, rooms, final_exam (Level 1's exam). Fanfares for rescue and level complete.
+- **Crossfade:** two music players take turns. `Sound` remembers which one is current
+  (`_current`), fades the other out over 1 s and keeps one fade tween (`_fade`), killed when a
+  new switch starts. (The old version only ever checked player A, so a track playing on player
+  B was never faded out and two songs played at once - in the backstory and the tutorial.)
+  `tools/test_sound.gd` replays those switches and checks only one track is heard.
 - Buses: Master, Music, SFX with sliders; saved in settings. All audio is CC0 - see `assets/shared/audio/CREDITS.md`.
 
 ### Ideas to be able to say
@@ -60,4 +83,6 @@
 ### Likely questions
 - How does the HUD know the player's health? (signal)
 - How are volume settings saved? (Game.save_settings -> user://settings.cfg)
-- How did you design for readability? (colors, pixel font, the game pauses while the terminal is open)
+- How did you design for readability? (beta testers found the old font and books hard to read:
+  a clearer pixel font, a real coding font for code, labelled diagrams, the dictionary; colors;
+  the game pauses while the terminal is open)

@@ -9,8 +9,8 @@
   **step-up** onto lips up to 2 px (so a sinking falling plank can't stick you on a corner).
 - Health 100; a hit gives 1 s blinking invulnerability. Stamina 100, regen 40/s after 0.6 s delay;
   hitting 0 = "exhausted" until full.
-- `jump_power` (set by the code `jumpPower`) scales jump height: 1.0 = 50 px, 1.5 = 75 px, 2.0 = 100 px.
-- Inventory: 5 slots (hotbar). The sword (`boolean hasSword = true;` in Level 1; Room 3's crab
+- `jump_power` (set by the code `jumpPower`, 1.0 to 1.5) scales jump height: 1.0 = 50 px, 1.5 = 75 px.
+- Inventory: 6 slots (hotbar). The sword (`boolean hasSword = true;` in Level 1; Room 3's crab
   makes you get it): 10 damage, windup 0.06 s, swing 0.14 s, cooldown 0.35 s. Tiny Psalm can't swing.
 - Signals: health_changed, stamina_changed, hero_changed, inventory_changed, died.
 
@@ -21,7 +21,14 @@
 | Sarah | Dash | 35 stamina, 0.3 s at 300 px/s = 90 px, cooldown 0.5 s |
 | April | Double jump | 35 stamina; the double jump ignores jumpPower (+50 px) |
 | Kervin | Sprint (hold Shift) | x1.9 speed, drains 30/s |
-| Psalm | Shrink (hold Down) | hitbox 16x24 -> 10x12 fits under a beam; 0.6x speed; drains 20/s, but not while a low ceiling keeps him small |
+| Psalm | Shrink (hold Down) | hitbox 16x24 -> 10x12 fits under a beam (14 px gap); 0.6x speed; drains 20/s, but not while a low ceiling keeps him small |
+
+Hitboxes are 16 px wide and as tall as the hero is drawn (`height` in `HERO_DATA`), so no head
+goes into a ceiling: Chelzy 34 px (too tall for a 1-tile crawlspace - switch first), Kervin 27,
+the others 24. The feet are always 16 px below the player's origin, so switching never lifts
+or sinks you. `can_change_hero(hero)` checks the new hitbox fits first; Byte and the hero
+wheel say NO ROOM if it doesn't.
+
 Unlock order: Sarah at the end of the tutorial; in Level 1, April after Room 0, Kervin after
 Room 1, Psalm after Room 2. Each hero has jobs in Level 1: Chelzy climbs three shafts, Kervin
 sprints over three falling floors, April reaches two sets of high planks, Psalm crawls under

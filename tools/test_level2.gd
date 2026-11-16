@@ -220,6 +220,9 @@ func shot(name: String) -> void:
 
 
 func _process(delta: float) -> bool:
+	if cap and cap.fighting:
+		var drawn := cap_drawn_x()
+		cap_in_wall = maxf(cap_in_wall, maxf(cap.arena_left - drawn.x, drawn.y - cap.arena_right))
 	# Wall-jump bot (Chelzy): press toward a wall, jump off it, then toward the other way.
 	# Above `exit_y` it walks off in `exit_dir` for half a second and stops (past the top the
 	# way often leads on into the next room's water).
@@ -233,8 +236,13 @@ func _process(delta: float) -> bool:
 			Input.action_press("move_right" if exit_dir > 0 else "move_left")
 			Input.action_release("jump")
 			if exit_walk <= 0.0:
-				wall_bot = false
-				release_all()
+				if p.is_on_floor() and p.global_position.y < exit_y + 12.0:
+					wall_bot = false  # up on the exit ledge
+					release_all()
+				else:
+					# Missed the ledge (fell past its corner): wall-jump again, like a player would.
+					exit_walk = 0.0
+					wall_dir = -exit_dir
 			return false
 		Input.action_press("move_right" if wall_dir > 0 else "move_left")
 		Input.action_release("move_left" if wall_dir > 0 else "move_right")
@@ -273,6 +281,11 @@ func find_in(group_parent: String, script_end: String, i: int) -> Node:
 	return null
 
 
+## The path planks of room i with this letter.
+func paths_in(i: int, letter: String) -> Array:
+	return get_nodes_in_group("path_platform").filter(func(pp): return pp.letter == letter and room(i).contains(pp.global_position))
+
+
 func hold_sword() -> void:
 	p.select_slot(p.inventory.find("sword"))
 	await wait(0.1)
@@ -282,6 +295,17 @@ func hold_sword() -> void:
 
 var cap: Node
 var arena_y := 0.0  ## Where a hero stands on the arena floor.
+var cap_in_wall := 0.0  ## The furthest (px) the captain's drawn body went into a wall in the fight.
+
+
+## Where the captain's body is drawn (not counting his sword), left and right edge.
+func cap_drawn_x() -> Vector2:
+	var spr: AnimatedSprite2D = cap._sprite
+	var r := SpriteMetrics.body_rect(spr.sprite_frames, "idle")
+	var half := spr.sprite_frames.get_frame_texture("idle", 0).get_width() / 2.0
+	var left := (half - r.end.x) if spr.flip_h else (r.position.x - half)
+	var x := spr.global_position.x + left * spr.scale.x
+	return Vector2(x, x + r.size.x * spr.scale.x)
 
 
 ## Waits for the captain to be between attacks, stands the hero `tiles` away from him (on the
@@ -330,6 +354,20 @@ func _run() -> void:
 	check("starts with Chelzy and Sarah", game.unlocked_heroes == ["chelzy", "sarah"], str(game.unlocked_heroes))
 	check("the HUD counts coins", level.hud.item_word == "COINS")
 	check("Byte's first tip is the sword", "hasSword" in term.pending_hint, term.pending_hint)
+	var reader: CanvasLayer = level.get_node("ManualReader")
+	var hotbar: CanvasLayer = level.get_node("Hotbar")
+	check("The Variable Dictionary starts in hotbar slot 1", p.inventory[0] == "manual_dictionary", str(p.inventory))
+	await wait(2.0)
+	check("Room 0: the note names its new dictionary pages", "hero" in level.page_note.text() and "hasSword" in level.page_note.text(), level.page_note.text())
+	check("Room 0: the dictionary's slot says NEW", hotbar.has_badge("manual_dictionary"))
+	var on_signs: Array = []
+	for sign in level.get_node("Signs").get_children():
+		if sign.code != "":
+			on_signs.append(sign.code)
+	var once := true
+	for name in on_signs:
+		once = once and on_signs.count(name) == 1 and not " " in name
+	check("Signs name each variable once, without its type", once and on_signs.size() == 5, str(on_signs))
 
 	# ---------------- Room 0: the shaft (Chelzy) and the wide gap (Sarah) ----------------
 	var top0 := at(0, 10, 3).y
@@ -350,6 +388,12 @@ func _run() -> void:
 	tp(at(0, 14, 3))
 	await code('String hero = "Sarah";')
 	check("R0 String hero = \"Sarah\"; switches to Sarah", p.hero_id == "sarah", last_byte())
+	var told := await await_talk(2.0)
+	check("R0 the first variable made: Byte stops to say it's made only once", told and "only ONCE" in term.log_label.get_parsed_text())
+	tp(at(0, 14, 3))
+	await wait(0.2)
+	await code('hero = "Chelzy";')
+	check("R0 Chelzy is too tall to come out in the crawlspace", p.hero_id == "sarah" and "too tall" in last_byte(), last_byte())
 	tp(at(0, 15, 3))
 	await wait(0.3)
 	Input.action_press("move_right")
@@ -367,6 +411,21 @@ func _run() -> void:
 	check("R0 all coins + flag: cutscene, then April joins", shown and "april" in game.unlocked_heroes, str(game.unlocked_heroes))
 
 	# ---------------- Room 1: the broken bridge, then April's planks ----------------
+	tp(at(1, 2, 4))  # walk in: Room 1 fills in bridgeLength's page
+	await wait(2.2)
+	check("R1 walking in: the note says bridgeLength has a new page", "bridgeLength" in level.page_note.text(), level.page_note.text())
+	reader.open("dictionary")
+	await wait(0.3)
+	var page_shown: int = reader._spread
+	var header: String = reader._headers[0].text + " | " + reader._headers[1].text
+	check("R1 the dictionary opens at bridgeLength's page, marked NEW", page_shown <= reader._page_of("bridgeLength") and reader._page_of("bridgeLength") <= page_shown + 1 and "NEW PAGE!" in header, "spread=%d %s" % [page_shown, header])
+	check("R1 ...and that page isn't new any more", not "bridgeLength" in reader.unread, str(reader.unread))
+	reader._spread = -2
+	for k in 6:
+		reader._turn(1)  # read every page
+	reader.close()
+	await wait(0.2)
+	check("R1 every new page read: the NEW tag goes", reader.unread.is_empty() and not hotbar.has_badge("manual_dictionary"), str(reader.unread))
 	var planks1 := at(1, 24, 1).y
 	won = await attempt("sarah", at(1, 2, 4), col(1, 5.7))
 	check("R1 Sarah can't jump and dash the 8-plank gap", won.x < col(1, 14), "pos=%s" % won)
@@ -412,7 +471,7 @@ func _run() -> void:
 	shown = await await_talk()
 	check("R1 all coins + flag: Kervin joins", shown and "kervin" in game.unlocked_heroes, str(game.unlocked_heroes))
 
-	# ---------------- Room 2: Kervin's falling floor, April's planks at jumpPower 2.0 ----------------
+	# ---------------- Room 2: Kervin's falling floor, April's planks at jumpPower 1.5 ----------------
 	var past_floor := col(2, 13)
 	var floor2 := at(2, 16, 7).y
 	won = await attempt("april", at(2, 2, 7), col(2, 7))
@@ -430,19 +489,21 @@ func _run() -> void:
 	release_all()
 	await wait(0.3)
 	check("R2 Kervin sprints over the falling floor", p.global_position.x > past_floor and p.global_position.y < floor2 + 8, "pos=%s" % p.global_position)
-	var planks2 := at(2, 24, 3).y
+	var planks2 := at(2, 24, 3).y + 16  # the '-' planks: half a tile lower than row 4's top
 	won = await wall_climb(at(2, 14, 7), planks2 - 40, 6.0, -1)
 	check("R2 Chelzy can't wall-jump over to the planks", won.y > planks2 + 8, "pos=%s" % won)
 	won = await jump_up("april", at(2, 21, 7), 1.0)
 	check("R2 April at jumpPower 1.0 can't reach the planks", won.y > planks2 + 8, "pos=%s" % won)
-	won = await jump_up("kervin", at(2, 21, 7), 2.0)
-	check("R2 Kervin at jumpPower 2.0 can't reach the planks", won.y > planks2 + 8, "pos=%s" % won)
+	won = await jump_up("kervin", at(2, 21, 7), 1.5)
+	check("R2 Kervin at jumpPower 1.5 can't reach the planks", won.y > planks2 + 8, "pos=%s" % won)
 	tp(at(2, 20, 7))
 	await code("double jumpPower = 2.0;")
+	check("R2 jumpPower 2.0 is too much: Byte says 1.0 to 1.5", not term.values.has("jumpPower") and "1.5" in last_byte(), last_byte())
+	await code("double jumpPower = 1.5;")
 	await code('hero = "April";')
-	check("R2 double jumpPower = 2.0; works", is_equal_approx(p.jump_power, 2.0) and p.hero_id == "april", last_byte())
-	won = await jump_up("april", at(2, 21, 7), 2.0)
-	check("R2 April at jumpPower 2.0 double-jumps up onto the planks", won.y < planks2 + 8, "pos=%s" % won)
+	check("R2 double jumpPower = 1.5; works", is_equal_approx(p.jump_power, 1.5) and p.hero_id == "april", last_byte())
+	won = await jump_up("april", at(2, 21, 7), 1.5)
+	check("R2 April at jumpPower 1.5 double-jumps up onto the planks", won.y < planks2 + 8, "pos=%s" % won)
 	await collect_room(2)
 	await touch_flag(at(2, 24, 3))
 	shown = await await_talk()
@@ -503,13 +564,14 @@ func _run() -> void:
 	release_all()
 	check("R3 the tunnel is open", p.global_position.x > col(3, 34), "pos=%s" % p.global_position)
 	var ledge3 := at(3, 37, 2).y
-	won = await jump_up("april", at(3, 34.5, 7), 2.0)
+	won = await jump_up("april", at(3, 34.5, 7), 1.5)
 	check("R3 April can't get up the shaft", won.y > ledge3 + 40, "pos=%s" % won)
 	won = await wall_climb(at(3, 34, 7), ledge3 - 6)
 	check("R3 Chelzy wall-jumps up to the exit", won.y < ledge3 + 8 and won.x > col(3, 36), "pos=%s" % won)
 	shot("r3_shaft")
 
 	# ---------------- Room 4: three paths, Kervin's falling floor ----------------
+	await touch_flag(at(4, 1, 2))  # Room 4's checkpoint, as when you walk in: falling comes back here
 	tp(at(4, 2, 2))  # code gadgets only listen to code typed in their own room
 	await code("char path = 'C';")
 	tp(at(4, 2, 2))
@@ -517,9 +579,36 @@ func _run() -> void:
 	p.restore_vitals()
 	await wait(0.3)
 	Input.action_press("move_right")
-	await wait(3.5)
+	await until_x(col(4, 5), 3.0)  # off the ledge, down onto path C
+	await wait(0.3)
+	var wrong := paths_in(4, "C")
+	var dropping := wrong.filter(func(pp): return pp._falling)
+	check("R4 a wrong path (C) drops as soon as you stand on it, every plank at once", not wrong.is_empty() and dropping.size() == wrong.size(), "%d of %d planks" % [dropping.size(), wrong.size()])
+	var furthest := p.global_position.x
+	var since := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - since < 2500:
+		furthest = maxf(furthest, p.global_position.x)
+		await process_frame
 	release_all()
-	check("R4 path C ends at a wall", p.global_position.x < col(4, 16) and p.global_position.y > at(4, 2, 2).y + 16, "pos=%s" % p.global_position)
+	check("R4 ...into the sea: back at the checkpoint, and Byte says why", furthest < col(4, 16) and p.global_position.x < col(4, 5) and room(4).contains(p.global_position) and "wasn't safe" in term.pending_hint, "furthest=%s pos=%s hint=%s" % [furthest, p.global_position, term.pending_hint.left(40)])
+	# Sarah tries to dash across a wrong path before it drops.
+	await code("path = 'A';")
+	await wait(2.6)  # the C planks come back
+	p.set_hero("sarah")
+	p.restore_vitals()
+	tp(at(4, 4, 1))  # on the first A plank
+	Input.action_press("move_right")
+	await wait(0.05)
+	await dash()
+	furthest = p.global_position.x
+	since = Time.get_ticks_msec()
+	while Time.get_ticks_msec() - since < 2500:
+		furthest = maxf(furthest, p.global_position.x)
+		await process_frame
+	release_all()
+	check("R4 Sarah's dash can't outrun a wrong path (A)", furthest < col(4, 16) and p.global_position.x < col(4, 5) and room(4).contains(p.global_position), "furthest=%s pos=%s" % [furthest, p.global_position])
+	await wait(2.6)
+	p.set_hero("april")
 	await code("path = 'B';")
 	tp(at(4, 2, 2))
 	await wait(0.3)
@@ -543,13 +632,13 @@ func _run() -> void:
 
 	# ---------------- Exam 1: the low cave ----------------
 	p.set_hero("sarah")
-	p.jump_power = 2.0
+	p.jump_power = 1.5
 	tp(at(5, 3, 2))
 	p.restore_vitals()
 	await wait(0.4)
 	await jump(0.4)
 	await wait(0.8)
-	check("E1 at jumpPower 2.0 the ceiling spikes hit for 50", p.health == 50.0, "hp=%.0f" % p.health)
+	check("E1 at jumpPower 1.5 the ceiling spikes hit for 50", p.health == 50.0, "hp=%.0f" % p.health)
 	await code("jumpPower = 1.0;")
 	check("E1 jumpPower = 1.0; works", is_equal_approx(p.jump_power, 1.0), last_byte())
 	await wait(1.0)
@@ -675,6 +764,8 @@ func _run() -> void:
 	await jump(0.28)
 	await until_state([OPEN])
 	check("E3 April double-jumps over the charge", p.health == hp, "hp=%.0f" % p.health)
+	var hit_wall: int = cap._facing
+	check("E3 the charge stops when his sword reaches the wall", absf(cap.global_position.x - (cap.arena_left if hit_wall < 0 else cap.arena_right)) <= cap._charge_reach + 8.0, "x=%.0f" % cap.global_position.x)
 	var dealt := await hit_captain()
 	check("E3 the sword hurts him while he's dizzy", dealt > 0.0, "dealt=%.0f" % dealt)
 	await wait(0.6)
@@ -736,6 +827,7 @@ func _run() -> void:
 	game.immune = false
 	await wait(2.0)
 	check("E3 six hits beat Captain Clown Nose", cap.st == DEAD, "hp=%.0f" % cap.health)
+	check("E3 the captain never goes into a wall (hitting it, dizzy or turning round)", cap_in_wall <= 1.0, "%.0f px in" % cap_in_wall)
 	check("E3 Byte is back and the terminal unlocks", level.byte.visible and term.locked_reason == "")
 	check("E3 the treasure appears", level.end_goal.visible)
 	shot("e3_won")

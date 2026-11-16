@@ -188,7 +188,7 @@ func _pick(hero_id: String) -> void:
 			var switched: bool = terminal.switch_from_wheel(hero_id) if terminal else player.set_hero(hero_id)
 			if not switched:
 				Sound.play("blocked")
-				_hud_message("NO ROOM TO GROW HERE!")
+				_hud_message("NO ROOM HERE!")
 
 
 # ---------------- Pointing ----------------
@@ -376,9 +376,9 @@ func _show_selected(terminal: Node) -> void:
 			_center_note.text = "TYPE IT ONCE"
 			_hint_text.text = "TYPE THIS ONCE IN BYTE'S TERMINAL:"
 			_hint_code.text = terminal.hero_line(id) if terminal else ""
-		elif not player.can_change_hero():
+		elif not player.can_change_hero(id):
 			_center_note.text = "NO ROOM HERE"
-			_hint_text.text = "GET PSALM OUT OF THE TUNNEL FIRST"
+			_hint_text.text = "GET PSALM OUT OF THE TUNNEL FIRST" if player.is_small else "TOO TALL FOR THIS TUNNEL"
 		else:
 			_center_note.text = "LET GO OF Q"
 			_hint_text.text = "LET GO OF Q TO PLAY AS " + hero_name

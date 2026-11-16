@@ -7,8 +7,9 @@ extends CanvasLayer
 
 signal closed
 
-const FONT := preload("res://assets/shared/ui/fonts/minecraftia/Minecraftia-Regular.ttf")
-const SLOT_COUNT := 5
+const FONT := GameFonts.TEXT
+const SLOT_COUNT := 5  ## Slots in a chest.
+const HOTBAR_SLOTS := 6  ## The same as the player's hotbar.
 const SLOT_SIZE := 24
 const TIP_TIME := 3.0
 const DEFAULT_TIP := "F / Esc - Close"
@@ -170,7 +171,7 @@ func _build() -> void:
 
 	tooltip = Label.new()
 	tooltip.add_theme_font_override("font", FONT)
-	tooltip.add_theme_font_size_override("font_size", 8)
+	tooltip.add_theme_font_size_override("font_size", GameFonts.TEXT_SIZE)
 	tooltip.add_theme_color_override("font_color", OUTLINE)
 	tooltip.add_theme_stylebox_override("normal", _box(BANNER, OUTLINE, 1, 2, Vector4(4, 2, 4, 0)))
 	tooltip.z_index = 5
@@ -205,7 +206,7 @@ func _section(title: String, inside: Color, slot_bg: Color, slot_edge: Color,
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	inner.add_child(row)
 
-	for i in SLOT_COUNT:
+	for i in (SLOT_COUNT if kind == "chest" else HOTBAR_SLOTS):
 		slots.append(_make_slot(row, kind, i, slot_bg, slot_edge))
 	return section
 
@@ -218,7 +219,7 @@ func _banner(text: String) -> PanelContainer:
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_override("font", FONT)
-	label.add_theme_font_size_override("font_size", 8)
+	label.add_theme_font_size_override("font_size", GameFonts.TEXT_SIZE)
 	label.add_theme_color_override("font_color", OUTLINE)
 	banner.add_child(label)
 	return banner

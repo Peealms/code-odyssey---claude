@@ -4,6 +4,8 @@ extends Node
 ##   Sound.play_at("fire", position)       - a trap sound, only heard near the camera
 ##   Sound.music("rooms")                  - crossfades to a music track (loops)
 ## Music plays on the "Music" bus, everything else on "SFX"; Game saves both volumes.
+## Two music players take turns: the current track on one, the next fading in on the other.
+## Only the current track and the one it replaces ever play, and only during the 1 s fade.
 ## Sources and licences: assets/shared/audio/CREDITS.md.
 
 const SFX_DIR := "res://assets/shared/audio/sfx/"
@@ -56,6 +58,8 @@ var _next_voice := 0
 var _music_a: AudioStreamPlayer
 var _music_b: AudioStreamPlayer
 var _music_name := ""
+var _current: AudioStreamPlayer = null  ## The player with the track now playing (or fading in).
+var _fade: Tween  ## The crossfade (or fade-out) in progress.
 
 
 func _ready() -> void:
@@ -104,27 +108,50 @@ func music(name: String) -> void:
 	if name == _music_name:
 		return
 	_music_name = name
-	var old := _music_a if _music_a.playing else null
+	if _fade:
+		_fade.kill()  # a fade still running would otherwise go on to mute or stop the wrong player
+	var old := _current
 	var new := _music_b if old == _music_a else _music_a
+	# Anything else still fading out stops now: the old track is the only one we fade.
+	for p in [_music_a, _music_b]:
+		if p != old:
+			p.stop()
 	var stream: AudioStream = load(MUSIC[name][0])
 	if stream is AudioStreamMP3 or stream is AudioStreamOggVorbis:
 		stream.loop = true
 	new.stream = stream
 	new.volume_db = -60.0
 	new.play()
-	var tween := create_tween().set_parallel()
-	tween.tween_property(new, "volume_db", MUSIC[name][1], MUSIC_FADE)
-	if old:
-		tween.tween_property(old, "volume_db", -60.0, MUSIC_FADE)
-		tween.chain().tween_callback(old.stop)
+	_current = new
+	_fade = create_tween().set_parallel()
+	_fade.tween_property(new, "volume_db", MUSIC[name][1], MUSIC_FADE)
+	if old and old.playing:
+		_fade.tween_property(old, "volume_db", -60.0, MUSIC_FADE)
+		_fade.chain().tween_callback(old.stop)
 
 
+## Fades all music out (a level is complete, the backstory starts).
 func stop_music() -> void:
 	_music_name = ""
+	_current = null
+	if _fade:
+		_fade.kill()
+	_fade = create_tween().set_parallel()
 	for p in [_music_a, _music_b]:
-		var tween := create_tween()
-		tween.tween_property(p, "volume_db", -60.0, MUSIC_FADE)
-		tween.tween_callback(p.stop)
+		if p.playing:
+			_fade.tween_property(p, "volume_db", -60.0, MUSIC_FADE)
+	_fade.chain().tween_callback(func():
+		_music_a.stop()
+		_music_b.stop())
+
+
+## How many music players are making sound right now (for the tests: 1, or 2 mid-crossfade).
+func music_playing() -> int:
+	var n := 0
+	for p in [_music_a, _music_b]:
+		if p.playing and p.volume_db > -59.0:
+			n += 1
+	return n
 
 
 func _music_player() -> AudioStreamPlayer:
