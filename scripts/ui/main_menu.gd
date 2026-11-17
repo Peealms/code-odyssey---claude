@@ -71,9 +71,13 @@ func _on_play() -> void:
 	Game.change_scene(LEVEL_SELECT)
 
 
-## The furthest level: Level 1 once the tutorial is done, else the tutorial (with the
-## backstory first if it hasn't been seen).
+## The level with a checkpoint save (it starts at that checkpoint), else the furthest level:
+## Level 1 once the tutorial is done, else the tutorial (with the backstory first if it
+## hasn't been seen).
 func continue_scene() -> String:
+	var saved: String = Game.checkpoint_save.get("scene", "")
+	if saved != "" and ResourceLoader.exists(saved):
+		return saved
 	if Game.best_stars.get("level1", 0) > 0:
 		return LEVEL_ONE
 	return FIRST_LEVEL
@@ -84,7 +88,7 @@ func _on_continue() -> void:
 	if next == FIRST_LEVEL and not Game.story_seen:
 		Game.play_story(FIRST_LEVEL)
 	else:
-		Game.change_scene(next)
+		Game.play_level(next)
 
 
 func _open_settings() -> void:

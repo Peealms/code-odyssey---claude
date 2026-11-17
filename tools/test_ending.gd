@@ -106,6 +106,7 @@ func _run() -> void:
 	# ---------------- CONTINUE ----------------
 	var menu: Node = current_scene
 	game.best_stars = {}
+	game.checkpoint_save = {}  # a checkpoint save would win (see the checkpoint test)
 	check("CONTINUE: the tutorial until it has a star", menu.continue_scene() == TUTORIAL, menu.continue_scene())
 	game.best_stars = {"level1": 2}
 	check("CONTINUE: Level 1 once the tutorial has a star", menu.continue_scene() == LEVEL_ONE, menu.continue_scene())

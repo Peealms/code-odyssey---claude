@@ -50,6 +50,9 @@ var current_room: Room = null:
 		_reset_answer_button()
 ## Every variable the player declared so far, and its value as Java would print it.
 var values := {}
+## True while LevelSave runs saved code again (coming back to a checkpoint): gadgets react,
+## but nothing is said, played or counted as a wrong try.
+var replaying := false
 
 var _checker: CommandChecker
 var _running := false
@@ -223,6 +226,18 @@ func _run_action(action: Dictionary) -> void:
 	variable_set.emit(name, value)
 
 
+## LevelSave: a line that ran before the checkpoint runs again, quietly. The hero itself is
+## switched by LevelSave at the end (any hero fits at the checkpoint, not where it was typed).
+func replay(name: String, value: Variant) -> void:
+	if name != "println":
+		if name == "hero":
+			values["hero"] = _java_text("hero", value)
+		else:
+			_apply_value(name, value)
+		_told_declare_once = true
+	variable_set.emit(name, value)
+
+
 ## Stores a player variable and makes it happen (switch hero, give the sword...).
 func _apply_value(name: String, value: Variant) -> void:
 	values[name] = _java_text(name, value)
@@ -274,6 +289,8 @@ func _java_text(name: String, value) -> String:
 ## that's too long). Byte explains, and it counts as a wrong try for the room's hints.
 ## `room`: the room whose wrong tries count (default: the one the player is in).
 func report_wrong(text: String, room: Room = null) -> void:
+	if replaying:
+		return  # already counted the first time (LevelSave restores the counts)
 	Sound.play("code_error")
 	_byte_line(text)
 	if byte:

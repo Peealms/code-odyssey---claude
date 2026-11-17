@@ -19,6 +19,9 @@ extends Node2D
 @export var fall_limit_margin := 64.0  ## How far below the map the player can fall before respawning.
 ## Extra space the camera may show above the map (0 for framed rooms with a ceiling).
 @export var camera_top_margin := 64.0
+## Save at every checkpoint, so CONTINUE and the pause menu's LAST CHECKPOINT come back to it
+## (LevelSave). The tutorial turns it off: it's one short room.
+@export var saves_progress := true
 
 @onready var terrain: TileMapLayer = $Terrain
 @onready var player: CharacterBody2D = $Player
@@ -32,6 +35,8 @@ const HERO_CUTSCENE := preload("res://scenes/ui/hero_cutscene.tscn")
 
 ## Hold Q: switch to a hero you've already switched to in code (see HeroWheel).
 var hero_wheel: HeroWheel
+## Saves the level at its checkpoints (null if `saves_progress` is off).
+var level_save: LevelSave
 var respawn_position := Vector2.ZERO
 var _map_bottom := 0.0
 var _finished := false
@@ -68,8 +73,42 @@ func _ready() -> void:
 		checkpoint.rescue_blocked.connect(_on_rescue_blocked)
 	end_goal.reached.connect(_on_level_complete)
 	end_goal.blocked.connect(_on_goal_blocked)
+	var resume := Game.take_resume(level_id)
+	if not resume.is_empty() and get_node_or_null(NodePath(resume.get("checkpoint", ""))) == null:
+		# From before the level was rebuilt (tools/build_level2.gd renames nodes): start fresh.
+		push_warning("Checkpoint save doesn't match this level any more; starting from the beginning.")
+		Game.clear_checkpoint()
+		resume = {}
+	if saves_progress:
+		level_save = LevelSave.new(self)
+		add_child(level_save)
+		if not resume.is_empty():
+			level_save.restore(resume)
+			return  # it shows BACK AT THE CHECKPOINT instead of the title
 	if level_title != "":
 		hud.show_message(level_title, 1.5)
+
+
+## True if LAST CHECKPOINT (pause menu) has a save to go back to.
+func has_checkpoint_save() -> bool:
+	return saves_progress and not Game.checkpoint_for(level_id).is_empty()
+
+
+## Pause menu: LAST CHECKPOINT reloads the level as it was at the last flag.
+func back_to_checkpoint() -> void:
+	Game.play_level(scene_file_path, true)
+
+
+## Pause menu: RESTART LEVEL starts over from the beginning, and forgets the checkpoint.
+func restart_level() -> void:
+	if not Game.checkpoint_for(level_id).is_empty():
+		Game.clear_checkpoint()
+	Game.play_level(scene_file_path, false)
+
+
+func _save_at(checkpoint: Area2D) -> void:
+	if level_save and not _finished:
+		level_save.save_at(checkpoint)
 
 
 func _physics_process(_delta: float) -> void:
@@ -110,6 +149,7 @@ func _on_checkpoint_reached(checkpoint: Area2D) -> void:
 	player.restore_vitals()
 	if checkpoint.unlock_hero == "none" or Game.is_hero_unlocked(checkpoint.unlock_hero):
 		hud.show_message("CHECKPOINT", 1.0)
+	_save_at(checkpoint)
 
 
 ## All the room's fruit is collected and the rescue flag was touched: cutscene, then the hero joins.
@@ -120,6 +160,7 @@ func _on_hero_rescued(checkpoint: Area2D) -> void:
 	add_child(cutscene)
 	await cutscene.play(hero, checkpoint, player)
 	checkpoint.hero_joined()
+	_save_at(checkpoint)
 	if byte:
 		byte.react(true)
 

@@ -129,7 +129,7 @@ func _play_selected() -> void:
 	if LEVELS[_target]["id"] == "level1" and not Game.story_seen:
 		Game.play_story(scene)  # the first time, the backstory plays before the tutorial
 	else:
-		Game.change_scene(scene)
+		Game.play_level(scene)  # from its checkpoint save, if it has one
 
 
 func _back() -> void:

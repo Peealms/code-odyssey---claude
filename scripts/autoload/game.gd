@@ -20,6 +20,11 @@ var best_stars: Dictionary = {}
 var story_seen := false
 ## Where the backstory goes when it ends (set by play_story()).
 var story_next := ""
+## The last checkpoint of the level being played (see LevelSave), so CONTINUE and LAST
+## CHECKPOINT go back to it. Empty = none. Saved with progress; cleared when the level is done.
+var checkpoint_save: Dictionary = {}
+## Set by play_level(): the next level to load starts from checkpoint_save, if it's for it.
+var resume_requested := false
 
 # The level being played right now (reset by start_level).
 var level_id := ""
@@ -45,6 +50,8 @@ func _ready() -> void:
 	load_progress()
 	if OS.has_feature("editor") and ResourceLoader.exists("res://scripts/dev/immunity.gd"):  # IMMUNITY: editor runs only
 		add_child(load("res://scripts/dev/immunity.gd").new())  # IMMUNITY
+	if OS.has_feature("smoke_test"):  # only the "Windows (smoke test)" export (tools/export_smoke_test.gd)
+		add_child(load("res://tools/export_smoke_test.gd").new())
 
 
 # ---------------- Scene changes ----------------
@@ -68,6 +75,39 @@ func change_scene(path: String) -> void:
 
 func reload_scene() -> void:
 	change_scene(get_tree().current_scene.scene_file_path)
+
+
+## Loads a level. If it has a checkpoint save (and `resume` is on), it starts from there.
+func play_level(path: String, resume := true) -> void:
+	resume_requested = resume
+	change_scene(path)
+
+
+# ---------------- Checkpoint saves ----------------
+
+func save_checkpoint(data: Dictionary) -> void:
+	if immune: return  # IMMUNITY: a level played in immunity mode isn't saved
+	checkpoint_save = data
+	save_progress()
+
+
+func clear_checkpoint() -> void:
+	if checkpoint_save.is_empty():
+		return
+	checkpoint_save = {}
+	save_progress()
+
+
+## The checkpoint save for level `id` (empty if there's none).
+func checkpoint_for(id: String) -> Dictionary:
+	return checkpoint_save if checkpoint_save.get("level_id", "") == id else {}
+
+
+## The level's checkpoint save if play_level() asked for it (once: the request is used up).
+func take_resume(id: String) -> Dictionary:
+	var wanted := resume_requested
+	resume_requested = false
+	return checkpoint_for(id) if wanted else {}
 
 
 ## Plays the backstory (story_intro.gd), then goes to `next_scene`.
@@ -122,6 +162,15 @@ func start_level(id: String) -> void:
 	_level_start_ms = Time.get_ticks_msec()
 
 
+## Seconds since the level started (a checkpoint save keeps counting from its own time).
+func level_seconds() -> float:
+	return (Time.get_ticks_msec() - _level_start_ms) / 1000.0
+
+
+func set_level_seconds(seconds: float) -> void:
+	_level_start_ms = Time.get_ticks_msec() - int(seconds * 1000.0)
+
+
 ## 0 answers shown = 3 stars, 1 = 2 stars, 2 or more = 1 star.
 func stars_earned() -> int:
 	return clampi(3 - answers_shown, 1, 3)
@@ -136,10 +185,12 @@ func finish_level() -> Dictionary:
 		"best": best,
 		"answers_shown": answers_shown,
 		"mistakes": mistakes,
-		"seconds": (Time.get_ticks_msec() - _level_start_ms) / 1000.0,
+		"seconds": level_seconds(),
 	}
 	if immune: return results  # IMMUNITY: a level finished in immunity mode isn't saved
 	best_stars[level_id] = best
+	if not checkpoint_for(level_id).is_empty():
+		checkpoint_save = {}  # done: CONTINUE goes to the next level now
 	save_progress()
 	return results
 
@@ -210,6 +261,7 @@ func save_progress() -> void:
 	cfg.set_value("progress", "wheel_heroes", wheel_heroes)
 	cfg.set_value("progress", "best_stars", best_stars)
 	cfg.set_value("progress", "story_seen", story_seen)
+	cfg.set_value("progress", "checkpoint", checkpoint_save)
 	cfg.save(SAVE_PATH)
 
 
@@ -222,6 +274,7 @@ func load_progress() -> void:
 		wheel_heroes = cfg.get_value("progress", "wheel_heroes", [HEROES[0], current_hero])
 		best_stars = cfg.get_value("progress", "best_stars", best_stars)
 		story_seen = cfg.get_value("progress", "story_seen", false)
+		checkpoint_save = cfg.get_value("progress", "checkpoint", {})
 		_drop_unknown_heroes()
 
 
@@ -253,5 +306,6 @@ func reset_progress() -> void:
 	wheel_heroes = [HEROES[0]]
 	best_stars = {}
 	story_seen = false
+	checkpoint_save = {}
 	if has_save():
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
