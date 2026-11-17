@@ -1,6 +1,8 @@
 extends CanvasLayer
 ## Press Esc in a level to pause. Works while the game tree is paused.
 ## Has Music and Sounds volume sliders (saved in the settings file when you resume).
+## Once the level has a checkpoint save (LevelSave), RESTART becomes LAST CHECKPOINT and a
+## RESTART LEVEL button (press twice) starts over from the beginning.
 
 const MAIN_MENU := "res://scenes/ui/main_menu.tscn"
 
@@ -8,20 +10,71 @@ const MAIN_MENU := "res://scenes/ui/main_menu.tscn"
 @onready var restart_button: Button = $Center/Panel/VBox/RestartButton
 @onready var menu_button: Button = $Center/Panel/VBox/MenuButton
 
+const RESTART_LEVEL_TEXT := "RESTART LEVEL"
+
 var _music_slider: HSlider
 var _sfx_slider: HSlider
+var _restart_level_button: Button
+var _restart_level_armed := false
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = false
 	resume_button.pressed.connect(close)
-	restart_button.pressed.connect(func(): Game.reload_scene())
+	restart_button.pressed.connect(_on_restart)
 	menu_button.pressed.connect(func(): Game.change_scene(MAIN_MENU))
+	_add_restart_level_button()
 	_music_slider = _add_volume_row("MUSIC", Game.set_music_volume)
 	_sfx_slider = _add_volume_row("SOUNDS", Game.set_sfx_volume)
-	for b in [resume_button, restart_button, menu_button]:
+	for b in [resume_button, restart_button, _restart_level_button, menu_button]:
 		b.pressed.connect(Sound.play.bind("ui_select"))
+
+
+## With a checkpoint save, RESTART becomes LAST CHECKPOINT and RESTART LEVEL appears under it.
+func _refresh_restart() -> void:
+	var level := get_tree().current_scene as Level
+	var saved := level != null and level.has_checkpoint_save()
+	restart_button.text = "LAST CHECKPOINT" if saved else "RESTART"
+	_restart_level_button.visible = saved
+	_disarm_restart_level()
+
+
+## LAST CHECKPOINT: the level as it was at the last flag. RESTART (no save): from the start.
+func _on_restart() -> void:
+	var level := get_tree().current_scene as Level
+	if level == null:
+		Game.reload_scene()
+	elif level.has_checkpoint_save():
+		level.back_to_checkpoint()
+	else:
+		level.restart_level()
+
+
+## RESTART LEVEL throws the checkpoint away, so the first press asks "SURE? PRESS AGAIN".
+func _add_restart_level_button() -> void:
+	_restart_level_button = Button.new()
+	_restart_level_button.name = "RestartLevelButton"
+	_restart_level_button.text = RESTART_LEVEL_TEXT
+	$Center/Panel/VBox.add_child(_restart_level_button)
+	$Center/Panel/VBox.move_child(_restart_level_button, restart_button.get_index() + 1)
+	_restart_level_button.pressed.connect(_on_restart_level)
+
+
+func _on_restart_level() -> void:
+	if not _restart_level_armed:
+		_restart_level_armed = true
+		_restart_level_button.text = "SURE? PRESS AGAIN"
+		return
+	var level := get_tree().current_scene as Level
+	if level:
+		level.restart_level()
+
+
+func _disarm_restart_level() -> void:
+	_restart_level_armed = false
+	if _restart_level_button:
+		_restart_level_button.text = RESTART_LEVEL_TEXT
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -36,6 +89,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func open() -> void:
 	_music_slider.set_value_no_signal(Game.music_volume)
 	_sfx_slider.set_value_no_signal(Game.sfx_volume)
+	_refresh_restart()
 	visible = true
 	get_tree().paused = true
 	Sound.play("terminal_open")

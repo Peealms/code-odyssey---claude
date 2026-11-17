@@ -7,3 +7,6 @@
 
 # Claude Code MCP config - contains the Godot path on one person's PC
 .mcp.json
+
+# Release builds (made from export_presets.cfg)
+/build/

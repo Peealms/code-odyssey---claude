@@ -20,6 +20,10 @@ var _gate_open := false
 @onready var reader: CanvasLayer = $ManualReader
 
 
+func _init() -> void:
+	saves_progress = false  # one short room: RESTART is enough, no checkpoint saves
+
+
 func _ready() -> void:
 	super()
 	chest.first_opened.connect(_on_chest_first_opened)

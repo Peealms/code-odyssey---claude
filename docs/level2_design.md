@@ -123,6 +123,21 @@ treasure chest appears only when he's beaten.
 - **60 HP = 6 hits.** His hits do 25 damage (4 hits and you're back at the checkpoint before the
   arena, and he resets with full health). Leaving the arena also resets him.
 
+## The ending (`scripts/ui/story_ending.gd`, scene `scenes/ui/story_ending.tscn`)
+Touching the treasure shows the results; CONTINUE (the level's `next_scene`) plays the ending,
+which goes back to the main menu. It extends the backstory's script (same helpers and look),
+in four shots:
+1. **The treasure:** the team stands across the broken bridge from the chest. It opens and the
+   stolen variables fly back out; `int bridgeLength = 4;` rebuilds the bridge the captain broke
+   in the backstory, and the five run across to Byte.
+2. **Thanks:** Byte thanks each of them (make a variable once, change it, pick the right type)
+   and a portal takes them home.
+3. **Home:** the lab at 12:01, the same room as the backstory (`_lab_room`); they drop back out
+   of the screen and Byte waves goodbye, typing `System.out.println("I can code!");`.
+4. **THE END:** the team's names and the art, font and sound credits. Enter goes to the menu.
+Enter moves on, Esc skips. `tools/test_ending.gd` plays it (and checks the menu's CONTINUE and
+RESET PROGRESS): 12 checks.
+
 ## Why the numbers changed from the old Level 1
 Treasure Hunters tiles are 32 px (the old ones were 16 px). Each hero's hitbox is as tall as
 they're drawn, so no head goes into a ceiling: Chelzy 34 px, Kervin 27 px, Sarah, April and
